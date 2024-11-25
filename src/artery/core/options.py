@@ -38,6 +38,9 @@ def _get_from_env(f: Field) -> Any:
     anno = f.type
     if get_origin(anno) is Annotated:
         _, from_str = get_args(anno)
-    else:
+    elif callable(anno):
         from_str = anno
+    else:
+        msg = "Could not infer how to load from string - use Annotated to add a callable."
+        raise TypeError(msg)
     return from_str(os.environ[f.name])
