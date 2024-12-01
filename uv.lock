@@ -24,11 +24,24 @@ wheels = [
 ]
 
 [[package]]
+name = "anysync"
+version = "0.3.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "anyio" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/84/c5/e6f2b218d10fca3dea947c2ce3ab5d08a42dab1a4080851c23123a7f1ee1/anysync-0.3.1.tar.gz", hash = "sha256:f878d2fd1c929f600a125520f6662287ead9aaca66f12b1640751b0167500827", size = 9243 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4d/80/cd00f222ccd1d655c45e171c6e4435987ab7798068bd51d569891ad63f54/anysync-0.3.1-py3-none-any.whl", hash = "sha256:77b33aeceeb4375ed031b2e43564cce00a6c17018f9d7e16610cd778d7e23c0a", size = 7626 },
+]
+
+[[package]]
 name = "artery"
 version = "0.0.1"
 source = { editable = "." }
 dependencies = [
     { name = "anyio" },
+    { name = "anysync" },
     { name = "sqlalchemy" },
 ]
 
@@ -104,6 +117,7 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "anyio", specifier = ">=4.6.2,<5" },
+    { name = "anysync", specifier = ">=0.3.1" },
     { name = "sqlalchemy", specifier = ">=2.0.36,<3" },
 ]
 

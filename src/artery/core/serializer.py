@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from typing import Any
 from typing import LiteralString
 from typing import Protocol
 from typing import TypedDict
@@ -12,64 +11,83 @@ from artery.core.registry import Registry
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable
     from collections.abc import AsyncIterator
-    from collections.abc import Sequence
 
 T = TypeVar("T")
 
 
-class Serializer(Protocol[T]):
-    """A protocol for serializing and deserializing objects."""
-
+class _BaseSerializer(Protocol[T]):
     name: LiteralString
     """The name of the serializer."""
     types: tuple[type[T], ...]
     """The types that the serializer can handle."""
+    version: int
 
-    async def dump_scalar(self, scalar: T) -> ScalarData:
-        """Serialize the given scalar."""
+
+class ScalarSerializer(_BaseSerializer[T]):
+    """A protocol for serializing and deserializing objects from scalar values."""
+
+    def dump_scalar(self, value: T) -> ScalarDump:
+        """Serialize the given value."""
         ...
 
-    async def dump_stream(self, stream: AsyncIterator[T]) -> StreamData:
+    def load_scalar(self, dump: ScalarDump) -> T:
+        """Deserialize the given value."""
+        ...
+
+
+class StreamSerializer(_BaseSerializer[T]):
+    """A protocol for serializing and deserializing objects from streams of values."""
+
+    async def dump_stream(self, stream: AsyncIterable[T]) -> StreamDump:
         """Serialize the given stream."""
         ...
 
-    async def load_scalar(self, dump: ScalarData) -> T:
-        """Deserialize the given scalar."""
-        ...
-
-    async def load_stream(self, dump: StreamData) -> AsyncIterator[T]:
+    async def load_stream(self, dump: StreamDump) -> AsyncIterator[T]:
         """Deserialize the given stream."""
         ...
 
 
-class ScalarData(TypedDict):
-    """The serialized representation of a scalar value."""
+class ScalarDump(TypedDict):
+    """The serialized representation of a single value."""
 
-    content_bytes: bytes
+    scalar: bytes
     """The serialized data."""
     content_type: str
     """The MIME type of the data."""
+    serializer_name: str
+    """The name of the serializer used to serialize the data."""
+    serializer_version: int
+    """The version of the serializer used to serialize the data."""
 
 
-class StreamData(TypedDict):
+class StreamDump(TypedDict):
     """The serialized representation of a stream of values."""
 
-    content_bytes: AsyncIterable[bytes]
+    stream: AsyncIterable[bytes]
     """The serialized data stream."""
     content_type: str
     """The MIME type of the data stream as a whole."""
+    serializer_name: str
+    """The name of the serializer used to serialize the data."""
+    serializer_version: int
+    """The version of the serializer used to serialize the data."""
 
 
-class SerializerRegistry(Registry[Serializer]):
-    def __init__(self, items: Sequence[Serializer[Any]]) -> None:
-        super().__init__(items)
-        # ensure first declared item has highest priority for type inference
-        self.by_type = {t: s for s in reversed(self.items) for t in s.types}
-        """A mapping of types to serializers."""
+class StreamSerializerRegistry(Registry[StreamSerializer]):
+    """A registry of stream serializers."""
 
-    def get_by_type_inference(self, cls: type[T]) -> Serializer[T] | None:
-        """Get the first serializer that can handle the given type or its parent classes."""
-        for base in cls.mro():
-            if base in self.by_type:
-                return self.by_type[base]
-        return None
+    item_description = "Stream serializer"
+
+    if TYPE_CHECKING:
+
+        def get_by_type_inference(self, cls: type[T]) -> StreamSerializer[T]: ...  # noqa: D102
+
+
+class ScalarSerializerRegistry(Registry[ScalarSerializer]):
+    """A registry of scalar serializers."""
+
+    item_description = "Scalar serializer"
+
+    if TYPE_CHECKING:
+
+        def get_by_type_inference(self, cls: type[T]) -> ScalarSerializer[T]: ...  # noqa: D102

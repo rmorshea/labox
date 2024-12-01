@@ -11,6 +11,8 @@ class RegistryItem(Protocol):
     """A named item in a registry."""
 
     name: LiteralString
+    types: tuple[type, ...]
+    version: int
 
 
 T = TypeVar("T", bound=RegistryItem)
@@ -35,6 +37,16 @@ class Registry(Generic[T]):
         self.by_name = {s.name: s for s in self.items}
         self.default = items[0]
         self.items = items
+        self.by_type = {t: s for s in reversed(self.items) for t in s.types}
+        """A mapping of types to serializers."""
+
+    def get_by_type_inference(self, cls: type) -> T:
+        """Get the first item that can handle the given type or its parent classes."""
+        for base in cls.mro():
+            if base in self.by_type:
+                return self.by_type[base]
+        msg = f"No {self.item_description.lower()} found for {cls}."
+        raise ValueError(msg)
 
     def check_registered(self, item: T) -> None:
         """Ensure that the given serializer is registered - raises a ValueError if not."""

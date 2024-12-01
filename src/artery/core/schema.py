@@ -1,19 +1,38 @@
+from __future__ import annotations
+
+import operator
+from collections.abc import Callable
+from collections.abc import Mapping
+from collections.abc import Sequence
 from datetime import UTC
 from datetime import datetime
+from typing import TYPE_CHECKING
 from typing import Annotated
+from typing import Any
+from typing import Literal
+from typing import TypedDict
+from typing import TypeVar
+from typing import overload
 from uuid import UUID
 from uuid import uuid4
 
+from sqlalchemy import ColumnElement
 from sqlalchemy import DateTime
+from sqlalchemy import NamedColumn
 from sqlalchemy import UniqueConstraint
 from sqlalchemy import func
+from sqlalchemy.orm import ColumnProperty
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import MappedAsDataclass
+from sqlalchemy.orm import MappedColumn
 from sqlalchemy.orm import mapped_column
+from sqlalchemy.sql import expression as sql
 
-from artery.core.serializer import SerializerRegistry
-from artery.core.storage import StorageRegistry
+C = TypeVar("C", bound=MappedColumn)
+
+ColumnComparator = Callable[[ColumnElement, Any], ColumnElement[bool]]
+"""A function that constrains a column to a specific value."""
 
 DateTimeTZ = Annotated[datetime, mapped_column(DateTime(timezone=True))]
 """A datetime column with timezone information."""
@@ -25,66 +44,139 @@ There is no way to represent an infinite datetime in Python so we resort to usin
 largest representable value. Some databases have support for infinite datetimes but this
 is not a universal feature. If it's desireable to map datetime.max to infinity you may
 be able to register an extension with your driver of choice in order to do so. For
-example, with `psycopg3` allows you to implement a custom dumper/loader for datetimes:
+example, `psycopg3` allows you to implement a custom dumper/loader for datetimes:
 https://www.psycopg.org/psycopg3/docs/advanced/adapt.html#example-handling-infinity-date
 """
 
 
-class Base(DeclarativeBase):
-    """The base for all schema classes."""
+class Base(MappedAsDataclass, DeclarativeBase, kw_only=True):
+    """The base for Artery's schema classes."""
 
 
-class Record(Base, MappedAsDataclass, kw_only=True):
-    """A reference to a piece of data stored in a storage backend."""
+def unique_on(col: C, *, where: ColumnComparator = operator.eq) -> C:
+    """Indicate that a column defines a unique constraint on the latest value."""
+    _set_column_info(col.column.info, {"unique_on": {"comparator": where}})
+    return col
 
-    id: Mapped[UUID] = mapped_column(default_factory=uuid4)
-    """The unique identifier of the pointer."""
 
-    content_type: Mapped[str] = mapped_column()
+class DataRelation(Base):
+    """A relationship between a value's metadata and where/how it was saved."""
+
+    __tablename__ = "artery_data_relation"
+    __mapper_args__: Mapping[str, Any] = {"polymorphic_on": "rel_type"}
+
+    rel_id: Mapped[UUID] = mapped_column(init=False, default_factory=uuid4)
+    """The ID of the relation."""
+    rel_type: Mapped[str] = unique_on(mapped_column(init=False))
+    """The type of relation."""
+    rel_created_at: Mapped[DateTimeTZ] = mapped_column(init=False, default=func.now())
+    """The timestamp when the pointer was created."""
+    rel_archived_at: Mapped[DateTimeTZ] = unique_on(mapped_column(init=False, default=NEVER))
+    """The timestamp when the pointer was archived."""
+    rel_content_type: Mapped[str] = mapped_column(init=False)
     """The MIME type of the data."""
-    content_size: Mapped[int] = mapped_column()
-    """The size of the data in bytes."""
-    content_hash: Mapped[str] = mapped_column()
-    """The hash of the data."""
-    content_hash_algorithm: Mapped[str] = mapped_column()
-    """The algorithm used to hash the data."""
-
-    serializer_name: Mapped[str] = mapped_column()
+    rel_serializer_name: Mapped[str] = mapped_column(init=False)
     """The name of the serializer used to serialize the data."""
-    serialier_version: Mapped[int] = mapped_column()
+    rel_serialier_version: Mapped[int] = mapped_column(init=False)
     """The version of the serializer used to serialize the data."""
-    storage_name: Mapped[str] = mapped_column()
+    rel_storage_name: Mapped[str] = mapped_column(init=False)
     """The name of the storage backend used to store the data."""
-    storage_version: Mapped[int] = mapped_column()
+    rel_storage_version: Mapped[int] = mapped_column(init=False)
     """The version of the storage backend used to store the data."""
 
-    record_name: Mapped[str] = mapped_column()
-    """The name of the artifact."""
-    record_created_at: Mapped[DateTimeTZ] = mapped_column(default=func.now())
-    """The timestamp when the pointer was created."""
-    record_updated_at: Mapped[DateTimeTZ] = mapped_column(default=func.now(), onupdate=func.now())
-    """The timestamp when the pointer was last updated."""
-    record_archived_at: Mapped[DateTimeTZ] = mapped_column(default=NEVER)
-    """The timestamp when the pointer was archived."""
+    def rel_select_latest(self) -> ColumnElement[bool]:
+        """Get the expression to select the latest relation that conflicts with this one."""
+        exprs: list[ColumnElement[bool]] = []
+        for name, col in self._rel_columns_with_data_relation_info().items():
+            match _get_column_info(col.info):
+                case {"latest": {"comparator": comparator}}:
+                    exprs.append(comparator(col, getattr(self, name)))
+        return sql.and_(*exprs)
 
-    def __post_init__(
-        self,
-        *,
-        _storage_registry: StorageRegistry,
-        _serializer_registry: SerializerRegistry,
-    ) -> None:
-        if self.storage_name not in _storage_registry.by_name:
-            msg = f"Unknown storage: {self.storage_name}"
-            raise ValueError(msg)
-        if self.serializer_name not in _serializer_registry.by_name:
-            msg = f"Unknown serializer: {self.serializer_name}"
-            raise ValueError(msg)
+    @classmethod
+    def _rel_init_subclass(cls) -> None:
+        if cls.__mapper__.polymorphic_identity:
+            cls._rel_make_unique_constraint()
 
-    __tablename__ = "artery_record"
-    __table_args__ = (
-        UniqueConstraint(
-            record_archived_at,
-            record_name,
-            name="uq_artifact_name_archive_at",
-        ),
-    )
+    @classmethod
+    def _rel_make_unique_constraint(cls) -> UniqueConstraint:
+        """Get the unique constraint for the latest relations."""
+        return UniqueConstraint(
+            *cls._rel_unique_constraint_columns(),
+            **cls._rel_unique_constraint_kwargs(),
+        )
+
+    @classmethod
+    def _rel_unique_constraint_columns(cls) -> Sequence[NamedColumn]:
+        """Get the columns that make up the unique constraint for the latest relations."""
+        return [
+            col
+            for col in cls._rel_columns_with_data_relation_info().values()
+            if "latest" in _get_column_info(col.info)
+        ]
+
+    @classmethod
+    def _rel_unique_constraint_kwargs(cls) -> dict[str, Any]:
+        """Get the keyword arguments for the unique constraint for the latest relations."""
+        return {}
+
+    @classmethod
+    def _rel_columns_with_data_relation_info(cls) -> dict[str, NamedColumn]:
+        """Get the columns with data relation info."""
+        return {
+            k: v.columns[0]
+            for k, v in cls.__mapper__.attrs.items()
+            if isinstance(v, ColumnProperty)
+            and len(v.columns) == 1
+            and _get_column_info(v.info, missing_ok=True)
+        }
+
+    if not TYPE_CHECKING:
+
+        def __init_subclass__(cls, **kwargs: Any) -> None:
+            super().__init_subclass__(**kwargs)
+            cls._rel_init_subclass()
+
+
+_INFO_KEY = "__data_relation_info__"
+
+
+@overload
+def _get_column_info(
+    info: dict, *, missing_ok: Literal[True]
+) -> _DataRelationColumnInfo | None: ...
+
+
+@overload
+def _get_column_info(
+    info: dict, *, missing_ok: Literal[False] = ...
+) -> _DataRelationColumnInfo: ...
+
+
+def _get_column_info(info: dict, *, missing_ok: bool = False) -> _DataRelationColumnInfo | None:
+    """Get the data relation info from a column."""
+    if missing_ok:
+        return info.get(_INFO_KEY)
+    else:
+        try:
+            return info[_INFO_KEY]
+        except KeyError:
+            msg = f"Missing data relation info in {info}"
+            raise ValueError(msg) from None
+
+
+def _set_column_info(info: dict, data_relation_info: _DataRelationColumnInfo) -> None:
+    """Set the data relation info on a column."""
+    info[_INFO_KEY] = data_relation_info
+
+
+class _DataRelationColumnInfo(TypedDict, total=False):
+    """A dictionary of metadata about a column."""
+
+    unique_on: _UniqueOnInfo
+
+
+class _UniqueOnInfo(TypedDict):
+    """A dictionary of metadata about the latest value of a column."""
+
+    comparator: ColumnComparator

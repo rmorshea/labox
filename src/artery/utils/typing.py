@@ -14,3 +14,6 @@ def copy_signature(_copy_from: Callable[P, R]) -> Callable[[Any], Callable[P, R]
         return copy_to
 
     return decorator
+
+
+def extend_signature(_copy_from: Callable[P, R]) ->

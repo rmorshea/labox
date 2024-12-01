@@ -3,13 +3,13 @@ import json
 from typing import TypeAlias
 
 from artery.core.serializer import DataDump
-from artery.core.serializer import Serializer
+from artery.core.serializer import StreamSerializer
 
 JsonType: TypeAlias = "int | str | float | bool | None | dict[str, JsonType] | list[JsonType]"
 """A type alias for JSON data."""
 
 
-class JsonSerializer(Serializer[JsonType]):
+class JsonSerializer(StreamSerializer[JsonType]):
     """A serializer for JSON data."""
 
     name = "artery_json_v1"
