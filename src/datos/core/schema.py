@@ -50,7 +50,7 @@ https://www.psycopg.org/psycopg3/docs/advanced/adapt.html#example-handling-infin
 
 
 class Base(MappedAsDataclass, DeclarativeBase, kw_only=True):
-    """The base for Artery's schema classes."""
+    """The base for datos's schema classes."""
 
 
 def unique_on(col: C, *, where: ColumnComparator = operator.eq) -> C:
@@ -62,7 +62,7 @@ def unique_on(col: C, *, where: ColumnComparator = operator.eq) -> C:
 class DataRelation(Base):
     """A relationship between a value's metadata and where/how it was saved."""
 
-    __tablename__ = "artery_data_relation"
+    __tablename__ = "datos_data_relation"
     __mapper_args__: Mapping[str, Any] = {"polymorphic_on": "rel_type"}
 
     rel_id: Mapped[UUID] = mapped_column(init=False, default_factory=uuid4)

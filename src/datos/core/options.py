@@ -7,14 +7,14 @@ from typing import Self
 from typing import get_args
 from typing import get_origin
 
-from artery.utils.misc import frozenclass
+from datos.utils.misc import frozenclass
 
 
 @frozenclass
 class Options:
     """Common configuration options."""
 
-    ARTERY_MAX_ARCHIVE_EXISTING_RETRIES: int = 3
+    datos_MAX_ARCHIVE_EXISTING_RETRIES: int = 3
     """Number of times to retry archiving an existing artifact."""
 
     @classmethod

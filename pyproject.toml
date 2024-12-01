@@ -8,7 +8,7 @@ requires = ["setuptools>=64"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "artery"
+name = "datos"
 version = "0.0.1"
 description = "Dependency injection without the boilerplate."
 readme = "README.md"
@@ -23,7 +23,7 @@ classifiers = [
 dependencies = ["anyio>=4.6.2,<5", "anysync>=0.3.1,<1", "sqlalchemy>=2.0.36,<3"]
 
 [project.urls]
-Source = "https://github.com/rmorshea/artery"
+Source = "https://github.com/rmorshea/datos"
 
 [dependency-groups]
 all = [
@@ -118,7 +118,7 @@ fixable = ["ALL"]
 extend-safe-fixes = ["TCH"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["artery"]
+known-first-party = ["datos"]
 force-single-line = true
 
 [tool.ruff.lint.flake8-tidy-imports]
@@ -153,12 +153,12 @@ ban-relative-imports = "all"
 line_length = 100
 
 [tool.coverage.run]
-source_pkgs = ["artery", "tests"]
+source_pkgs = ["datos", "tests"]
 branch = true
 omit = []
 
 [tool.coverage.paths]
-artery = ["src"]
+datos = ["src"]
 tests = ["tests"]
 
 [tool.coverage.report]

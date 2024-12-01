@@ -1,5 +1,5 @@
-import artery
+import datos
 
 
-def test_artery():
-    artery  # noqa: B018
+def test_datos():
+    datos  # noqa: B018

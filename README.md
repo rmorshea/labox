@@ -1,7 +1,7 @@
-# Artery
+# datos
 
-[![PyPI - Version](https://img.shields.io/pypi/v/artery.svg)](https://pypi.org/project/artery)
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/artery.svg)](https://pypi.org/project/artery)
+[![PyPI - Version](https://img.shields.io/pypi/v/datos.svg)](https://pypi.org/project/datos)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/datos.svg)](https://pypi.org/project/datos)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 An artifact management system for Python.

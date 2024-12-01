@@ -5,12 +5,12 @@ from typing import LiteralString
 from typing import Protocol
 from typing import TypeVar
 
-from artery.core.registry import Registry
-from artery.core.schema import DataRelation
+from datos.core.registry import Registry
+from datos.core.schema import DataRelation
 
 if TYPE_CHECKING:
-    from artery.core.serializer import ScalarDump
-    from artery.core.serializer import StreamDump
+    from datos.core.serializer import ScalarDump
+    from datos.core.serializer import StreamDump
 
 
 R = TypeVar("R", bound=DataRelation)

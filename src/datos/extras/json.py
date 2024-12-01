@@ -2,8 +2,8 @@ import hashlib
 import json
 from typing import TypeAlias
 
-from artery.core.serializer import DataDump
-from artery.core.serializer import StreamSerializer
+from datos.core.serializer import DataDump
+from datos.core.serializer import StreamSerializer
 
 JsonType: TypeAlias = "int | str | float | bool | None | dict[str, JsonType] | list[JsonType]"
 """A type alias for JSON data."""
@@ -12,7 +12,7 @@ JsonType: TypeAlias = "int | str | float | bool | None | dict[str, JsonType] | l
 class JsonSerializer(StreamSerializer[JsonType]):
     """A serializer for JSON data."""
 
-    name = "artery_json_v1"
+    name = "datos_json_v1"
     types = (int, str, float, bool, type(None), dict, list)
 
     def dump(self, value: JsonType) -> DataDump:

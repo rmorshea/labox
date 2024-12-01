@@ -12,21 +12,21 @@ from anysync import contextmanager
 from pybooster import injector
 from pybooster import required
 
-from artery.core.schema import DataRelation
-from artery.utils.anyio import TaskGroupFuture
-from artery.utils.anyio import start_future
-from artery.utils.misc import frozenclass
+from datos.core.schema import DataRelation
+from datos.utils.anyio import TaskGroupFuture
+from datos.utils.anyio import start_future
+from datos.utils.misc import frozenclass
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable
     from collections.abc import AsyncIterator
 
-    from artery.core.serializer import ScalarSerializer
-    from artery.core.serializer import ScalarSerializerRegistry
-    from artery.core.serializer import StreamSerializer
-    from artery.core.serializer import StreamSerializerRegistry
-    from artery.core.storage import Storage
-    from artery.core.storage import StorageRegistry
+    from datos.core.serializer import ScalarSerializer
+    from datos.core.serializer import ScalarSerializerRegistry
+    from datos.core.serializer import StreamSerializer
+    from datos.core.serializer import StreamSerializerRegistry
+    from datos.core.storage import Storage
+    from datos.core.storage import StorageRegistry
 
 T = TypeVar("T")
 R = TypeVar("R", bound=DataRelation)

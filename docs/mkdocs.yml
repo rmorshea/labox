@@ -1,9 +1,9 @@
 ---
 site_author: Ryan Morshead
 site_description: An artifact management system for Python.
-site_name: Artery
+site_name: datos
 docs_dir: src
-repo_url: https://github.com/rmorshea/artery
+repo_url: https://github.com/rmorshea/datos
 nav:
   - Home: index.md
 theme:

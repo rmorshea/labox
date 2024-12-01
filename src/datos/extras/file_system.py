@@ -2,9 +2,9 @@ from collections.abc import Sequence
 from mimetypes import guess_extension
 from pathlib import Path
 
-from artery.core.schema import Record
-from artery.core.storage import Storage
-from artery.utils.misc import slugify
+from datos.core.schema import Record
+from datos.core.storage import Storage
+from datos.utils.misc import slugify
 
 
 class FileSystemStorage(Storage):
