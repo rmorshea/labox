@@ -204,11 +204,17 @@ async def _save_scalar(
 
     relation.rel_content_type = dump["content_type"]
     relation.rel_serializer_name = serializer.name
-    relation.rel_serialier_version = serializer.version
+    relation.rel_serializer_version = serializer.version
     relation.rel_storage_name = storage.name
     relation.rel_storage_version = storage.version
 
-    return await storage.write_scalar(relation, dump)
+    relation = await storage.write_scalar(relation, dump)
+
+    relation.rel_content_size = len(dump["scalar"])
+    relation.rel_content_hash = dump["content_hash"]
+    relation.rel_content_hash_algorithm = dump["content_hash_algorithm"]
+
+    return relation
 
 
 async def _save_stream(
@@ -231,15 +237,33 @@ async def _save_stream(
             msg = f"Invalid data dictionary: {data}"
             raise ValueError(msg)
 
-    dump = await serializer.dump_stream(stream)
+    dump = serializer.dump_stream(stream)
 
     relation.rel_storage_name = storage.name
     relation.rel_storage_version = storage.version
     relation.rel_content_type = dump["content_type"]
     relation.rel_serializer_name = serializer.name
-    relation.rel_serialier_version = serializer.version
+    relation.rel_serializer_version = serializer.version
 
-    return await storage.write_stream(relation, dump)
+    relation = await storage.write_stream(relation, dump)
+
+    if "content_hash" not in dump:
+        msg = f"Stream serializer {serializer.name} did not provide a content hash"
+        raise ValueError(msg)
+
+    try:
+        await anext(dump["stream"])
+    except StopAsyncIteration:
+        pass
+    else:
+        msg = f"Storage {storage.name} did not finish writing stream for relation {relation}"
+        raise RuntimeError(msg)
+
+    relation.rel_content_size = dump["content_size"]
+    relation.rel_content_hash = dump["content_hash"]
+    relation.rel_content_hash_algorithm = dump["content_hash_algorithm"]
+
+    return relation
 
 
 async def _save_relations(

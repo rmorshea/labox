@@ -25,20 +25,20 @@ class Storage(Protocol[R]):
     """The types that the serializer can handle."""
     version: int
 
-    async def write_stream(self, relation: R, dump: StreamDump) -> R:
-        """Save the given stream dump."""
-        ...
-
-    async def read_stream(self, relation: R) -> StreamDump:
-        """Load the stream dump for the given ORM."""
-        ...
-
-    async def write_scalar(self, relation: R, dump: ScalarDump) -> R:
+    async def write_scalar(self, relation: R, dump: ScalarDump, /) -> R:
         """Save the given scalar dump."""
         ...
 
-    async def read_scalar(self, relation: R) -> ScalarDump:
-        """Load the scalar dump for the given ORM."""
+    async def read_scalar(self, relation: R, /) -> ScalarDump:
+        """Load the scalar dump for the given relation."""
+        ...
+
+    async def write_stream(self, relation: R, dump: StreamDump, /) -> R:
+        """Save the given stream dump."""
+        ...
+
+    async def read_stream(self, relation: R, /) -> StreamDump:
+        """Load the stream dump for the given relation."""
         ...
 
 

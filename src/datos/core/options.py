@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import os
 from dataclasses import Field
 from dataclasses import fields
+from typing import TYPE_CHECKING
 from typing import Annotated
 from typing import Any
 from typing import Self
@@ -9,18 +12,22 @@ from typing import get_origin
 
 from datos.utils.misc import frozenclass
 
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+
 
 @frozenclass
 class Options:
     """Common configuration options."""
 
-    datos_MAX_ARCHIVE_EXISTING_RETRIES: int = 3
+    DATOS_MAX_ARCHIVE_EXISTING_RETRIES: int = 3
     """Number of times to retry archiving an existing artifact."""
 
     @classmethod
-    def from_env(cls) -> Self:
+    def from_env(cls, environ: Mapping[str, Any] | None = None) -> Self:
         """Create a new instance from environment variables."""
-        kwargs = {f.name: _get_from_env(f) for f in fields(cls) if f.name in os.environ}
+        environ = os.environ if environ is None else environ
+        kwargs = {f.name: _get_from_env(f) for f in fields(cls) if f.name in environ}
         return cls(**kwargs)
 
 

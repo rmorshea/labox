@@ -115,4 +115,4 @@ async def _load_stream(
 ) -> AsyncIterable[Any]:
     """Load the given stream data."""
     dump = await storage.read_stream(relation)
-    return await serializer.load_stream(dump)
+    return serializer.load_stream(dump)

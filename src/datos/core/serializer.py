@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 from typing import LiteralString
+from typing import NotRequired
 from typing import Protocol
 from typing import TypedDict
 from typing import TypeVar
@@ -38,39 +39,44 @@ class ScalarSerializer(_BaseSerializer[T]):
 class StreamSerializer(_BaseSerializer[T]):
     """A protocol for serializing and deserializing objects from streams of values."""
 
-    async def dump_stream(self, stream: AsyncIterable[T]) -> StreamDump:
+    def dump_stream(self, stream: AsyncIterable[T]) -> StreamDump:
         """Serialize the given stream."""
         ...
 
-    async def load_stream(self, dump: StreamDump) -> AsyncIterator[T]:
+    def load_stream(self, dump: StreamDump) -> AsyncIterator[T]:
         """Deserialize the given stream."""
         ...
 
 
-class ScalarDump(TypedDict):
-    """The serialized representation of a single value."""
-
-    scalar: bytes
-    """The serialized data."""
+class _BaseDump(TypedDict):
     content_type: str
     """The MIME type of the data."""
     serializer_name: str
     """The name of the serializer used to serialize the data."""
     serializer_version: int
     """The version of the serializer used to serialize the data."""
+    content_hash_algorithm: str
+    """The algorithm used to hash the dumped content."""
+    content_size: int
+    """The size of the dumped content in bytes."""
 
 
-class StreamDump(TypedDict):
+class ScalarDump(_BaseDump):
+    """The serialized representation of a single value."""
+
+    scalar: bytes
+    """The serialized data."""
+    content_hash: str
+    """The hash of the dumped content."""
+
+
+class StreamDump(_BaseDump):
     """The serialized representation of a stream of values."""
 
-    stream: AsyncIterable[bytes]
+    stream: AsyncIterator[bytes]
     """The serialized data stream."""
-    content_type: str
-    """The MIME type of the data stream as a whole."""
-    serializer_name: str
-    """The name of the serializer used to serialize the data."""
-    serializer_version: int
-    """The version of the serializer used to serialize the data."""
+    content_hash: NotRequired[str]
+    """The hash of the dumped content - must be set once the stream is fully read."""
 
 
 class StreamSerializerRegistry(Registry[StreamSerializer]):

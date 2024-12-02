@@ -62,7 +62,7 @@ def unique_on(col: C, *, where: ColumnComparator = operator.eq) -> C:
 class DataRelation(Base):
     """A relationship between a value's metadata and where/how it was saved."""
 
-    __tablename__ = "datos_data_relation"
+    __tablename__ = "datos_data_relations"
     __mapper_args__: Mapping[str, Any] = {"polymorphic_on": "rel_type"}
 
     rel_id: Mapped[UUID] = mapped_column(init=False, default_factory=uuid4)
@@ -75,9 +75,15 @@ class DataRelation(Base):
     """The timestamp when the pointer was archived."""
     rel_content_type: Mapped[str] = mapped_column(init=False)
     """The MIME type of the data."""
+    rel_content_hash: Mapped[str] = mapped_column(init=False)
+    """The hash of the data."""
+    rel_content_hash_algorithm: Mapped[str] = mapped_column(init=False)
+    """The algorithm used to hash the data."""
+    rel_content_size: Mapped[int] = mapped_column(init=False)
+    """The size of the data in bytes"""
     rel_serializer_name: Mapped[str] = mapped_column(init=False)
     """The name of the serializer used to serialize the data."""
-    rel_serialier_version: Mapped[int] = mapped_column(init=False)
+    rel_serializer_version: Mapped[int] = mapped_column(init=False)
     """The version of the serializer used to serialize the data."""
     rel_storage_name: Mapped[str] = mapped_column(init=False)
     """The name of the storage backend used to store the data."""

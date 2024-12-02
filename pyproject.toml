@@ -20,7 +20,13 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Programming Language :: Python",
 ]
-dependencies = ["anyio>=4.6.2,<5", "anysync>=0.3.1,<1", "sqlalchemy>=2.0.36,<3"]
+dependencies = [
+    "anyio>=4.6.2,<5",
+    "anysync>=0.3.1,<1",
+    "pybooster>=0.0.2,<1",
+    "sqlalchemy>=2.0.36,<3",
+    "tenacity>=9.0.0,<10",
+]
 
 [project.urls]
 Source = "https://github.com/rmorshea/datos"
