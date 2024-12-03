@@ -8,7 +8,7 @@ requires = ["setuptools>=64"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "datos"
+name = "artum"
 version = "0.0.1"
 description = "Dependency injection without the boilerplate."
 readme = "README.md"
@@ -30,7 +30,7 @@ dependencies = [
 [project.optional-dependencies]
 pyarrow = ["pyarrow>=18,<19"]
 [project.urls]
-Source = "https://github.com/rmorshea/datos"
+Source = "https://github.com/rmorshea/artum"
 
 [dependency-groups]
 all = [
@@ -122,7 +122,7 @@ unfixable = [
 fixable = ["ALL"]
 extend-safe-fixes = ["TCH"]
 [tool.ruff.lint.isort]
-known-first-party = ["datos"]
+known-first-party = ["artum"]
 force-single-line = true
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"
@@ -156,11 +156,11 @@ ban-relative-imports = "all"
 line_length = 100
 
 [tool.coverage.run]
-source_pkgs = ["datos", "tests"]
+source_pkgs = ["artum", "tests"]
 branch = true
 omit = []
 [tool.coverage.paths]
-datos = ["src"]
+artum = ["src"]
 tests = ["tests"]
 [tool.coverage.report]
 exclude_lines = [

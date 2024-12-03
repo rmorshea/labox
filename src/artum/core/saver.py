@@ -21,12 +21,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from tenacity import AsyncRetrying
 from tenacity import stop_after_attempt
 
-from datos.core.schema import DataRelation
-from datos.core.serializer import ScalarSerializerRegistry
-from datos.core.serializer import StreamSerializerRegistry
-from datos.core.storage import StorageRegistry
-from datos.utils.anyio import TaskGroupFuture
-from datos.utils.anyio import start_future
+from artum.core.schema import DataRelation
+from artum.core.serializer import ScalarSerializerRegistry
+from artum.core.serializer import StreamSerializerRegistry
+from artum.core.storage import StorageRegistry
+from artum.utils.anyio import TaskGroupFuture
+from artum.utils.anyio import start_future
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable
@@ -34,13 +34,13 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from collections.abc import Sequence
 
-    from datos.core.serializer import ScalarDump
-    from datos.core.serializer import ScalarSerializer
-    from datos.core.serializer import StreamDump
-    from datos.core.serializer import StreamSerializer
-    from datos.core.storage import DumpDigest
-    from datos.core.storage import DumpDigestGetter
-    from datos.core.storage import Storage
+    from artum.core.serializer import ScalarDump
+    from artum.core.serializer import ScalarSerializer
+    from artum.core.serializer import StreamDump
+    from artum.core.serializer import StreamSerializer
+    from artum.core.storage import DumpDigest
+    from artum.core.storage import DumpDigestGetter
+    from artum.core.storage import Storage
 
 
 T = TypeVar("T")

@@ -7,7 +7,7 @@ from typing import ParamSpec
 from typing import TypeVar
 from typing import overload
 
-from datos.utils.misc import UNDEFINED
+from artum.utils.misc import UNDEFINED
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable
@@ -19,19 +19,6 @@ if TYPE_CHECKING:
 P = ParamSpec("P")
 R = TypeVar("R")
 D = TypeVar("D")
-
-
-def create_future(
-    task_group: TaskGroup,
-    func: Callable[P, Coroutine[Any, Any, R]],
-    /,
-    *args: P.args,
-    **kwargs: P.kwargs,
-) -> TaskGroupFuture[R]:
-    """Create a future that is completed by a task group."""
-    future = TaskGroupFuture()
-    start_future(task_group, future, func, *args, **kwargs)
-    return future
 
 
 def start_future(

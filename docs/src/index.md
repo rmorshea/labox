@@ -1,3 +1,3 @@
-# {{ project_title }}
+# Artum
 
-{{ project_description }}
+An artifact management system for Python.

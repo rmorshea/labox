@@ -1,6 +1,6 @@
-from datos.core.loader import data_loader
-from datos.core.saver import data_saver
-from datos.core.schema import DataRelation
+from artum.core.loader import data_loader
+from artum.core.saver import data_saver
+from artum.core.schema import DataRelation
 
 
 async def test_simple_scalar_data_saver_and_loader_usage():

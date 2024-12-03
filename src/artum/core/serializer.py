@@ -6,7 +6,7 @@ from typing import Protocol
 from typing import TypedDict
 from typing import TypeVar
 
-from datos.core.registry import Registry
+from artum.core.registry import Registry
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable

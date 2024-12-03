@@ -11,20 +11,20 @@ from anysync import contextmanager
 from pybooster import injector
 from pybooster import required
 
-from datos.core.schema import DataRelation
-from datos.core.serializer import ScalarSerializerRegistry
-from datos.core.serializer import StreamSerializerRegistry
-from datos.core.storage import StorageRegistry
-from datos.utils.anyio import TaskGroupFuture
-from datos.utils.anyio import start_future
+from artum.core.schema import DataRelation
+from artum.core.serializer import ScalarSerializerRegistry
+from artum.core.serializer import StreamSerializerRegistry
+from artum.core.storage import StorageRegistry
+from artum.utils.anyio import TaskGroupFuture
+from artum.utils.anyio import start_future
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable
     from collections.abc import AsyncIterator
 
-    from datos.core.serializer import ScalarSerializer
-    from datos.core.serializer import StreamSerializer
-    from datos.core.storage import Storage
+    from artum.core.serializer import ScalarSerializer
+    from artum.core.serializer import StreamSerializer
+    from artum.core.storage import Storage
 
 T = TypeVar("T")
 R = TypeVar("R", bound=DataRelation)
@@ -87,7 +87,6 @@ async def _load_data(
     async with create_task_group() as tg:
         for fut, rel, typ in items:
             if typ == "scalar":
-                print(scalar_serializer_registry.by_name)
                 scalar_serializer = scalar_serializer_registry.by_name[rel.rel_serializer_name]
                 storage = storage_registry.by_name[rel.rel_storage_name]
                 start_future(tg, fut, _load_scalar, rel, scalar_serializer, storage)

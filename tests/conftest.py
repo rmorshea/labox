@@ -8,12 +8,12 @@ from pybooster import solved
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from datos.core.schema import Base
-from datos.core.serializer import ScalarSerializerRegistry
-from datos.core.serializer import StreamSerializerRegistry
-from datos.core.storage import StorageRegistry
-from datos.extra.json import JsonSerializer
-from datos.extra.tempfile import TemporaryDirectoryStorage
+from artum.core.schema import Base
+from artum.core.serializer import ScalarSerializerRegistry
+from artum.core.serializer import StreamSerializerRegistry
+from artum.core.storage import StorageRegistry
+from artum.extra.json import JsonSerializer
+from artum.extra.tempfile import TemporaryDirectoryStorage
 
 
 @provider.asynciterator

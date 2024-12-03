@@ -53,7 +53,7 @@ https://www.psycopg.org/psycopg3/docs/advanced/adapt.html#example-handling-infin
 
 
 class Base(MappedAsDataclass, DeclarativeBase, kw_only=True):
-    """The base for datos's schema classes."""
+    """The base for artum's schema classes."""
 
 
 _INFO_KEY = "__data_relation_info__"
@@ -67,7 +67,7 @@ def is_unique(where: ColumnComparator = operator.eq) -> dict:
 class DataRelation(Base):
     """A relationship between a value's metadata and where/how it was saved."""
 
-    __tablename__ = "datos_data_relations"
+    __tablename__ = "artum_data_relations"
     __mapper_args__: ClassVar[Mapping[str, Any]] = {"polymorphic_on": "rel_type"}  # type: ignore[reportIncompatibleVariableOverride]
 
     rel_id: Mapped[UUID] = mapped_column(init=False, default_factory=uuid4, primary_key=True)

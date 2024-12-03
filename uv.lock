@@ -240,7 +240,7 @@ toml = [
 ]
 
 [[package]]
-name = "datos"
+name = "artum"
 version = "0.0.1"
 source = { editable = "." }
 dependencies = [
