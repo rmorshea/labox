@@ -48,6 +48,177 @@ wheels = [
 ]
 
 [[package]]
+name = "artum"
+version = "0.0.1a1"
+source = { editable = "." }
+dependencies = [
+    { name = "anyio" },
+    { name = "anysync" },
+    { name = "pybooster" },
+    { name = "sqlalchemy", extra = ["asyncio"] },
+    { name = "tenacity" },
+]
+
+[package.optional-dependencies]
+pyarrow = [
+    { name = "pyarrow" },
+]
+
+[package.dev-dependencies]
+all = [
+    { name = "aiosqlite" },
+    { name = "click" },
+    { name = "coverage", extra = ["toml"] },
+    { name = "diff-cover" },
+    { name = "doccmd" },
+    { name = "mdformat" },
+    { name = "mdformat-admon" },
+    { name = "mdformat-mkdocs" },
+    { name = "mdformat-pyproject" },
+    { name = "mdformat-tables" },
+    { name = "mkdocs" },
+    { name = "mkdocs-gen-files" },
+    { name = "mkdocs-material" },
+    { name = "mkdocs-open-in-new-tab" },
+    { name = "mkdocstrings-python" },
+    { name = "pycobertura" },
+    { name = "pyright" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-examples" },
+    { name = "ruff" },
+    { name = "yamlfix" },
+]
+dev = [
+    { name = "click" },
+]
+docs = [
+    { name = "aiosqlite" },
+    { name = "click" },
+    { name = "coverage", extra = ["toml"] },
+    { name = "diff-cover" },
+    { name = "mkdocs" },
+    { name = "mkdocs-gen-files" },
+    { name = "mkdocs-material" },
+    { name = "mkdocs-open-in-new-tab" },
+    { name = "mkdocstrings-python" },
+    { name = "pycobertura" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-examples" },
+]
+lint = [
+    { name = "aiosqlite" },
+    { name = "click" },
+    { name = "coverage", extra = ["toml"] },
+    { name = "diff-cover" },
+    { name = "doccmd" },
+    { name = "mdformat" },
+    { name = "mdformat-admon" },
+    { name = "mdformat-mkdocs" },
+    { name = "mdformat-pyproject" },
+    { name = "mdformat-tables" },
+    { name = "pycobertura" },
+    { name = "pyright" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-examples" },
+    { name = "ruff" },
+    { name = "yamlfix" },
+]
+test = [
+    { name = "aiosqlite" },
+    { name = "click" },
+    { name = "coverage", extra = ["toml"] },
+    { name = "diff-cover" },
+    { name = "pycobertura" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-examples" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "anyio", specifier = ">=4.6.2,<5" },
+    { name = "anysync", specifier = ">=0.3.1,<1" },
+    { name = "pyarrow", marker = "extra == 'pyarrow'", specifier = ">=18,<19" },
+    { name = "pybooster", specifier = ">=0.0.2,<1" },
+    { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.36,<3" },
+    { name = "tenacity", specifier = ">=9.0.0,<10" },
+]
+
+[package.metadata.requires-dev]
+all = [
+    { name = "aiosqlite", specifier = "==0.20.0" },
+    { name = "click", specifier = "==8.1.7" },
+    { name = "coverage", extras = ["toml"], specifier = "==7.6.1" },
+    { name = "diff-cover", specifier = "==9.2.0" },
+    { name = "doccmd", specifier = "==2024.11.14" },
+    { name = "mdformat", specifier = "==0.7.19" },
+    { name = "mdformat-admon", git = "https://github.com/rmorshea/mdformat-admon.git?rev=0e513d7a2c265faf74441938ccbd1010660609f4#0e513d7a2c265faf74441938ccbd1010660609f4" },
+    { name = "mdformat-mkdocs", specifier = "==3.1.1" },
+    { name = "mdformat-pyproject", specifier = "==0.0.1" },
+    { name = "mdformat-tables", specifier = "==1.0.0" },
+    { name = "mkdocs", specifier = "==1.6.1" },
+    { name = "mkdocs-gen-files", specifier = "==0.5.0" },
+    { name = "mkdocs-material", specifier = "==9.5.39" },
+    { name = "mkdocs-open-in-new-tab", specifier = "==1.0.5" },
+    { name = "mkdocstrings-python", specifier = "==1.11.1" },
+    { name = "pycobertura", specifier = "==3.3.2" },
+    { name = "pyright", specifier = "==1.1.389" },
+    { name = "pytest", specifier = "==8.3.3" },
+    { name = "pytest-asyncio", specifier = "==0.24.0" },
+    { name = "pytest-examples", specifier = "==0.0.13" },
+    { name = "ruff", specifier = "==0.7.3" },
+    { name = "yamlfix", specifier = "==1.17.0" },
+]
+dev = [{ name = "click", specifier = "==8.1.7" }]
+docs = [
+    { name = "aiosqlite", specifier = "==0.20.0" },
+    { name = "click", specifier = "==8.1.7" },
+    { name = "coverage", extras = ["toml"], specifier = "==7.6.1" },
+    { name = "diff-cover", specifier = "==9.2.0" },
+    { name = "mkdocs", specifier = "==1.6.1" },
+    { name = "mkdocs-gen-files", specifier = "==0.5.0" },
+    { name = "mkdocs-material", specifier = "==9.5.39" },
+    { name = "mkdocs-open-in-new-tab", specifier = "==1.0.5" },
+    { name = "mkdocstrings-python", specifier = "==1.11.1" },
+    { name = "pycobertura", specifier = "==3.3.2" },
+    { name = "pytest", specifier = "==8.3.3" },
+    { name = "pytest-asyncio", specifier = "==0.24.0" },
+    { name = "pytest-examples", specifier = "==0.0.13" },
+]
+lint = [
+    { name = "aiosqlite", specifier = "==0.20.0" },
+    { name = "click", specifier = "==8.1.7" },
+    { name = "coverage", extras = ["toml"], specifier = "==7.6.1" },
+    { name = "diff-cover", specifier = "==9.2.0" },
+    { name = "doccmd", specifier = "==2024.11.14" },
+    { name = "mdformat", specifier = "==0.7.19" },
+    { name = "mdformat-admon", git = "https://github.com/rmorshea/mdformat-admon.git?rev=0e513d7a2c265faf74441938ccbd1010660609f4#0e513d7a2c265faf74441938ccbd1010660609f4" },
+    { name = "mdformat-mkdocs", specifier = "==3.1.1" },
+    { name = "mdformat-pyproject", specifier = "==0.0.1" },
+    { name = "mdformat-tables", specifier = "==1.0.0" },
+    { name = "pycobertura", specifier = "==3.3.2" },
+    { name = "pyright", specifier = "==1.1.389" },
+    { name = "pytest", specifier = "==8.3.3" },
+    { name = "pytest-asyncio", specifier = "==0.24.0" },
+    { name = "pytest-examples", specifier = "==0.0.13" },
+    { name = "ruff", specifier = "==0.7.3" },
+    { name = "yamlfix", specifier = "==1.17.0" },
+]
+test = [
+    { name = "aiosqlite", specifier = "==0.20.0" },
+    { name = "click", specifier = "==8.1.7" },
+    { name = "coverage", extras = ["toml"], specifier = "==7.6.1" },
+    { name = "diff-cover", specifier = "==9.2.0" },
+    { name = "pycobertura", specifier = "==3.3.2" },
+    { name = "pytest", specifier = "==8.3.3" },
+    { name = "pytest-asyncio", specifier = "==0.24.0" },
+    { name = "pytest-examples", specifier = "==0.0.13" },
+]
+
+[[package]]
 name = "babel"
 version = "2.16.0"
 source = { registry = "https://pypi.org/simple" }
@@ -237,177 +408,6 @@ wheels = [
 [package.optional-dependencies]
 toml = [
     { name = "tomli", marker = "python_full_version <= '3.11'" },
-]
-
-[[package]]
-name = "artum"
-version = "0.0.1"
-source = { editable = "." }
-dependencies = [
-    { name = "anyio" },
-    { name = "anysync" },
-    { name = "pybooster" },
-    { name = "sqlalchemy", extra = ["asyncio"] },
-    { name = "tenacity" },
-]
-
-[package.optional-dependencies]
-pyarrow = [
-    { name = "pyarrow" },
-]
-
-[package.dev-dependencies]
-all = [
-    { name = "aiosqlite" },
-    { name = "click" },
-    { name = "coverage", extra = ["toml"] },
-    { name = "diff-cover" },
-    { name = "doccmd" },
-    { name = "mdformat" },
-    { name = "mdformat-admon" },
-    { name = "mdformat-mkdocs" },
-    { name = "mdformat-pyproject" },
-    { name = "mdformat-tables" },
-    { name = "mkdocs" },
-    { name = "mkdocs-gen-files" },
-    { name = "mkdocs-material" },
-    { name = "mkdocs-open-in-new-tab" },
-    { name = "mkdocstrings-python" },
-    { name = "pycobertura" },
-    { name = "pyright" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "pytest-examples" },
-    { name = "ruff" },
-    { name = "yamlfix" },
-]
-dev = [
-    { name = "click" },
-]
-docs = [
-    { name = "aiosqlite" },
-    { name = "click" },
-    { name = "coverage", extra = ["toml"] },
-    { name = "diff-cover" },
-    { name = "mkdocs" },
-    { name = "mkdocs-gen-files" },
-    { name = "mkdocs-material" },
-    { name = "mkdocs-open-in-new-tab" },
-    { name = "mkdocstrings-python" },
-    { name = "pycobertura" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "pytest-examples" },
-]
-lint = [
-    { name = "aiosqlite" },
-    { name = "click" },
-    { name = "coverage", extra = ["toml"] },
-    { name = "diff-cover" },
-    { name = "doccmd" },
-    { name = "mdformat" },
-    { name = "mdformat-admon" },
-    { name = "mdformat-mkdocs" },
-    { name = "mdformat-pyproject" },
-    { name = "mdformat-tables" },
-    { name = "pycobertura" },
-    { name = "pyright" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "pytest-examples" },
-    { name = "ruff" },
-    { name = "yamlfix" },
-]
-test = [
-    { name = "aiosqlite" },
-    { name = "click" },
-    { name = "coverage", extra = ["toml"] },
-    { name = "diff-cover" },
-    { name = "pycobertura" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "pytest-examples" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "anyio", specifier = ">=4.6.2,<5" },
-    { name = "anysync", specifier = ">=0.3.1,<1" },
-    { name = "pyarrow", marker = "extra == 'pyarrow'", specifier = ">=18,<19" },
-    { name = "pybooster", specifier = ">=0.0.2,<1" },
-    { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.36,<3" },
-    { name = "tenacity", specifier = ">=9.0.0,<10" },
-]
-
-[package.metadata.requires-dev]
-all = [
-    { name = "aiosqlite", specifier = "==0.20.0" },
-    { name = "click", specifier = "==8.1.7" },
-    { name = "coverage", extras = ["toml"], specifier = "==7.6.1" },
-    { name = "diff-cover", specifier = "==9.2.0" },
-    { name = "doccmd", specifier = "==2024.11.14" },
-    { name = "mdformat", specifier = "==0.7.19" },
-    { name = "mdformat-admon", git = "https://github.com/rmorshea/mdformat-admon.git?rev=0e513d7a2c265faf74441938ccbd1010660609f4#0e513d7a2c265faf74441938ccbd1010660609f4" },
-    { name = "mdformat-mkdocs", specifier = "==3.1.1" },
-    { name = "mdformat-pyproject", specifier = "==0.0.1" },
-    { name = "mdformat-tables", specifier = "==1.0.0" },
-    { name = "mkdocs", specifier = "==1.6.1" },
-    { name = "mkdocs-gen-files", specifier = "==0.5.0" },
-    { name = "mkdocs-material", specifier = "==9.5.39" },
-    { name = "mkdocs-open-in-new-tab", specifier = "==1.0.5" },
-    { name = "mkdocstrings-python", specifier = "==1.11.1" },
-    { name = "pycobertura", specifier = "==3.3.2" },
-    { name = "pyright", specifier = "==1.1.389" },
-    { name = "pytest", specifier = "==8.3.3" },
-    { name = "pytest-asyncio", specifier = "==0.24.0" },
-    { name = "pytest-examples", specifier = "==0.0.13" },
-    { name = "ruff", specifier = "==0.7.3" },
-    { name = "yamlfix", specifier = "==1.17.0" },
-]
-dev = [{ name = "click", specifier = "==8.1.7" }]
-docs = [
-    { name = "aiosqlite", specifier = "==0.20.0" },
-    { name = "click", specifier = "==8.1.7" },
-    { name = "coverage", extras = ["toml"], specifier = "==7.6.1" },
-    { name = "diff-cover", specifier = "==9.2.0" },
-    { name = "mkdocs", specifier = "==1.6.1" },
-    { name = "mkdocs-gen-files", specifier = "==0.5.0" },
-    { name = "mkdocs-material", specifier = "==9.5.39" },
-    { name = "mkdocs-open-in-new-tab", specifier = "==1.0.5" },
-    { name = "mkdocstrings-python", specifier = "==1.11.1" },
-    { name = "pycobertura", specifier = "==3.3.2" },
-    { name = "pytest", specifier = "==8.3.3" },
-    { name = "pytest-asyncio", specifier = "==0.24.0" },
-    { name = "pytest-examples", specifier = "==0.0.13" },
-]
-lint = [
-    { name = "aiosqlite", specifier = "==0.20.0" },
-    { name = "click", specifier = "==8.1.7" },
-    { name = "coverage", extras = ["toml"], specifier = "==7.6.1" },
-    { name = "diff-cover", specifier = "==9.2.0" },
-    { name = "doccmd", specifier = "==2024.11.14" },
-    { name = "mdformat", specifier = "==0.7.19" },
-    { name = "mdformat-admon", git = "https://github.com/rmorshea/mdformat-admon.git?rev=0e513d7a2c265faf74441938ccbd1010660609f4#0e513d7a2c265faf74441938ccbd1010660609f4" },
-    { name = "mdformat-mkdocs", specifier = "==3.1.1" },
-    { name = "mdformat-pyproject", specifier = "==0.0.1" },
-    { name = "mdformat-tables", specifier = "==1.0.0" },
-    { name = "pycobertura", specifier = "==3.3.2" },
-    { name = "pyright", specifier = "==1.1.389" },
-    { name = "pytest", specifier = "==8.3.3" },
-    { name = "pytest-asyncio", specifier = "==0.24.0" },
-    { name = "pytest-examples", specifier = "==0.0.13" },
-    { name = "ruff", specifier = "==0.7.3" },
-    { name = "yamlfix", specifier = "==1.17.0" },
-]
-test = [
-    { name = "aiosqlite", specifier = "==0.20.0" },
-    { name = "click", specifier = "==8.1.7" },
-    { name = "coverage", extras = ["toml"], specifier = "==7.6.1" },
-    { name = "diff-cover", specifier = "==9.2.0" },
-    { name = "pycobertura", specifier = "==3.3.2" },
-    { name = "pytest", specifier = "==8.3.3" },
-    { name = "pytest-asyncio", specifier = "==0.24.0" },
-    { name = "pytest-examples", specifier = "==0.0.13" },
 ]
 
 [[package]]

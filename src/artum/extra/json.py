@@ -23,12 +23,13 @@ class JsonSerializer(ScalarSerializer[JsonType], StreamSerializer[JsonType]):
     name = "artum.json"
     version = 1
     types = JSON_TYPES
+    content_type = "application/json"
 
     def dump_scalar(self, value: JsonType) -> ScalarDump:
         """Serialize the given value to JSON."""
         return {
             "content_scalar": json.dumps(value).encode("utf-8"),
-            "content_type": "application/json",
+            "content_type": self.content_type,
             "serializer_name": self.name,
             "serializer_version": self.version,
         }
@@ -41,7 +42,7 @@ class JsonSerializer(ScalarSerializer[JsonType], StreamSerializer[JsonType]):
         """Serialize the given stream of JSON data."""
         return {
             "content_stream": _dump_json_stream(stream),
-            "content_type": "application/json",
+            "content_type": self.content_type,
             "serializer_name": self.name,
             "serializer_version": self.version,
         }
@@ -71,23 +72,26 @@ async def _load_json_stream(stream: AsyncIterable[bytes]) -> AsyncIterator[JsonT
     async for chunk in decode_utf8_byte_stream(stream):
         if not started:
             buffer += chunk.lstrip()
-            if buffer.startswith("["):
-                buffer = buffer[1:]
-                started = True
-            else:
+            if not buffer.startswith("["):
                 msg = f"Expected '[' at start of JSON stream, got {buffer!r}"
                 raise ValueError(msg)
-        buffer += chunk
+            buffer = buffer[1:]
+            started = True
+        else:
+            buffer += chunk
+        if not chunk:
+            buffer = buffer.removesuffix("]")
         while buffer:
             try:
+                buffer = buffer.lstrip()
                 obj, index = decoder.raw_decode(buffer)
                 yield obj
-                buffer = buffer[index:]
+                buffer = buffer[index:].removeprefix(",")
             except json.JSONDecodeError:
                 break
     if not started:
         msg = "Expected '[' at start of JSON stream, got EOF"
         raise ValueError(msg)
-    if buffer.strip() != "]":
+    if buffer:
         msg = f"Expected ']' at end of JSON stream, got {buffer!r}"
         raise ValueError(msg)

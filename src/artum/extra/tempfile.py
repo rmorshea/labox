@@ -29,7 +29,7 @@ class TemporaryDirectoryStorage(Storage[DataRelation]):
     def __init__(
         self,
         tempdir: TemporaryDirectory | str | None = None,
-        chunk_size: int = 1024,
+        chunk_size: int = 1024**2,  # 1MB chunk size by default
     ) -> None:
         match tempdir:
             case None:
