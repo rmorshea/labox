@@ -24,10 +24,11 @@ dependencies = [
     "anyio>=4.6.2,<5",
     "anysync>=0.3.1,<1",
     "pybooster>=0.0.2,<1",
-    "sqlalchemy>=2.0.36,<3",
+    "sqlalchemy[asyncio]>=2.0.36,<3",
     "tenacity>=9.0.0,<10",
 ]
-
+[project.optional-dependencies]
+pyarrow = ["pyarrow>=18,<19"]
 [project.urls]
 Source = "https://github.com/rmorshea/datos"
 
@@ -67,6 +68,7 @@ test = [
     "pytest-asyncio==0.24.0",
     "pytest-examples==0.0.13",
     "pytest==8.3.3",
+    "aiosqlite==0.20.0",
 ]
 
 [tool.pytest.ini_options]
@@ -75,12 +77,10 @@ asyncio_default_fixture_loop_scope = "function"
 
 [tool.ruff]
 line-length = 100
-
 [tool.ruff.format]
 docstring-code-format = true
 quote-style = "double"
 indent-style = "space"
-
 [tool.ruff.lint]
 preview = true
 select = ["ALL"]
@@ -107,31 +107,28 @@ ignore = [
     "DOC501", # Ignore raises missing from docstring
     "ERA001", # Commented out code
     "FBT003", # Allow boolean positional values in function calls, like `dict.get(... True)`
+    "ISC001", # implicitly concatenated strings on a single line
+    "PIE790", # Unecessary elipsis literal
     "PL",     # PyLint
     "PYI",    # Stub files
-    "PIE790", # Unecessary elipsis literal
     "RET503", # Explicit return
     "RET505", # Unnecessary return statement after return
     "S105",   # Ignore checks for possible passwords
     "SIM117", # Use a single `with` statement
-    "ISC001", # implicitly concatenated strings on a single line
 ]
 unfixable = [
     "COM819", # Trailing comma
 ]
 fixable = ["ALL"]
-
 extend-safe-fixes = ["TCH"]
-
 [tool.ruff.lint.isort]
 known-first-party = ["datos"]
 force-single-line = true
-
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"
-
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = [
+    "ARG001",  # Unused argument (pytest fixtures)
     "PLC2701", # Private imports
     "RUF029",  # Async functions without await
     "S101",    # Assert statements
@@ -162,11 +159,9 @@ line_length = 100
 source_pkgs = ["datos", "tests"]
 branch = true
 omit = []
-
 [tool.coverage.paths]
 datos = ["src"]
 tests = ["tests"]
-
 [tool.coverage.report]
 exclude_lines = [
     "# nocov",

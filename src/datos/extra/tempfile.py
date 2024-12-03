@@ -12,16 +12,17 @@ from datos.core.schema import DataRelation
 from datos.core.storage import Storage
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterable
     from collections.abc import AsyncIterator
 
-    from datos.core.serializer import ScalarDump
-    from datos.core.serializer import StreamDump
+    from datos.core.storage import DumpDigest
+    from datos.core.storage import DumpDigestGetter
 
 
-class TempDirectoryStorage(Storage[DataRelation]):
+class TemporaryDirectoryStorage(Storage[DataRelation]):
     """A storage backend for testing that saves data to a temporary directory."""
 
-    name = "datos.temp_directory"
+    name = "datos.tempfile"
     version = 1
     types = (DataRelation,)
 
@@ -36,61 +37,50 @@ class TempDirectoryStorage(Storage[DataRelation]):
     def __exit__(self, *_: Any) -> None:
         self.tempdir.cleanup()
 
-    async def write_scalar(self, relation: DataRelation, dump: ScalarDump) -> DataRelation:
+    async def write_scalar(
+        self,
+        relation: DataRelation,
+        scalar: bytes,
+        digest: DumpDigest,
+    ) -> DataRelation:
         """Save the given scalar dump."""
-        content_path = self._get_content_path(dump["content_type"], dump["content_hash"])
+        content_path = self._get_content_path(digest["content_type"], digest["content_hash"])
         if not content_path.exists():
-            content_path.write_bytes(dump["scalar"])
+            content_path.write_bytes(scalar)
         return relation
 
-    async def read_scalar(self, relation: DataRelation) -> ScalarDump:
+    async def read_scalar(self, relation: DataRelation) -> bytes:
         """Load the scalar dump for the given relation."""
         content_path = self._get_content_path(relation.rel_content_type, relation.rel_content_hash)
-        return {
-            "content_type": relation.rel_content_type,
-            "serializer_name": relation.rel_serializer_name,
-            "serializer_version": relation.rel_serializer_version,
-            "content_hash": relation.rel_content_hash,
-            "content_hash_algorithm": relation.rel_content_hash_algorithm,
-            "content_size": relation.rel_content_size,
-            "scalar": content_path.read_bytes(),
-        }
+        return content_path.read_bytes()
 
-    async def write_stream(self, relation: DataRelation, dump: StreamDump) -> DataRelation:
+    async def write_stream(
+        self,
+        relation: DataRelation,
+        stream: AsyncIterable[bytes],
+        get_digest: DumpDigestGetter,
+    ) -> DataRelation:
         """Save the given stream dump."""
         scratch_path = self._get_scratch_path()
         with scratch_path.open("wb") as file:
-            async for chunk in dump["stream"]:
+            async for chunk in stream:
                 file.write(chunk)
         try:
-            if "content_hash" not in dump:
-                msg = "Stream dump missing 'content_hash'"
-                raise RuntimeError(msg)
-            content_path = self._get_content_path(dump["content_type"], dump["content_hash"])
+            digest = get_digest()
+            content_path = self._get_content_path(digest["content_type"], digest["content_hash"])
             if not content_path.exists():
                 scratch_path.replace(content_path)
         finally:
             scratch_path.unlink(missing_ok=True)
         return relation
 
-    async def read_stream(self, relation: DataRelation) -> StreamDump:
+    async def read_stream(self, relation: DataRelation) -> AsyncIterator[bytes]:
         """Load the stream dump for the given relation."""
         content_path = self._get_content_path(relation.rel_content_type, relation.rel_content_hash)
 
-        async def stream() -> AsyncIterator[bytes]:  # noqa: RUF029
-            with content_path.open("rb") as file:
-                while chunk := file.read(self.chunk_size):
-                    yield chunk
-
-        return {
-            "content_type": relation.rel_content_type,
-            "serializer_name": relation.rel_serializer_name,
-            "serializer_version": relation.rel_serializer_version,
-            "content_hash": relation.rel_content_hash,
-            "content_hash_algorithm": relation.rel_content_hash_algorithm,
-            "content_size": relation.rel_content_size,
-            "stream": stream(),
-        }
+        with content_path.open("rb") as file:
+            while chunk := file.read(self.chunk_size):
+                yield chunk
 
     def _get_content_path(self, content_type: str, content_hash: str) -> Path:
         ext = guess_extension(content_type) or ""

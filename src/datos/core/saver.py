@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+from hashlib import sha256
 from typing import TYPE_CHECKING
 from typing import Generic
 from typing import ParamSpec
-from typing import Protocol
 from typing import Required
 from typing import TypedDict
 from typing import TypeVar
@@ -12,17 +12,20 @@ from anyio import create_task_group
 from anysync import contextmanager
 from pybooster import injector
 from pybooster import required
-from sqlalchemy import IntegrityError
 from sqlalchemy import func
 from sqlalchemy import or_
 from sqlalchemy import update
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
 from tenacity import AsyncRetrying
 from tenacity import stop_after_attempt
 
 from datos.core.schema import DataRelation
+from datos.core.serializer import ScalarSerializerRegistry
+from datos.core.serializer import StreamSerializerRegistry
+from datos.core.storage import StorageRegistry
 from datos.utils.anyio import TaskGroupFuture
 from datos.utils.anyio import start_future
-from datos.utils.misc import frozenclass
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable
@@ -30,14 +33,13 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from collections.abc import Sequence
 
-    from sqlalchemy.ext.asyncio import AsyncSession
-
+    from datos.core.serializer import ScalarDump
     from datos.core.serializer import ScalarSerializer
-    from datos.core.serializer import ScalarSerializerRegistry
+    from datos.core.serializer import StreamDump
     from datos.core.serializer import StreamSerializer
-    from datos.core.serializer import StreamSerializerRegistry
+    from datos.core.storage import DumpDigest
+    from datos.core.storage import DumpDigestGetter
     from datos.core.storage import Storage
-    from datos.core.storage import StorageRegistry
 
 
 T = TypeVar("T")
@@ -46,58 +48,25 @@ P = ParamSpec("P")
 
 
 @contextmanager
-@injector.asynciterator
+@injector.asynciterator(
+    requires={
+        "session": AsyncSession,
+        "storage_registry": StorageRegistry,
+        "stream_serializer_registry": StreamSerializerRegistry,
+        "scalar_serializer_registry": ScalarSerializerRegistry,
+    }
+)
 async def data_saver(
     *,
     session: AsyncSession = required,
     storage_registry: StorageRegistry = required,
     stream_serializer_registry: StreamSerializerRegistry = required,
     scalar_serializer_registry: ScalarSerializerRegistry = required,
-) -> AsyncIterator[DataSaver]:
+) -> AsyncIterator[_DataSaver]:
     """Create a context manager for saving data."""
     items: list[tuple[TaskGroupFuture[DataRelation], DataRelation, _ScalarData | _StreamData]] = []
 
-    def save_scalar(
-        relation: Callable[P, R],
-        scalar: R,
-        serializer: ScalarSerializer[R] | None = None,
-        storage: Storage[R] | None = None,
-        /,
-        *args: P.args,
-        **kwargs: P.kwargs,
-    ) -> TaskGroupFuture[R]:
-        fut = TaskGroupFuture[R]()
-        rel = relation(*args, **kwargs)
-        dat: _ScalarData = {"scalar": scalar}
-        if serializer is not None:
-            dat["serializer"] = serializer
-        if storage is not None:
-            dat["storage"] = storage
-        items.append((fut, rel, dat))  # type: ignore[reportArgumentType]
-        return fut
-
-    def save_stream(
-        relation: Callable[P, R],
-        stream: AsyncIterable[R],
-        serializer: StreamSerializer[R] | type[R],
-        storage: Storage[R] | None = None,
-        /,
-        *args: P.args,
-        **kwargs: P.kwargs,
-    ) -> TaskGroupFuture[R]:
-        fut = TaskGroupFuture[R]()
-        rel = relation(*args, **kwargs)
-        dat: _StreamData
-        if isinstance(serializer, type):
-            dat: _StreamData = {"stream": stream, "type": serializer}
-        else:
-            dat: _StreamData = {"stream": stream, "serializer": serializer}
-        if storage is not None:
-            dat["storage"] = storage
-        items.append((fut, rel, dat))  # type: ignore[reportArgumentType]
-        return fut
-
-    yield DataSaver(scalar=save_scalar, stream=save_stream)
+    yield _DataSaver(items)
 
     await _save_data(
         items,
@@ -108,38 +77,58 @@ async def data_saver(
     )
 
 
-@frozenclass
-class DataSaver:
+class _DataSaver:
     """Defines a protocol for saving data."""
 
-    scalar: _ScalarSaver
-    stream: _StreamSaver
+    def __init__(
+        self,
+        items: list[tuple[TaskGroupFuture[DataRelation], DataRelation, _ScalarData | _StreamData]],
+    ) -> None:
+        self._items = items
 
-
-class _ScalarSaver(Protocol[R]):
-    def __call__(
+    def scalar(
         self,
         relation: Callable[P, R],
-        scalar: R,
-        serializer: ScalarSerializer[R],
-        storage: Storage[R],
+        scalar: T,
+        serializer: ScalarSerializer[T] | None = None,
+        storage: Storage[R] | None = None,
         /,
         *args: P.args,
         **kwargs: P.kwargs,
-    ) -> TaskGroupFuture[R]: ...
+    ) -> TaskGroupFuture[R]:
+        """Save the given scalar data."""
+        fut = TaskGroupFuture[R]()
+        rel = relation(*args, **kwargs)
+        dat: _ScalarData = {"scalar": scalar}
+        if serializer is not None:
+            dat["serializer"] = serializer
+        if storage is not None:
+            dat["storage"] = storage
+        self._items.append((fut, rel, dat))  # type: ignore[reportArgumentType]
+        return fut
 
-
-class _StreamSaver(Protocol[R]):
-    def __call__(
+    def stream(
         self,
         relation: Callable[P, R],
-        stream: AsyncIterable[R],
-        serializer: StreamSerializer[R],
-        storage: Storage[R],
+        stream: AsyncIterable[T],
+        serializer: StreamSerializer[T] | type[T],
+        storage: Storage[R] | None = None,
         /,
         *args: P.args,
         **kwargs: P.kwargs,
-    ) -> TaskGroupFuture[R]: ...
+    ) -> TaskGroupFuture[R]:
+        """Save the given stream data."""
+        fut = TaskGroupFuture[R]()
+        rel = relation(*args, **kwargs)
+        dat: _StreamData
+        if isinstance(serializer, type):
+            dat: _StreamData = {"stream": stream, "type": serializer}
+        else:
+            dat: _StreamData = {"stream": stream, "serializer": serializer}
+        if storage is not None:
+            dat["storage"] = storage
+        self._items.append((fut, rel, dat))  # type: ignore[reportArgumentType]
+        return fut
 
 
 async def _save_data(
@@ -201,18 +190,19 @@ async def _save_scalar(
             raise ValueError(msg)
 
     dump = serializer.dump_scalar(scalar)
+    digest = _make_scalar_dump_digest(dump)
 
     relation.rel_content_type = dump["content_type"]
-    relation.rel_serializer_name = serializer.name
-    relation.rel_serializer_version = serializer.version
+    relation.rel_serializer_name = dump["serializer_name"]
+    relation.rel_serializer_version = dump["serializer_version"]
     relation.rel_storage_name = storage.name
     relation.rel_storage_version = storage.version
 
-    relation = await storage.write_scalar(relation, dump)
+    relation = await storage.write_scalar(relation, dump["content_scalar"], digest)
 
-    relation.rel_content_size = len(dump["scalar"])
-    relation.rel_content_hash = dump["content_hash"]
-    relation.rel_content_hash_algorithm = dump["content_hash_algorithm"]
+    relation.rel_content_size = len(dump["content_scalar"])
+    relation.rel_content_hash = digest["content_hash"]
+    relation.rel_content_hash_algorithm = digest["content_hash_algorithm"]
 
     return relation
 
@@ -238,30 +228,25 @@ async def _save_stream(
             raise ValueError(msg)
 
     dump = serializer.dump_stream(stream)
+    stream, get_digest = _make_stream_dump_digest_getter(dump)
 
     relation.rel_storage_name = storage.name
     relation.rel_storage_version = storage.version
     relation.rel_content_type = dump["content_type"]
-    relation.rel_serializer_name = serializer.name
-    relation.rel_serializer_version = serializer.version
+    relation.rel_serializer_name = dump["serializer_name"]
+    relation.rel_serializer_version = dump["serializer_version"]
 
-    relation = await storage.write_stream(relation, dump)
-
-    if "content_hash" not in dump:
-        msg = f"Stream serializer {serializer.name} did not provide a content hash"
-        raise ValueError(msg)
+    await storage.write_stream(relation, stream, get_digest)
 
     try:
-        await anext(dump["stream"])
-    except StopAsyncIteration:
-        pass
-    else:
-        msg = f"Storage {storage.name} did not finish writing stream for relation {relation}"
-        raise RuntimeError(msg)
+        digest = get_digest()
+    except RuntimeError:
+        msg = f"Storage {storage.name} did not fully consume the stream for relation {relation}."
+        raise RuntimeError(msg) from None
 
-    relation.rel_content_size = dump["content_size"]
-    relation.rel_content_hash = dump["content_hash"]
-    relation.rel_content_hash_algorithm = dump["content_hash_algorithm"]
+    relation.rel_content_size = digest["content_size"]
+    relation.rel_content_hash = digest["content_hash"]
+    relation.rel_content_hash_algorithm = digest["content_hash_algorithm"]
 
     return relation
 
@@ -272,17 +257,17 @@ async def _save_relations(
     retries: int,
 ) -> None:
     stop = stop_after_attempt(retries)
-    update_existing_stmt = update(DataRelation).where(
-        or_(*(r.rel_select_latest() for r in relations)).values(
-            {DataRelation.rel_archived_at: func.now()}
-        )
+    update_existing_stmt = (
+        update(DataRelation)
+        .values({DataRelation.rel_archived_at: func.now()})
+        .where(or_(*(r.rel_select_latest() for r in relations)))
     )
     async for attempt in AsyncRetrying(stop=stop, retry_error_cls=IntegrityError):
         with attempt:
             async with session.begin_nested():
                 await session.execute(update_existing_stmt)
                 session.add_all(relations)
-                await session.flush()
+                await session.commit()
 
 
 class _ScalarData(Generic[T, R], TypedDict, total=False):
@@ -305,3 +290,46 @@ class _KnownStreamData(_BaseStreamData[T, R]):
 
 
 _StreamData = _KnownStreamData[T, R] | _InferStreamData[T, R]
+
+
+def _make_stream_dump_digest_getter(
+    dump: StreamDump,
+) -> tuple[AsyncIterator[bytes], DumpDigestGetter]:
+    stream = dump["content_stream"]
+
+    content_hash = sha256()
+    size = 0
+    done = False
+
+    async def wrapper() -> AsyncIterator[bytes]:
+        nonlocal done, size
+        async for chunk in stream:
+            content_hash.update(chunk)
+            size += len(chunk)
+            yield chunk
+        done = True
+
+    def digest() -> DumpDigest:
+        if not done:
+            msg = "The stream has not been fully consumed."
+            raise RuntimeError(msg)
+
+        return {
+            "content_hash": content_hash.hexdigest(),
+            "content_hash_algorithm": content_hash.name,
+            "content_size": size,
+            "content_type": dump["content_type"],
+        }
+
+    return wrapper(), digest
+
+
+def _make_scalar_dump_digest(dump: ScalarDump) -> DumpDigest:
+    scalar = dump["content_scalar"]
+    content_hash = sha256(scalar)
+    return {
+        "content_hash": content_hash.hexdigest(),
+        "content_hash_algorithm": content_hash.name,
+        "content_size": len(scalar),
+        "content_type": dump["content_type"],
+    }

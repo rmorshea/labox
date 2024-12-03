@@ -1,35 +1,101 @@
-import hashlib
 import json
+from collections.abc import AsyncIterable
 from typing import TypeAlias
+
+from anysync.core import AsyncIterator
 
 from datos.core.serializer import ScalarDump
 from datos.core.serializer import ScalarSerializer
+from datos.core.serializer import StreamDump
+from datos.core.serializer import StreamSerializer
+from datos.utils.stream import decode_utf8_byte_stream
 
 JsonType: TypeAlias = int | str | float | bool | dict[str, "JsonType"] | list["JsonType"] | None
 """A type alias for JSON data."""
 
+JSON_TYPES = (int, str, float, bool, type(None), dict, list)
+"""The types that can be serialized to JSON."""
 
-class JsonSerializer(ScalarSerializer[JsonType]):
+
+class JsonScalarSerializer(ScalarSerializer[JsonType]):
     """A serializer for JSON data."""
 
-    name = "datos_json"
+    name = "datos.json_scalar"
     version = 1
-    types = (int, str, float, bool, type(None), dict, list)
+    types = JSON_TYPES
 
     def dump_scalar(self, value: JsonType) -> ScalarDump:
         """Serialize the given value to JSON."""
-        content_bytes = json.dumps(value).encode("utf-8")
-        content_hash = hashlib.sha256(content_bytes)
         return {
-            "scalar": content_bytes,
+            "content_scalar": json.dumps(value).encode("utf-8"),
             "content_type": "application/json",
-            "content_hash": content_hash.hexdigest(),
-            "content_size": len(content_bytes),
-            "content_hash_algorithm": content_hash.name,
             "serializer_name": self.name,
             "serializer_version": self.version,
         }
 
     def load_scalar(self, dump: ScalarDump) -> JsonType:
         """Deserialize the given JSON data."""
-        return json.loads(dump["scalar"].decode("utf-8"))
+        return json.loads(dump["content_scalar"].decode("utf-8"))
+
+
+class JsonStreamSerializer(StreamSerializer[JsonType]):
+    """A serializer for JSON data streams."""
+
+    name = "datos.json_stream"
+    version = 1
+    types = JSON_TYPES
+
+    def dump_stream(self, stream: AsyncIterable[JsonType]) -> StreamDump:
+        """Serialize the given stream of JSON data."""
+        return {
+            "content_stream": _dump_json_stream(stream),
+            "content_type": "application/json",
+            "serializer_name": self.name,
+            "serializer_version": self.version,
+        }
+
+    def load_stream(self, dump: StreamDump) -> AsyncIterator[JsonType]:
+        """Deserialize the given stream of JSON data."""
+        return _load_json_stream(dump["content_stream"])
+
+
+async def _dump_json_stream(stream: AsyncIterable[JsonType]) -> AsyncIterator[bytes]:
+    yield b"["
+    first = True
+    async for chunk in stream:
+        content_body = json.dumps(chunk).encode("utf-8")
+        if first:
+            yield content_body
+            first = False
+        else:
+            yield b"," + content_body
+    yield b"]"
+
+
+async def _load_json_stream(stream: AsyncIterable[bytes]) -> AsyncIterator[JsonType]:
+    buffer = ""
+    started = False
+    decoder = json.JSONDecoder()
+    async for chunk in decode_utf8_byte_stream(stream):
+        if not started:
+            buffer += chunk.lstrip()
+            if buffer.startswith("["):
+                buffer = buffer[1:]
+                started = True
+            else:
+                msg = f"Expected '[' at start of JSON stream, got {buffer!r}"
+                raise ValueError(msg)
+        buffer += chunk
+        while buffer:
+            try:
+                obj, index = decoder.raw_decode(buffer)
+                yield obj
+                buffer = buffer[index:]
+            except json.JSONDecodeError:
+                break
+    if not started:
+        msg = "Expected '[' at start of JSON stream, got EOF"
+        raise ValueError(msg)
+    if buffer.strip() != "]":
+        msg = f"Expected ']' at end of JSON stream, got {buffer!r}"
+        raise ValueError(msg)

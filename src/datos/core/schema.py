@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 from typing import Annotated
 from typing import Any
+from typing import ClassVar
 from typing import Literal
 from typing import TypedDict
 from typing import TypeVar
@@ -18,7 +19,6 @@ from uuid import uuid4
 
 from sqlalchemy import ColumnElement
 from sqlalchemy import DateTime
-from sqlalchemy import NamedColumn
 from sqlalchemy import UniqueConstraint
 from sqlalchemy import func
 from sqlalchemy.orm import ColumnProperty
@@ -28,6 +28,9 @@ from sqlalchemy.orm import MappedAsDataclass
 from sqlalchemy.orm import MappedColumn
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.sql import expression as sql
+
+if TYPE_CHECKING:
+    from sqlalchemy.sql.elements import NamedColumn
 
 C = TypeVar("C", bound=MappedColumn)
 
@@ -53,25 +56,27 @@ class Base(MappedAsDataclass, DeclarativeBase, kw_only=True):
     """The base for datos's schema classes."""
 
 
-def unique_on(col: C, *, where: ColumnComparator = operator.eq) -> C:
+_INFO_KEY = "__data_relation_info__"
+
+
+def is_unique(where: ColumnComparator = operator.eq) -> dict:
     """Indicate that a column defines a unique constraint on the latest value."""
-    _set_column_info(col.column.info, {"unique_on": {"comparator": where}})
-    return col
+    return {_INFO_KEY: {"unique_on": {"comparator": where}}}
 
 
 class DataRelation(Base):
     """A relationship between a value's metadata and where/how it was saved."""
 
     __tablename__ = "datos_data_relations"
-    __mapper_args__: Mapping[str, Any] = {"polymorphic_on": "rel_type"}
+    __mapper_args__: ClassVar[Mapping[str, Any]] = {"polymorphic_on": "rel_type"}  # type: ignore[reportIncompatibleVariableOverride]
 
-    rel_id: Mapped[UUID] = mapped_column(init=False, default_factory=uuid4)
+    rel_id: Mapped[UUID] = mapped_column(init=False, default_factory=uuid4, primary_key=True)
     """The ID of the relation."""
-    rel_type: Mapped[str] = unique_on(mapped_column(init=False))
+    rel_type: Mapped[str] = mapped_column(init=False, info=is_unique())
     """The type of relation."""
     rel_created_at: Mapped[DateTimeTZ] = mapped_column(init=False, default=func.now())
     """The timestamp when the pointer was created."""
-    rel_archived_at: Mapped[DateTimeTZ] = unique_on(mapped_column(init=False, default=NEVER))
+    rel_archived_at: Mapped[DateTimeTZ] = mapped_column(init=False, default=NEVER, info=is_unique())
     """The timestamp when the pointer was archived."""
     rel_content_type: Mapped[str] = mapped_column(init=False)
     """The MIME type of the data."""
@@ -142,9 +147,6 @@ class DataRelation(Base):
         def __init_subclass__(cls, **kwargs: Any) -> None:
             super().__init_subclass__(**kwargs)
             cls._rel_init_subclass()
-
-
-_INFO_KEY = "__data_relation_info__"
 
 
 @overload

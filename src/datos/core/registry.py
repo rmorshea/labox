@@ -9,6 +9,7 @@ from typing import Protocol
 from typing import TypeVar
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
     from collections.abc import Sequence
 
 
@@ -34,16 +35,22 @@ class Registry(Generic[T]):
             msg = "At least one item must be registered."
             raise ValueError(msg)
 
-        names = Counter(s.name for s in self.items)
+        names = Counter(s.name for s in items)
         if conflicts := {n for n, c in names.items() if c > 1}:
             msg = f"Conflicting {self.item_description.lower()} names: {conflicts}"
             raise ValueError(msg)
 
-        self.by_name = {s.name: s for s in self.items}
-        self.default = items[0]
         self.items = items
-        self.by_type = {t: s for s in reversed(self.items) for t in s.types}
-        """A mapping of types to serializers."""
+        self.by_name: Mapping[str, T] = {i.name: i for i in self.items}
+
+        by_type: dict[type, T] = {}
+        for i in reversed(self.items):  # reverse to prioritize first items
+            for t in i.types:
+                if t is object:
+                    msg = f"{t} is not a valid type for {self.item_description.lower()} {i}."
+                    raise ValueError(msg)
+                by_type[t] = i
+        self.by_type: Mapping[type, T] = by_type
 
     def get_by_type_inference(self, cls: type) -> T:
         """Get the first item that can handle the given type or its parent classes."""

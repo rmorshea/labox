@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 from typing import LiteralString
-from typing import NotRequired
 from typing import Protocol
 from typing import TypedDict
 from typing import TypeVar
@@ -12,6 +11,7 @@ from datos.core.registry import Registry
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable
     from collections.abc import AsyncIterator
+
 
 T = TypeVar("T")
 
@@ -27,11 +27,11 @@ class _BaseSerializer(Protocol[T]):
 class ScalarSerializer(_BaseSerializer[T]):
     """A protocol for serializing and deserializing objects from scalar values."""
 
-    def dump_scalar(self, value: T) -> ScalarDump:
+    def dump_scalar(self, value: T, /) -> ScalarDump:
         """Serialize the given value."""
         ...
 
-    def load_scalar(self, dump: ScalarDump) -> T:
+    def load_scalar(self, dump: ScalarDump, /) -> T:
         """Deserialize the given value."""
         ...
 
@@ -39,11 +39,11 @@ class ScalarSerializer(_BaseSerializer[T]):
 class StreamSerializer(_BaseSerializer[T]):
     """A protocol for serializing and deserializing objects from streams of values."""
 
-    def dump_stream(self, stream: AsyncIterable[T]) -> StreamDump:
+    def dump_stream(self, stream: AsyncIterable[T], /) -> StreamDump:
         """Serialize the given stream."""
         ...
 
-    def load_stream(self, dump: StreamDump) -> AsyncIterator[T]:
+    def load_stream(self, dump: StreamDump, /) -> AsyncIterator[T]:
         """Deserialize the given stream."""
         ...
 
@@ -55,28 +55,20 @@ class _BaseDump(TypedDict):
     """The name of the serializer used to serialize the data."""
     serializer_version: int
     """The version of the serializer used to serialize the data."""
-    content_hash_algorithm: str
-    """The algorithm used to hash the dumped content."""
-    content_size: int
-    """The size of the dumped content in bytes."""
 
 
 class ScalarDump(_BaseDump):
     """The serialized representation of a single value."""
 
-    scalar: bytes
+    content_scalar: bytes
     """The serialized data."""
-    content_hash: str
-    """The hash of the dumped content."""
 
 
 class StreamDump(_BaseDump):
     """The serialized representation of a stream of values."""
 
-    stream: AsyncIterator[bytes]
+    content_stream: AsyncIterable[bytes]
     """The serialized data stream."""
-    content_hash: NotRequired[str]
-    """The hash of the dumped content - must be set once the stream is fully read."""
 
 
 class StreamSerializerRegistry(Registry[StreamSerializer]):
