@@ -7,6 +7,7 @@ from typing import ParamSpec
 from typing import Required
 from typing import TypedDict
 from typing import TypeVar
+from typing import overload
 
 from anyio import create_task_group
 from anysync import contextmanager
@@ -92,7 +93,6 @@ class _DataSaver:
         scalar: T,
         serializer: ScalarSerializer[T] | None = None,
         storage: Storage[R] | None = None,
-        /,
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> TaskGroupFuture[R]:
@@ -107,13 +107,34 @@ class _DataSaver:
         self._items.append((fut, rel, dat))  # type: ignore[reportArgumentType]
         return fut
 
+    @overload
+    def stream(
+        self,
+        relation: Callable[P, R],
+        stream: tuple[type[T], AsyncIterable[T]],
+        serializer: StreamSerializer[T] | None = ...,
+        storage: Storage[R] | None = ...,
+        *args: P.args,
+        **kwargs: P.kwargs,
+    ) -> TaskGroupFuture[R]: ...
+
+    @overload
     def stream(
         self,
         relation: Callable[P, R],
         stream: AsyncIterable[T],
-        serializer: StreamSerializer[T] | type[T],
+        serializer: StreamSerializer[T],
         storage: Storage[R] | None = None,
-        /,
+        *args: P.args,
+        **kwargs: P.kwargs,
+    ) -> TaskGroupFuture[R]: ...
+
+    def stream(
+        self,
+        relation: Callable[P, R],
+        stream: AsyncIterable[T] | tuple[type[T], AsyncIterable[T]],
+        serializer: StreamSerializer[T] | None = None,
+        storage: Storage[R] | None = None,
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> TaskGroupFuture[R]:
@@ -121,10 +142,20 @@ class _DataSaver:
         fut = TaskGroupFuture[R]()
         rel = relation(*args, **kwargs)
         dat: _StreamData
-        if isinstance(serializer, type):
-            dat: _StreamData = {"stream": stream, "type": serializer}
+        if serializer is None:
+            match stream:
+                case (type_, stream):
+                    dat = {"stream": stream, "type": type_}
+                case stream:
+                    msg = "A serializer must be provided when the stream type is not given."
+                    raise ValueError(msg)
         else:
-            dat: _StreamData = {"stream": stream, "serializer": serializer}
+            match stream:
+                case (type_, stream):
+                    msg = "The stream type must not be given when a serializer is provided."
+                    raise ValueError(msg)
+                case stream:
+                    dat = {"stream": stream, "serializer": serializer}
         if storage is not None:
             dat["storage"] = storage
         self._items.append((fut, rel, dat))  # type: ignore[reportArgumentType]
@@ -262,12 +293,15 @@ async def _save_relations(
         .values({DataRelation.rel_archived_at: func.now()})
         .where(or_(*(r.rel_select_latest() for r in relations)))
     )
-    async for attempt in AsyncRetrying(stop=stop, retry_error_cls=IntegrityError):
+    async for attempt in AsyncRetrying(stop=stop):
         with attempt:
-            async with session.begin_nested():
-                await session.execute(update_existing_stmt)
-                session.add_all(relations)
-                await session.commit()
+            try:
+                async with session.begin_nested():
+                    await session.execute(update_existing_stmt)
+                    session.add_all(relations)
+                    await session.commit()
+            except IntegrityError:
+                pass
 
 
 class _ScalarData(Generic[T, R], TypedDict, total=False):

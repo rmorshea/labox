@@ -26,12 +26,27 @@ class TemporaryDirectoryStorage(Storage[DataRelation]):
     version = 1
     types = (DataRelation,)
 
-    def __init__(self, chunk_size: int = 1024) -> None:
-        self.tempdir = TemporaryDirectory()
-        self.path = Path(self.tempdir.name)
+    def __init__(
+        self,
+        tempdir: TemporaryDirectory | str | None = None,
+        chunk_size: int = 1024,
+    ) -> None:
+        match tempdir:
+            case None:
+                self.tempdir = TemporaryDirectory()
+                self.path = Path(self.tempdir.name)
+            case str(path):
+                self.path = Path(path)
+            case tempdir:
+                self.tempdir = tempdir
+                self.path = Path(tempdir.name)
         self.chunk_size = chunk_size
+        (self.path / "scratch").mkdir()
 
     def __enter__(self) -> Self:
+        if not hasattr(self, "tempdir"):
+            msg = f"{self} does not own the temporary directory {self.path!r}"
+            raise RuntimeError(msg)
         return self
 
     def __exit__(self, *_: Any) -> None:

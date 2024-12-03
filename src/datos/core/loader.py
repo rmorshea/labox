@@ -87,6 +87,7 @@ async def _load_data(
     async with create_task_group() as tg:
         for fut, rel, typ in items:
             if typ == "scalar":
+                print(scalar_serializer_registry.by_name)
                 scalar_serializer = scalar_serializer_registry.by_name[rel.rel_serializer_name]
                 storage = storage_registry.by_name[rel.rel_storage_name]
                 start_future(tg, fut, _load_scalar, rel, scalar_serializer, storage)

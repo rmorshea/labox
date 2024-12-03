@@ -12,8 +12,7 @@ from datos.core.schema import Base
 from datos.core.serializer import ScalarSerializerRegistry
 from datos.core.serializer import StreamSerializerRegistry
 from datos.core.storage import StorageRegistry
-from datos.extra.json import JsonScalarSerializer
-from datos.extra.json import JsonStreamSerializer
+from datos.extra.json import JsonSerializer
 from datos.extra.tempfile import TemporaryDirectoryStorage
 
 
@@ -29,13 +28,13 @@ async def aiosqlite_session_provider(path: str) -> AsyncIterator[AsyncSession]:
 @provider.function
 @functools.lru_cache(1)
 def scalar_serializer_registry_provider() -> ScalarSerializerRegistry:
-    return ScalarSerializerRegistry([JsonScalarSerializer()])
+    return ScalarSerializerRegistry([JsonSerializer()])
 
 
 @provider.function
 @functools.lru_cache(1)
 def stream_serializer_registry_provider() -> StreamSerializerRegistry:
-    return StreamSerializerRegistry([JsonStreamSerializer()])
+    return StreamSerializerRegistry([JsonSerializer()])
 
 
 @provider.function
@@ -44,11 +43,11 @@ def storage_registry_provider() -> StorageRegistry:
     return StorageRegistry([TemporaryDirectoryStorage()])
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse=True, scope="session")
 def providers():
-    with NamedTemporaryFile() as file:
+    with NamedTemporaryFile() as tempfile:
         with solved(
-            aiosqlite_session_provider.bind(path=file.name),
+            aiosqlite_session_provider.bind(path=tempfile.name),
             scalar_serializer_registry_provider,
             stream_serializer_registry_provider,
             storage_registry_provider,

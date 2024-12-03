@@ -17,10 +17,10 @@ JSON_TYPES = (int, str, float, bool, type(None), dict, list)
 """The types that can be serialized to JSON."""
 
 
-class JsonScalarSerializer(ScalarSerializer[JsonType]):
+class JsonSerializer(ScalarSerializer[JsonType], StreamSerializer[JsonType]):
     """A serializer for JSON data."""
 
-    name = "datos.json_scalar"
+    name = "datos.json"
     version = 1
     types = JSON_TYPES
 
@@ -36,14 +36,6 @@ class JsonScalarSerializer(ScalarSerializer[JsonType]):
     def load_scalar(self, dump: ScalarDump) -> JsonType:
         """Deserialize the given JSON data."""
         return json.loads(dump["content_scalar"].decode("utf-8"))
-
-
-class JsonStreamSerializer(StreamSerializer[JsonType]):
-    """A serializer for JSON data streams."""
-
-    name = "datos.json_stream"
-    version = 1
-    types = JSON_TYPES
 
     def dump_stream(self, stream: AsyncIterable[JsonType]) -> StreamDump:
         """Serialize the given stream of JSON data."""
