@@ -4,11 +4,11 @@ from typing import TypeAlias
 
 from anysync.core import AsyncIterator
 
-from artum.core.serializer import ScalarDump
-from artum.core.serializer import ScalarSerializer
-from artum.core.serializer import StreamDump
-from artum.core.serializer import StreamSerializer
-from artum.utils.stream import decode_utf8_byte_stream
+from ardex.core.serializer import ScalarDump
+from ardex.core.serializer import ScalarSerializer
+from ardex.core.serializer import StreamDump
+from ardex.core.serializer import StreamSerializer
+from ardex.utils.stream import decode_utf8_byte_stream
 
 JsonType: TypeAlias = int | str | float | bool | dict[str, "JsonType"] | list["JsonType"] | None
 """A type alias for JSON data."""
@@ -20,7 +20,7 @@ JSON_TYPES = (int, str, float, bool, type(None), dict, list)
 class JsonSerializer(ScalarSerializer[JsonType], StreamSerializer[JsonType]):
     """A serializer for JSON data."""
 
-    name = "artum.json"
+    name = "ardex.json"
     version = 1
     types = JSON_TYPES
     content_type = "application/json"

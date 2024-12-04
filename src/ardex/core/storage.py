@@ -7,8 +7,8 @@ from typing import Protocol
 from typing import TypedDict
 from typing import TypeVar
 
-from artum.core.registry import Registry
-from artum.core.schema import DataRelation
+from ardex.core.registry import Registry
+from ardex.core.schema import DataRelation
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable

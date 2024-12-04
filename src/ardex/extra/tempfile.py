@@ -8,21 +8,21 @@ from typing import Any
 from typing import Self
 from uuid import uuid4
 
-from artum.core.schema import DataRelation
-from artum.core.storage import Storage
+from ardex.core.schema import DataRelation
+from ardex.core.storage import Storage
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable
     from collections.abc import AsyncIterator
 
-    from artum.core.storage import DumpDigest
-    from artum.core.storage import DumpDigestGetter
+    from ardex.core.storage import DumpDigest
+    from ardex.core.storage import DumpDigestGetter
 
 
 class TemporaryDirectoryStorage(Storage[DataRelation]):
     """A storage backend for testing that saves data to a temporary directory."""
 
-    name = "artum.tempfile"
+    name = "ardex.tempfile"
     version = 1
     types = (DataRelation,)
 

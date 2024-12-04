@@ -4,7 +4,7 @@ _src_path: https://github.com/rmorshea/python-copier-template
 author_email: ryan.morshead@gmail.com
 author_name: Ryan Morshead
 project_description: An artifact management system for Python.
-project_title: artum
-python_package_name: artum
+project_title: ardex
+python_package_name: ardex
 python_version_range: ">=3.11,<4"
-repo_url: https://github.com/rmorshea/artum
+repo_url: https://github.com/rmorshea/ardex

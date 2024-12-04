@@ -7,7 +7,7 @@ from typing import ParamSpec
 from typing import TypeVar
 from typing import overload
 
-from artum.utils.misc import UNDEFINED
+from ardex.utils.misc import UNDEFINED
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable

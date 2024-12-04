@@ -10,7 +10,7 @@ from typing import Self
 from typing import get_args
 from typing import get_origin
 
-from artum.utils.misc import frozenclass
+from ardex.utils.misc import frozenclass
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 class Options:
     """Common configuration options."""
 
-    ARTUM_MAX_ARCHIVE_EXISTING_RETRIES: int = 3
+    ARDEX_MAX_ARCHIVE_EXISTING_RETRIES: int = 3
     """Number of times to retry archiving an existing artifact."""
 
     @classmethod

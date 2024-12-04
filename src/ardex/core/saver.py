@@ -11,6 +11,12 @@ from typing import overload
 
 from anyio import create_task_group
 from anysync import contextmanager
+from ardex.core.schema import DataRelation
+from ardex.core.serializer import ScalarSerializerRegistry
+from ardex.core.serializer import StreamSerializerRegistry
+from ardex.core.storage import StorageRegistry
+from ardex.utils.anyio import TaskGroupFuture
+from ardex.utils.anyio import start_future
 from pybooster import injector
 from pybooster import required
 from sqlalchemy import func
@@ -21,26 +27,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from tenacity import AsyncRetrying
 from tenacity import stop_after_attempt
 
-from artum.core.schema import DataRelation
-from artum.core.serializer import ScalarSerializerRegistry
-from artum.core.serializer import StreamSerializerRegistry
-from artum.core.storage import StorageRegistry
-from artum.utils.anyio import TaskGroupFuture
-from artum.utils.anyio import start_future
-
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable
     from collections.abc import AsyncIterator
     from collections.abc import Callable
     from collections.abc import Sequence
 
-    from artum.core.serializer import ScalarDump
-    from artum.core.serializer import ScalarSerializer
-    from artum.core.serializer import StreamDump
-    from artum.core.serializer import StreamSerializer
-    from artum.core.storage import DumpDigest
-    from artum.core.storage import DumpDigestGetter
-    from artum.core.storage import Storage
+    from ardex.core.serializer import ScalarDump
+    from ardex.core.serializer import ScalarSerializer
+    from ardex.core.serializer import StreamDump
+    from ardex.core.serializer import StreamSerializer
+    from ardex.core.storage import DumpDigest
+    from ardex.core.storage import DumpDigestGetter
+    from ardex.core.storage import Storage
 
 
 T = TypeVar("T")
