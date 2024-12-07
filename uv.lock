@@ -142,7 +142,7 @@ requires-dist = [
     { name = "anyio", specifier = ">=4.6.2,<5" },
     { name = "anysync", specifier = ">=0.3.1,<1" },
     { name = "pyarrow", marker = "extra == 'pyarrow'", specifier = ">=18,<19" },
-    { name = "pybooster", specifier = ">=0.0.2,<1" },
+    { name = "pybooster", specifier = ">=0.0.4,<1" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.36,<3" },
     { name = "tenacity", specifier = ">=9.0.0,<10" },
 ]
@@ -1117,16 +1117,16 @@ wheels = [
 
 [[package]]
 name = "pybooster"
-version = "0.0.2"
+version = "0.0.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "paramorator" },
     { name = "rustworkx" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/83/aa/18e0a269eb1d905ef9d2176c8e14a71080467a563af08ef236ef12a41ba8/pybooster-0.0.2.tar.gz", hash = "sha256:782645d52b14a3209b2b545e7dd2ae5f58ca2319ce4260571ccd80e089564feb", size = 17715 }
+sdist = { url = "https://files.pythonhosted.org/packages/66/0c/7cae96c7f0b65f47f554f48e36151d197802fdae82f1161f0f36ebd3ab99/pybooster-0.0.4.tar.gz", hash = "sha256:9d06e45b2718eccfc2f916aeba322ccffcb43fc699752a9caae0017046a96041", size = 110789 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/72/a3/d4366bd143e877788b87f335f7b7b0d0af9516b6a05014868b811b5a3cb1/pybooster-0.0.2-py3-none-any.whl", hash = "sha256:57f1bf05076365964c426b134d9ea8894edb089bb9fa1c241a3fa920d73370b9", size = 19422 },
+    { url = "https://files.pythonhosted.org/packages/42/f9/e96ba2f9f3b897f7c00777b7c5bb183cb88e3d935ec9bf9c520231a6b4fd/pybooster-0.0.4-py3-none-any.whl", hash = "sha256:ae5397965acf46e6dcfd9ccc57aa1e69ac05f9ae545c6d30cb0ce63629975fa2", size = 20115 },
 ]
 
 [[package]]

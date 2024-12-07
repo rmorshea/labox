@@ -1,4 +1,3 @@
-import functools
 from collections.abc import AsyncIterator
 from tempfile import NamedTemporaryFile
 
@@ -8,6 +7,8 @@ from pybooster import solved
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.asyncio import create_async_engine
 
+from ardex.core.context import DatabaseSession
+from ardex.core.context import registries
 from ardex.core.schema import Base
 from ardex.core.serializer import ScalarSerializerRegistry
 from ardex.core.serializer import StreamSerializerRegistry
@@ -16,40 +17,27 @@ from ardex.extra.json import JsonSerializer
 from ardex.extra.tempfile import TemporaryDirectoryStorage
 
 
-@provider.asynciterator
-async def aiosqlite_session_provider(path: str) -> AsyncIterator[AsyncSession]:
-    engine = create_async_engine(f"sqlite+aiosqlite:///{path}")
+@pytest.fixture(autouse=True, scope="session")
+def registry_context():
+    with registries(
+        storages=StorageRegistry([TemporaryDirectoryStorage()]),
+        stream_serializers=StreamSerializerRegistry([JsonSerializer()]),
+        scalar_serializers=ScalarSerializerRegistry([JsonSerializer()]),
+    ):
+        yield
+
+
+@provider.asynciterator(provides=DatabaseSession)
+async def database_session(location: str) -> AsyncIterator[DatabaseSession]:
+    engine = create_async_engine(f"sqlite+aiosqlite:///{location}")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     async with AsyncSession(engine) as session:
-        yield session
+        yield DatabaseSession(session)
 
 
-@provider.function
-@functools.lru_cache(1)
-def scalar_serializer_registry_provider() -> ScalarSerializerRegistry:
-    return ScalarSerializerRegistry([JsonSerializer()])
-
-
-@provider.function
-@functools.lru_cache(1)
-def stream_serializer_registry_provider() -> StreamSerializerRegistry:
-    return StreamSerializerRegistry([JsonSerializer()])
-
-
-@provider.function
-@functools.lru_cache(1)
-def storage_registry_provider() -> StorageRegistry:
-    return StorageRegistry([TemporaryDirectoryStorage()])
-
-
-@pytest.fixture(autouse=True, scope="session")
-def providers():
-    with NamedTemporaryFile() as tempfile:
-        with solved(
-            aiosqlite_session_provider.bind(path=tempfile.name),
-            scalar_serializer_registry_provider,
-            stream_serializer_registry_provider,
-            storage_registry_provider,
-        ):
+@pytest.fixture(autouse=True)
+def solution():
+    with NamedTemporaryFile() as file:
+        with solved(database_session.bind(file.name)):
             yield

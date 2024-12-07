@@ -7,7 +7,7 @@ from typing import Protocol
 from typing import TypedDict
 from typing import TypeVar
 
-from ardex.core.registry import Registry
+from ardex.core._registry import Registry
 from ardex.core.schema import DataRelation
 
 if TYPE_CHECKING:

@@ -21,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from tenacity import AsyncRetrying
 from tenacity import stop_after_attempt
 
+from ardex.core.context import DatabaseSession
 from ardex.core.schema import DataRelation
 from ardex.core.serializer import ScalarSerializerRegistry
 from ardex.core.serializer import StreamSerializerRegistry
@@ -33,6 +34,8 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator
     from collections.abc import Callable
     from collections.abc import Sequence
+
+    from sqlalchemy.ext.asyncio import AsyncSession
 
     from ardex.core.serializer import ScalarDump
     from ardex.core.serializer import ScalarSerializer
@@ -47,19 +50,21 @@ T = TypeVar("T")
 R = TypeVar("R", bound=DataRelation)
 P = ParamSpec("P")
 
+_COMMIT_RETRIES = 3
+
 
 @contextmanager
 @injector.asynciterator(
-    requires={
-        "session": AsyncSession,
-        "storage_registry": StorageRegistry,
-        "stream_serializer_registry": StreamSerializerRegistry,
-        "scalar_serializer_registry": ScalarSerializerRegistry,
-    }
+    requires=(
+        DatabaseSession,
+        StorageRegistry,
+        StreamSerializerRegistry,
+        ScalarSerializerRegistry,
+    )
 )
 async def data_saver(
     *,
-    session: AsyncSession = required,
+    database_session: DatabaseSession | AsyncSession = required,
     storage_registry: StorageRegistry = required,
     stream_serializer_registry: StreamSerializerRegistry = required,
     scalar_serializer_registry: ScalarSerializerRegistry = required,
@@ -71,10 +76,11 @@ async def data_saver(
 
     await _save_data(
         items,
-        session,
+        database_session,
         storage_registry,
         stream_serializer_registry,
         scalar_serializer_registry,
+        _COMMIT_RETRIES,
     )
 
 
@@ -168,6 +174,7 @@ async def _save_data(
     storage_registry: StorageRegistry,
     stream_serializer_registry: StreamSerializerRegistry,
     scalar_serializer_registry: ScalarSerializerRegistry,
+    retries,
 ) -> Sequence[DataRelation]:
     """Save the given data to the database."""
     relation_futures: list[TaskGroupFuture[DataRelation]] = []
@@ -197,7 +204,7 @@ async def _save_data(
         return [f.result() for f in relation_futures]
     finally:
         relations = [r for f in relation_futures if (r := f.result(default=None)) is not None]
-        await _save_relations(session, relations, retries=3)
+        await _save_relations(session, relations, retries=retries)
 
 
 async def _save_scalar(

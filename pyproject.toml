@@ -23,7 +23,7 @@ classifiers = [
 dependencies = [
     "anyio>=4.6.2,<5",
     "anysync>=0.3.1,<1",
-    "pybooster>=0.0.2,<1",
+    "pybooster>=0.0.4,<1",
     "sqlalchemy[asyncio]>=2.0.36,<3",
     "tenacity>=9.0.0,<10",
 ]
@@ -169,8 +169,8 @@ exclude_lines = [
     "if TYPE_CHECKING:",
     "raise AssertionError",
     "raise NotImplementedError",
-    'class .*\bProtocol\b.*\):',
     'if __name__ == .__main__.:',
+    '\.\.\.\n($|\s*#.*)',
 ]
 show_missing = true
 skip_covered = true

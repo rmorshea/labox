@@ -1,4 +1,5 @@
 import json
+from codecs import getincrementaldecoder
 from collections.abc import AsyncIterable
 from typing import TypeAlias
 
@@ -8,7 +9,7 @@ from ardex.core.serializer import ScalarDump
 from ardex.core.serializer import ScalarSerializer
 from ardex.core.serializer import StreamDump
 from ardex.core.serializer import StreamSerializer
-from ardex.utils.stream import decode_utf8_byte_stream
+from ardex.utils.stream import decode_byte_stream
 
 JsonType: TypeAlias = int | str | float | bool | dict[str, "JsonType"] | list["JsonType"] | None
 """A type alias for JSON data."""
@@ -69,7 +70,7 @@ async def _load_json_stream(stream: AsyncIterable[bytes]) -> AsyncIterator[JsonT
     buffer = ""
     started = False
     decoder = json.JSONDecoder()
-    async for chunk in decode_utf8_byte_stream(stream):
+    async for chunk in decode_byte_stream(_GET_UTF_8_DECODER(), stream):
         if not started:
             buffer += chunk.lstrip()
             if not buffer.startswith("["):
@@ -95,3 +96,6 @@ async def _load_json_stream(stream: AsyncIterable[bytes]) -> AsyncIterator[JsonT
     if buffer:
         msg = f"Expected ']' at end of JSON stream, got {buffer!r}"
         raise ValueError(msg)
+
+
+_GET_UTF_8_DECODER = getincrementaldecoder("utf-8")

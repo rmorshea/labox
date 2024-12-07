@@ -33,11 +33,11 @@ P = ParamSpec("P")
 
 @contextmanager
 @injector.asynciterator(
-    requires={
-        "storage_registry": StorageRegistry,
-        "stream_serializer_registry": StreamSerializerRegistry,
-        "scalar_serializer_registry": ScalarSerializerRegistry,
-    }
+    requires=(
+        StorageRegistry,
+        StreamSerializerRegistry,
+        ScalarSerializerRegistry,
+    )
 )
 async def data_loader(
     *,
