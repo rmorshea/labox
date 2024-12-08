@@ -38,8 +38,10 @@ all = [
     { include-group = "docs" },
     { include-group = "lint" },
     { include-group = "test" },
+    { include-group = "extra" },
 ]
-dev = ["click==8.1.7"]
+dev = ["click==8.1.7", "ipykernel==6.29.5"]
+extra = ["pyarrow==18.0.0"]
 docs = [
     { include-group = "test" },
     "mkdocs-gen-files==0.5.0",

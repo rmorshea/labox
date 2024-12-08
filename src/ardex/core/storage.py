@@ -26,18 +26,18 @@ class Storage(Protocol[R]):
     """The types that the serializer can handle."""
     version: int
 
-    async def write_scalar(
+    async def write_single(
         self,
         relation: R,
-        scalar: bytes,
+        single: bytes,
         digest: DumpDigest,
         /,
     ) -> R:
-        """Save the given scalar dump."""
+        """Save the given single dump."""
         ...
 
-    async def read_scalar(self, relation: R, /) -> bytes:
-        """Load the scalar dump for the given relation."""
+    async def read_single(self, relation: R, /) -> bytes:
+        """Load the single dump for the given relation."""
         ...
 
     async def write_stream(

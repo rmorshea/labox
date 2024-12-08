@@ -24,14 +24,14 @@ class _BaseSerializer(Protocol[T]):
     version: int
 
 
-class ScalarSerializer(_BaseSerializer[T]):
-    """A protocol for serializing and deserializing objects from scalar values."""
+class SingleSerializer(_BaseSerializer[T]):
+    """A protocol for serializing and deserializing objects from single values."""
 
-    def dump_scalar(self, value: T, /) -> ScalarDump:
+    def dump_single(self, value: T, /) -> SingleDump:
         """Serialize the given value."""
         ...
 
-    def load_scalar(self, dump: ScalarDump, /) -> T:
+    def load_single(self, dump: SingleDump, /) -> T:
         """Deserialize the given value."""
         ...
 
@@ -57,10 +57,10 @@ class _BaseDump(TypedDict):
     """The version of the serializer used to serialize the data."""
 
 
-class ScalarDump(_BaseDump):
+class SingleDump(_BaseDump):
     """The serialized representation of a single value."""
 
-    content_scalar: bytes
+    content_single: bytes
     """The serialized data."""
 
 
@@ -81,11 +81,11 @@ class StreamSerializerRegistry(Registry[StreamSerializer]):
         def get_by_type_inference(self, cls: type[T]) -> StreamSerializer[T]: ...  # noqa: D102
 
 
-class ScalarSerializerRegistry(Registry[ScalarSerializer]):
-    """A registry of scalar serializers."""
+class SingleSerializerRegistry(Registry[SingleSerializer]):
+    """A registry of single serializers."""
 
-    item_description = "Scalar serializer"
+    item_description = "Single serializer"
 
     if TYPE_CHECKING:
 
-        def get_by_type_inference(self, cls: type[T]) -> ScalarSerializer[T]: ...  # noqa: D102
+        def get_by_type_inference(self, cls: type[T]) -> SingleSerializer[T]: ...  # noqa: D102

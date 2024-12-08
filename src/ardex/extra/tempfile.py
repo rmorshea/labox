@@ -52,20 +52,20 @@ class TemporaryDirectoryStorage(Storage[DataRelation]):
     def __exit__(self, *_: Any) -> None:
         self.tempdir.cleanup()
 
-    async def write_scalar(
+    async def write_single(
         self,
         relation: DataRelation,
-        scalar: bytes,
+        single: bytes,
         digest: DumpDigest,
     ) -> DataRelation:
-        """Save the given scalar dump."""
+        """Save the given single dump."""
         content_path = self._get_content_path(digest["content_type"], digest["content_hash"])
         if not content_path.exists():
-            content_path.write_bytes(scalar)
+            content_path.write_bytes(single)
         return relation
 
-    async def read_scalar(self, relation: DataRelation) -> bytes:
-        """Load the scalar dump for the given relation."""
+    async def read_single(self, relation: DataRelation) -> bytes:
+        """Load the single dump for the given relation."""
         content_path = self._get_content_path(relation.rel_content_type, relation.rel_content_hash)
         return content_path.read_bytes()
 
