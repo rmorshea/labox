@@ -110,7 +110,7 @@ ignore = [
     "DOC501", # Ignore raises missing from docstring
     "ERA001", # Commented out code
     "FBT003", # Allow boolean positional values in function calls, like `dict.get(... True)`
-    "ISC001", # implicitly concatenated strings on a scalar line
+    "ISC001", # implicitly concatenated strings on a single line
     "PIE790", # Unecessary elipsis literal
     "PL",     # PyLint
     "PYI",    # Stub files
@@ -118,7 +118,7 @@ ignore = [
     "RET505", # Unnecessary return statement after return
     "S105",   # Ignore checks for possible passwords
     "S311",   # Random not suitable for security/cryptographic purposes
-    "SIM117", # Use a scalar `with` statement
+    "SIM117", # Use a single `with` statement
 ]
 unfixable = [
     "COM819", # Trailing comma

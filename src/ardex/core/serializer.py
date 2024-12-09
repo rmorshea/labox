@@ -12,6 +12,7 @@ from ardex.core._registry import Registry
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable
     from collections.abc import AsyncIterator
+    from collections.abc import Iterable
     from collections.abc import Sequence
 
 
@@ -26,16 +27,16 @@ class _BaseSerializer(abc.ABC, Generic[T]):
     version: int
 
 
-class ScalarSerializer(_BaseSerializer[T]):
-    """A protocol for serializing/deserializing objects from scalar values."""
+class ValueSerializer(_BaseSerializer[T]):
+    """A protocol for serializing/deserializing objects from value values."""
 
     @abc.abstractmethod
-    def dump_scalar(self, scalar: T, /) -> ScalarDump:
+    def dump_value(self, value: T, /) -> ValueDump:
         """Serialize the given value."""
         ...
 
     @abc.abstractmethod
-    def load_scalar(self, dump: ScalarDump, /) -> T:
+    def load_value(self, dump: ValueDump, /) -> T:
         """Deserialize the given value."""
         ...
 
@@ -44,12 +45,12 @@ class StreamSerializer(_BaseSerializer[T]):
     """A protocol for serializing/deserializing objects from streams of values."""
 
     @abc.abstractmethod
-    def dump_scalar(self, scalar: Sequence[T], /) -> ScalarDump:
+    def dump_value(self, value: Iterable[T], /) -> ValueDump:
         """Serialize the given value."""
         ...
 
     @abc.abstractmethod
-    def load_scalar(self, dump: ScalarDump, /) -> Sequence[T]:
+    def load_value(self, dump: ValueDump, /) -> Iterable[T]:
         """Deserialize the given value."""
         ...
 
@@ -73,31 +74,31 @@ class _BaseDump(TypedDict):
     """The version of the serializer used to serialize the data."""
 
 
-class ScalarDump(_BaseDump):
-    """The serialized representation of a scalar value."""
+class ValueDump(_BaseDump):
+    """The serialized representation of a value value."""
 
-    content_scalar: bytes
+    value: bytes
     """The serialized data."""
 
 
 class StreamDump(_BaseDump):
     """The serialized representation of a stream of values."""
 
-    content_stream: AsyncIterable[bytes]
+    stream: AsyncIterable[bytes]
     """The serialized data stream."""
 
 
-class SerializerRegistry(Registry[ScalarSerializer | StreamSerializer]):
+class SerializerRegistry(Registry[ValueSerializer | StreamSerializer]):
     """A registry of stream serializers."""
 
     item_description = "Stream serializer"
 
-    def __init__(self, items: Sequence[ScalarSerializer | StreamSerializer]) -> None:
+    def __init__(self, items: Sequence[ValueSerializer | StreamSerializer]) -> None:
         super().__init__(items)
-        self.by_scalar_type = {
+        self.by_value_type = {
             type_: serializer
             for serializer in self.items
-            if isinstance(serializer, ScalarSerializer | StreamSerializer)
+            if isinstance(serializer, ValueSerializer | StreamSerializer)
             for type_ in serializer.types
         }
         self.by_stream_type = {
@@ -107,10 +108,10 @@ class SerializerRegistry(Registry[ScalarSerializer | StreamSerializer]):
             for type_ in serializer.types
         }
 
-    def infer_from_scalar_type(self, cls: type[T]) -> ScalarSerializer[T] | StreamSerializer[T]:
+    def infer_from_value_type(self, cls: type[T]) -> ValueSerializer[T] | StreamSerializer[T]:
         """Get the first serializer that can handle the given type or its parent classes."""
         for base in cls.mro():
-            if item := self.by_scalar_type.get(base):
+            if item := self.by_value_type.get(base):
                 return item
         msg = f"No serializer found for {cls}."
         raise ValueError(msg)

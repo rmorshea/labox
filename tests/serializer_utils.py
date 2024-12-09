@@ -10,27 +10,28 @@ from typing import TypeVar
 
 import pytest
 
-from ardex.core.serializer import ScalarDump
-from ardex.core.serializer import ScalarSerializer
 from ardex.core.serializer import StreamDump
 from ardex.core.serializer import StreamSerializer
+from ardex.core.serializer import ValueDump
+from ardex.core.serializer import ValueSerializer
 
 T = TypeVar("T")
 
 
-def make_scalar_serializer_test(
-    serializer: ScalarSerializer[T],
+def make_value_serializer_test(
+    serializer: ValueSerializer[T],
     *cases: T,
 ) -> Callable:
     async def tester(checker, case):
         if isawaitable(result := checker(case)):
             await result
 
-    matrix = [(partial(_check_dump_scalar_load_scalar, serializer, None), case) for case in cases]
+    matrix = [(partial(_check_dump_value_load_value, serializer, None), case) for case in cases]
 
     def get_id(x: Any) -> Any:
-        wrapped = getattr(x, "func", x)
-        return getattr(wrapped, "__name__", x)
+        if hasattr(wrapped := getattr(x, "func", x), "__name__"):
+            return wrapped.__name__.lstrip("_")
+        return x
 
     arg_names = ("checker", "case")
     return pytest.mark.parametrize(arg_names, matrix, ids=get_id)(tester)
@@ -51,14 +52,14 @@ def make_stream_serializer_test(
     for case in cases:
         matrix.append(
             (
-                partial(_check_dump_scalar_load_scalar, serializer),
+                partial(_check_dump_value_load_value, serializer, conv=list),
                 None,
                 case,
             )
         )
         matrix.extend(
             (
-                partial(_check_dump_scalar_load_stream, serializer),
+                partial(_check_dump_value_load_stream, serializer),
                 restreamer,
                 case,
             )
@@ -66,7 +67,7 @@ def make_stream_serializer_test(
         )
         matrix.append(
             (
-                partial(_check_dump_stream_load_scalar, serializer),
+                partial(_check_dump_stream_load_value, serializer),
                 None,
                 case,
             )
@@ -89,44 +90,41 @@ def make_stream_serializer_test(
     return pytest.mark.parametrize(arg_names, matrix, ids=get_id)(tester)
 
 
-async def _check_dump_scalar_load_stream(
+async def _check_dump_value_load_stream(
     serializer: StreamSerializer[Any],
     restream: Callable[[bytes], AsyncIterator[bytes]],
     value: Any,
 ) -> None:
-    scalar_dump = serializer.dump_scalar(value)
-    content_stream = restream(scalar_dump["content_scalar"])
+    value_dump = serializer.dump_value(value)
+    content_stream = restream(value_dump["value"])
     stream_dump: StreamDump = {
-        "content_stream": content_stream,
-        "content_type": scalar_dump["content_type"],
-        "serializer_name": scalar_dump["serializer_name"],
-        "serializer_version": scalar_dump["serializer_version"],
+        "stream": content_stream,
+        "content_type": value_dump["content_type"],
+        "serializer_name": value_dump["serializer_name"],
+        "serializer_version": value_dump["serializer_version"],
     }
     loaded_stream = serializer.load_stream(stream_dump)
 
     loaded_values = [value async for value in loaded_stream]
 
-    if isinstance(value, Iterable) and not isinstance(value, str):
-        assert loaded_values == [value] or loaded_values == list(value)
-    else:
-        assert loaded_values == [value]
+    assert loaded_values == list(value)
 
 
-async def _check_dump_stream_load_scalar(
+async def _check_dump_stream_load_value(
     serializer: StreamSerializer[Any],
     restream: Any,
     values: Sequence[Any],
 ) -> None:
     content_stream = _to_async_iterable(values)
     stream_dump = serializer.dump_stream(content_stream)
-    content_scalar = b"".join([chunk async for chunk in stream_dump["content_stream"]])
-    scalar_dump: ScalarDump = {
-        "content_scalar": content_scalar,
+    content_value = b"".join([chunk async for chunk in stream_dump["stream"]])
+    value_dump: ValueDump = {
+        "value": content_value,
         "content_type": stream_dump["content_type"],
         "serializer_name": stream_dump["serializer_name"],
         "serializer_version": stream_dump["serializer_version"],
     }
-    assert list(serializer.load_scalar(scalar_dump)) == list(values)  # type: ignore[reportArgumentType]
+    assert list(serializer.load_value(value_dump)) == list(values)  # type: ignore[reportArgumentType]
 
 
 async def _check_dump_stream_load_stream(
@@ -136,17 +134,18 @@ async def _check_dump_stream_load_stream(
 ) -> None:
     content_stream = _to_async_iterable(values)
     stream_dump = serializer.dump_stream(content_stream)
-    stream = restream(b"".join([chunk async for chunk in stream_dump["content_stream"]]))
-    loaded_stream = serializer.load_stream({**stream_dump, "content_stream": stream})
+    stream = restream(b"".join([chunk async for chunk in stream_dump["stream"]]))
+    loaded_stream = serializer.load_stream({**stream_dump, "stream": stream})
     assert [value async for value in loaded_stream] == list(values)
 
 
-def _check_dump_scalar_load_scalar(
-    serializer: ScalarSerializer[Any] | StreamSerializer[Any],
+def _check_dump_value_load_value(
+    serializer: ValueSerializer[Any] | StreamSerializer[Any],
     restream: None,
     value: Any,
+    conv: Callable[[Any], Any] = lambda x: x,
 ) -> None:
-    assert serializer.load_scalar(serializer.dump_scalar(value)) == value
+    assert conv(serializer.load_value(serializer.dump_value(value))) == conv(value)
 
 
 async def _to_async_iterable(iterable: Iterable[Any]) -> AsyncIterator[Any]:

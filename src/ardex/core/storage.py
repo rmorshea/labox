@@ -28,19 +28,19 @@ class Storage(Generic[R], abc.ABC):
     version: int
 
     @abc.abstractmethod
-    async def write_scalar(
+    async def write_value(
         self,
         relation: R,
-        scalar: bytes,
+        value: bytes,
         digest: DumpDigest,
         /,
     ) -> R:
-        """Save the given scalar dump."""
+        """Save the given value dump."""
         ...
 
     @abc.abstractmethod
-    async def read_scalar(self, relation: R, /) -> bytes:
-        """Load the scalar dump for the given relation."""
+    async def read_value(self, relation: R, /) -> bytes:
+        """Load the value dump for the given relation."""
         ...
 
     @abc.abstractmethod

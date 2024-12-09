@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterable
     from collections.abc import AsyncIterator
 
-    from ardex.core.serializer import ScalarSerializer
+    from ardex.core.serializer import ValueSerializer
     from ardex.core.storage import Storage
 
 T = TypeVar("T")
@@ -38,7 +38,7 @@ async def data_loader(
     serializer_registry: SerializerRegistry = required,
 ) -> AsyncIterator[DataLoader]:
     """Create a context manager for saving data."""
-    items: list[tuple[TaskGroupFuture, DataRelation, Literal["scalar", "stream"]]] = []
+    items: list[tuple[TaskGroupFuture, DataRelation, Literal["value", "stream"]]] = []
 
     yield DataLoader(items)
 
@@ -49,14 +49,14 @@ class DataLoader:
     """Defines a protocol for saving data."""
 
     def __init__(
-        self, items: list[tuple[TaskGroupFuture, DataRelation, Literal["scalar", "stream"]]]
+        self, items: list[tuple[TaskGroupFuture, DataRelation, Literal["value", "stream"]]]
     ) -> None:
         self._items = items
 
-    def scalar(self, relation: DataRelation) -> TaskGroupFuture[Any]:
-        """Load the given data as a scalar value."""
+    def value(self, relation: DataRelation) -> TaskGroupFuture[Any]:
+        """Load the given data as a value value."""
         fut = TaskGroupFuture()
-        self._items.append((fut, relation, "scalar"))
+        self._items.append((fut, relation, "value"))
         return fut
 
     def stream(self, relation: DataRelation) -> TaskGroupFuture[AsyncIterable[Any]]:
@@ -67,16 +67,16 @@ class DataLoader:
 
 
 async def _load_data(
-    items: list[tuple[TaskGroupFuture, DataRelation, Literal["scalar", "stream"]]],
+    items: list[tuple[TaskGroupFuture, DataRelation, Literal["value", "stream"]]],
     storage_registry: StorageRegistry,
     serializer_registry: SerializerRegistry,
 ) -> None:
     async with create_task_group() as tg:
         for fut, rel, typ in items:
-            if typ == "scalar":
+            if typ == "value":
                 serializer = serializer_registry.by_name[rel.rel_serializer_name]
                 storage = storage_registry.by_name[rel.rel_storage_name]
-                start_future(tg, fut, _load_scalar, rel, serializer, storage)
+                start_future(tg, fut, _load_value, rel, serializer, storage)
             else:
                 stream_serializer = serializer_registry.by_name[rel.rel_serializer_name]
                 if not isinstance(stream_serializer, StreamSerializer):
@@ -86,15 +86,15 @@ async def _load_data(
                 fut._result = _load_stream(rel, stream_serializer, storage)  # noqa: SLF001
 
 
-async def _load_scalar(
+async def _load_value(
     relation: DataRelation,
-    serializer: ScalarSerializer | StreamSerializer,
+    serializer: ValueSerializer | StreamSerializer,
     storage: Storage,
 ) -> Any:
-    """Load the given scalar data."""
-    return serializer.load_scalar(
+    """Load the given value data."""
+    return serializer.load_value(
         {
-            "content_scalar": await storage.read_scalar(relation),
+            "value": await storage.read_value(relation),
             "content_type": relation.rel_content_type,
             "serializer_name": relation.rel_serializer_name,
             "serializer_version": relation.rel_serializer_version,
@@ -110,7 +110,7 @@ def _load_stream(
     """Load the given stream data."""
     return serializer.load_stream(
         {
-            "content_stream": storage.read_stream(relation),
+            "stream": storage.read_stream(relation),
             "content_type": relation.rel_content_type,
             "serializer_name": relation.rel_serializer_name,
             "serializer_version": relation.rel_serializer_version,

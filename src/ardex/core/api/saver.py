@@ -36,10 +36,10 @@ if TYPE_CHECKING:
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
-    from ardex.core.serializer import ScalarDump
-    from ardex.core.serializer import ScalarSerializer
     from ardex.core.serializer import StreamDump
     from ardex.core.serializer import StreamSerializer
+    from ardex.core.serializer import ValueDump
+    from ardex.core.serializer import ValueSerializer
     from ardex.core.storage import DumpDigest
     from ardex.core.storage import Storage
 
@@ -60,7 +60,7 @@ async def data_saver(
     serializer_registry: SerializerRegistry = required,
 ) -> AsyncIterator[DataSaver]:
     """Create a context manager for saving data."""
-    items: list[tuple[TaskGroupFuture[DataRelation], DataRelation, _ScalarData | _StreamData]] = []
+    items: list[tuple[TaskGroupFuture[DataRelation], DataRelation, _ValueData | _StreamData]] = []
 
     yield DataSaver(items)
 
@@ -74,23 +74,23 @@ class DataSaver:
 
     def __init__(
         self,
-        items: list[tuple[TaskGroupFuture[DataRelation], DataRelation, _ScalarData | _StreamData]],
+        items: list[tuple[TaskGroupFuture[DataRelation], DataRelation, _ValueData | _StreamData]],
     ) -> None:
         self._items = items
 
-    def scalar(
+    def value(
         self,
         relation: Callable[P, R],
-        scalar: T,
-        serializer: ScalarSerializer[T] | None = None,
+        value: T,
+        serializer: ValueSerializer[T] | None = None,
         storage: Storage[R] | None = None,
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> TaskGroupFuture[R]:
-        """Save the given scalar data."""
+        """Save the given value data."""
         fut = TaskGroupFuture[R]()
         rel = relation(*args, **kwargs)
-        dat: _ScalarData = {"scalar": scalar}
+        dat: _ValueData = {"value": value}
         if serializer is not None:
             dat["serializer"] = serializer
         if storage is not None:
@@ -154,7 +154,7 @@ class DataSaver:
 
 
 async def _save_data(
-    items: Sequence[tuple[TaskGroupFuture[DataRelation], DataRelation, _ScalarData | _StreamData]],
+    items: Sequence[tuple[TaskGroupFuture[DataRelation], DataRelation, _ValueData | _StreamData]],
     session: AsyncSession,
     storage_registry: StorageRegistry,
     serializer_registry: SerializerRegistry,
@@ -179,7 +179,7 @@ async def _save_data(
                     start_future(
                         tg,
                         fut,
-                        _save_scalar,
+                        _save_value,
                         rel,
                         dat,
                         storage_registry,
@@ -191,28 +191,28 @@ async def _save_data(
         await _save_relations(session, relations, retries=retries)
 
 
-async def _save_scalar(
+async def _save_value(
     relation: DataRelation,
-    data: _ScalarData,
+    data: _ValueData,
     storage_registry: StorageRegistry,
     serializer_registry: SerializerRegistry,
 ) -> DataRelation:
     match data:
-        case {"scalar": scalar, "serializer": serializer, "storage": storage}:
+        case {"value": value, "serializer": serializer, "storage": storage}:
             pass
-        case {"scalar": scalar, "serializer": serializer}:
+        case {"value": value, "serializer": serializer}:
             storage = storage_registry.infer_from_data_relation_type(type(relation))
-        case {"scalar": scalar, "storage": storage}:
-            serializer = serializer_registry.infer_from_scalar_type(type(scalar))
-        case {"scalar": scalar}:
+        case {"value": value, "storage": storage}:
+            serializer = serializer_registry.infer_from_value_type(type(value))
+        case {"value": value}:
             storage = storage_registry.infer_from_data_relation_type(type(relation))
-            serializer = serializer_registry.infer_from_scalar_type(type(scalar))
+            serializer = serializer_registry.infer_from_value_type(type(value))
         case _:
             msg = f"Invalid data dictionary: {data}"
             raise ValueError(msg)
 
-    dump = serializer.dump_scalar(scalar)
-    digest = _make_scalar_dump_digest(dump)
+    dump = serializer.dump_value(value)
+    digest = _make_value_dump_digest(dump)
 
     relation.rel_content_type = dump["content_type"]
     relation.rel_serializer_name = dump["serializer_name"]
@@ -220,9 +220,9 @@ async def _save_scalar(
     relation.rel_storage_name = storage.name
     relation.rel_storage_version = storage.version
 
-    relation = await storage.write_scalar(relation, dump["content_scalar"], digest)
+    relation = await storage.write_value(relation, dump["value"], digest)
 
-    relation.rel_content_size = len(dump["content_scalar"])
+    relation.rel_content_size = len(dump["value"])
     relation.rel_content_hash = digest["content_hash"]
     relation.rel_content_hash_algorithm = digest["content_hash_algorithm"]
 
@@ -295,9 +295,9 @@ async def _save_relations(
                 pass
 
 
-class _ScalarData(Generic[T, R], TypedDict, total=False):
-    scalar: Required[T]
-    serializer: ScalarSerializer[R]
+class _ValueData(Generic[T, R], TypedDict, total=False):
+    value: Required[T]
+    serializer: ValueSerializer[R]
     storage: Storage[R]
 
 
@@ -320,7 +320,7 @@ _StreamData = _KnownStreamData[T, R] | _InferStreamData[T, R]
 def _make_stream_dump_digest_getter(
     dump: StreamDump,
 ) -> tuple[AsyncIterator[bytes], Callable[[], DumpDigest]]:
-    stream = dump["content_stream"]
+    stream = dump["stream"]
 
     content_hash = sha256()
     size = 0
@@ -349,12 +349,12 @@ def _make_stream_dump_digest_getter(
     return wrapper(), digest
 
 
-def _make_scalar_dump_digest(dump: ScalarDump) -> DumpDigest:
-    scalar = dump["content_scalar"]
-    content_hash = sha256(scalar)
+def _make_value_dump_digest(dump: ValueDump) -> DumpDigest:
+    value = dump["value"]
+    content_hash = sha256(value)
     return {
         "content_hash": content_hash.hexdigest(),
         "content_hash_algorithm": content_hash.name,
-        "content_size": len(scalar),
+        "content_size": len(value),
         "content_type": dump["content_type"],
     }

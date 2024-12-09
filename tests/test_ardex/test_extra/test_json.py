@@ -1,7 +1,7 @@
-from ardex.extra.json import JsonScalarSerializer
+from ardex.extra.json import JsonSerializer
 from ardex.extra.json import JsonStreamSerializer
-from tests.serializer_utils import make_scalar_serializer_test
 from tests.serializer_utils import make_stream_serializer_test
+from tests.serializer_utils import make_value_serializer_test
 
 test_json_stream_serializer = make_stream_serializer_test(
     JsonStreamSerializer(),
@@ -11,8 +11,8 @@ test_json_stream_serializer = make_stream_serializer_test(
 )
 
 
-test_json_scalar_serializer = make_scalar_serializer_test(
-    JsonScalarSerializer(),
+test_json_value_serializer = make_value_serializer_test(
+    JsonSerializer(),
     {"a": 1, "b": 2},
     [1, 2, 3],
     {"a": [1, 2, 3], "b": {"c": 4}},

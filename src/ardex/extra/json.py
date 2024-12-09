@@ -1,16 +1,16 @@
 import json
 from codecs import getincrementaldecoder
 from collections.abc import AsyncIterable
-from collections.abc import Sequence
+from collections.abc import Iterable
 from io import StringIO
 from typing import TypeAlias
 
 from anysync.core import AsyncIterator
 
-from ardex.core.serializer import ScalarDump
-from ardex.core.serializer import ScalarSerializer
 from ardex.core.serializer import StreamDump
 from ardex.core.serializer import StreamSerializer
+from ardex.core.serializer import ValueDump
+from ardex.core.serializer import ValueSerializer
 from ardex.utils.stream import decode_byte_stream
 
 JsonType: TypeAlias = "int | str | float | bool | dict[str, JsonType] | list[JsonType] | None"
@@ -24,26 +24,26 @@ JSON_STREAM_TYPES = (list, dict)
 """The types that can be serialized JSON in a stream."""
 
 
-class JsonScalarSerializer(ScalarSerializer[JsonType]):
+class JsonSerializer(ValueSerializer[JsonType]):
     """A serializer for JSON data."""
 
-    name = "ardex.json.scalar"
+    name = "ardex.json.value"
     version = 1
     types = JSON_SCALAR_TYPES
     content_type = "application/json"
 
-    def dump_scalar(self, value: JsonType) -> ScalarDump:
+    def dump_value(self, value: JsonType) -> ValueDump:
         """Serialize the given value to JSON."""
         return {
-            "content_scalar": json.dumps(value, separators=(",", ":")).encode("utf-8"),
+            "value": json.dumps(value, separators=(",", ":")).encode("utf-8"),
             "content_type": self.content_type,
             "serializer_name": self.name,
             "serializer_version": self.version,
         }
 
-    def load_scalar(self, dump: ScalarDump) -> JsonType:
+    def load_value(self, dump: ValueDump) -> JsonType:
         """Deserialize the given JSON data."""
-        return json.loads(dump["content_scalar"].decode("utf-8"))
+        return json.loads(dump["value"].decode("utf-8"))
 
 
 class JsonStreamSerializer(StreamSerializer[JsonStreamType]):
@@ -54,23 +54,23 @@ class JsonStreamSerializer(StreamSerializer[JsonStreamType]):
     types = JSON_STREAM_TYPES
     content_type = "application/json"
 
-    def dump_scalar(self, value: Sequence[JsonStreamType]) -> ScalarDump:
+    def dump_value(self, value: Iterable[JsonStreamType]) -> ValueDump:
         """Serialize the given value to JSON."""
         return {
-            "content_scalar": json.dumps(list(value), separators=(",", ":")).encode("utf-8"),
+            "value": json.dumps(list(value), separators=(",", ":")).encode("utf-8"),
             "content_type": self.content_type,
             "serializer_name": self.name,
             "serializer_version": self.version,
         }
 
-    def load_scalar(self, dump: ScalarDump) -> Sequence[JsonStreamType]:
+    def load_value(self, dump: ValueDump) -> list[JsonStreamType]:
         """Deserialize the given JSON data."""
-        return json.loads(dump["content_scalar"].decode("utf-8"))
+        return json.loads(dump["value"].decode("utf-8"))
 
     def dump_stream(self, stream: AsyncIterable[JsonStreamType]) -> StreamDump:
         """Serialize the given stream of JSON data."""
         return {
-            "content_stream": _dump_json_stream(stream),
+            "stream": _dump_json_stream(stream),
             "content_type": self.content_type,
             "serializer_name": self.name,
             "serializer_version": self.version,
@@ -78,7 +78,7 @@ class JsonStreamSerializer(StreamSerializer[JsonStreamType]):
 
     def load_stream(self, dump: StreamDump) -> AsyncIterator[JsonStreamType]:
         """Deserialize the given stream of JSON data."""
-        return _load_json_stream(dump["content_stream"])
+        return _load_json_stream(dump["stream"])
 
 
 async def _dump_json_stream(stream: AsyncIterable[JsonStreamType]) -> AsyncIterator[bytes]:

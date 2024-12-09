@@ -12,7 +12,7 @@ from ardex.core.context import registries
 from ardex.core.schema import Base
 from ardex.core.serializer import SerializerRegistry
 from ardex.core.storage import StorageRegistry
-from ardex.extra.json import JsonScalarSerializer
+from ardex.extra.json import JsonSerializer
 from ardex.extra.json import JsonStreamSerializer
 from ardex.extra.tempfile import TemporaryDirectoryStorage
 
@@ -21,7 +21,7 @@ from ardex.extra.tempfile import TemporaryDirectoryStorage
 def registry_context():
     with registries(
         storages=StorageRegistry([TemporaryDirectoryStorage()]),
-        serializers=SerializerRegistry([JsonScalarSerializer(), JsonStreamSerializer()]),
+        serializers=SerializerRegistry([JsonSerializer(), JsonStreamSerializer()]),
     ):
         yield
 
