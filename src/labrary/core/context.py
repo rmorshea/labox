@@ -3,14 +3,13 @@ from typing import Any
 from typing import NewType
 
 from anysync.core import Iterator
+from labrary.core.serializer import SerializerRegistry
+from labrary.core.storage import StorageRegistry
 from pybooster import injector
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ardex.core.serializer import SerializerRegistry
-from ardex.core.storage import StorageRegistry
-
 DatabaseSession = NewType("DatabaseSession", AsyncSession)
-"""A type alias for an Ardex database session."""
+"""A type alias for an labrary database session."""
 
 
 @contextmanager

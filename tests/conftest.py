@@ -2,19 +2,18 @@ from collections.abc import AsyncIterator
 from tempfile import NamedTemporaryFile
 
 import pytest
+from labrary.core.context import DatabaseSession
+from labrary.core.context import registries
+from labrary.core.schema import Base
+from labrary.core.serializer import SerializerRegistry
+from labrary.core.storage import StorageRegistry
+from labrary.extra.json import JsonSerializer
+from labrary.extra.json import JsonStreamSerializer
+from labrary.extra.tempfile import TemporaryDirectoryStorage
 from pybooster import provider
 from pybooster import solved
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.asyncio import create_async_engine
-
-from ardex.core.context import DatabaseSession
-from ardex.core.context import registries
-from ardex.core.schema import Base
-from ardex.core.serializer import SerializerRegistry
-from ardex.core.storage import StorageRegistry
-from ardex.extra.json import JsonSerializer
-from ardex.extra.json import JsonStreamSerializer
-from ardex.extra.tempfile import TemporaryDirectoryStorage
 
 
 @pytest.fixture(autouse=True, scope="session")

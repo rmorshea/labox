@@ -14,16 +14,16 @@ import pyarrow.fs as fs
 import pyarrow.parquet as pq
 from anysync.core import AsyncIterator
 
-from ardex.core.serializer import StreamDump
-from ardex.core.serializer import StreamSerializer
-from ardex.core.serializer import ValueDump
-from ardex.core.serializer import ValueSerializer
+from labrary.core.serializer import StreamDump
+from labrary.core.serializer import StreamSerializer
+from labrary.core.serializer import ValueDump
+from labrary.core.serializer import ValueSerializer
 
 
 class ArrowTableSerializer(ValueSerializer[pa.Table]):
     """Serialize a PyArrow table to the arrow file format."""
 
-    name = "ardex.pyarrow.arrow.file"
+    name = "labrary.pyarrow.arrow.file"
     version = 1
     types = (pa.Table,)
     content_type = "application/vnd.apache.arrow.file"
@@ -59,7 +59,7 @@ class ArrowTableSerializer(ValueSerializer[pa.Table]):
 class ArrowRecordBatchStreamSerializer(StreamSerializer[pa.RecordBatch]):
     """Serialize a stream of PyArrow record batches to the arrow stream format."""
 
-    name = "ardex.arrow.record_batch.stream"
+    name = "labrary.arrow.record_batch.stream"
     version = 1
     types = (pa.RecordBatch,)
     content_type = "application/vnd.apache.arrow.stream"
@@ -154,7 +154,7 @@ class ParquetReadOptions(TypedDict, total=False):
 class ParquetTableSerializer(ValueSerializer[pa.Table]):
     """Serialize a PyArrow table to the parquet file format."""
 
-    name = "ardex.pyarrow.parquet"
+    name = "labrary.pyarrow.parquet"
     version = 1
     types = (pa.Table,)
     content_type = "application/vnd.apache.parquet"
@@ -195,7 +195,7 @@ class ParquetTableSerializer(ValueSerializer[pa.Table]):
 class ParquetRecordBatchStreamSerializer(StreamSerializer[pa.RecordBatch]):
     """Serialize a stream of PyArrow record batches to the parquet file format."""
 
-    name = "ardex.arrow.parquet.record_batch.stream"
+    name = "labrary.arrow.parquet.record_batch.stream"
     version = 1
     types = (pa.RecordBatch,)
     content_type = "application/vnd.apache.parquet"

@@ -57,7 +57,7 @@ wheels = [
 ]
 
 [[package]]
-name = "ardex"
+name = "labrary"
 version = "0.0.1a1"
 source = { editable = "." }
 dependencies = [

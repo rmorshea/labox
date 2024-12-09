@@ -7,7 +7,7 @@ from typing import LiteralString
 from typing import TypedDict
 from typing import TypeVar
 
-from ardex.core._registry import Registry
+from labrary.core._registry import Registry
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable

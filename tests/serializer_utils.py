@@ -9,11 +9,10 @@ from typing import Any
 from typing import TypeVar
 
 import pytest
-
-from ardex.core.serializer import StreamDump
-from ardex.core.serializer import StreamSerializer
-from ardex.core.serializer import ValueDump
-from ardex.core.serializer import ValueSerializer
+from labrary.core.serializer import StreamDump
+from labrary.core.serializer import StreamSerializer
+from labrary.core.serializer import ValueDump
+from labrary.core.serializer import ValueSerializer
 
 T = TypeVar("T")
 

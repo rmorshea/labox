@@ -1,9 +1,9 @@
 import pyarrow as pa
+from labrary.extra.pyarrow import ArrowRecordBatchStreamSerializer
+from labrary.extra.pyarrow import ArrowTableSerializer
+from labrary.extra.pyarrow import ParquetRecordBatchStreamSerializer
+from labrary.extra.pyarrow import ParquetTableSerializer
 
-from ardex.extra.pyarrow import ArrowRecordBatchStreamSerializer
-from ardex.extra.pyarrow import ArrowTableSerializer
-from ardex.extra.pyarrow import ParquetRecordBatchStreamSerializer
-from ardex.extra.pyarrow import ParquetTableSerializer
 from tests.serializer_utils import make_stream_serializer_test
 from tests.serializer_utils import make_value_serializer_test
 

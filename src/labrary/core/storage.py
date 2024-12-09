@@ -7,8 +7,8 @@ from typing import LiteralString
 from typing import TypedDict
 from typing import TypeVar
 
-from ardex.core._registry import Registry
-from ardex.core.schema import DataRelation
+from labrary.core._registry import Registry
+from labrary.core.schema import DataRelation
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable

@@ -1,6 +1,6 @@
-from ardex.core.api.loader import data_loader
-from ardex.core.api.saver import data_saver
-from ardex.core.schema import DataRelation
+from labrary.core.api.loader import data_loader
+from labrary.core.api.saver import data_saver
+from labrary.core.schema import DataRelation
 
 
 async def test_simple_value_data_saver_and_loader_usage():

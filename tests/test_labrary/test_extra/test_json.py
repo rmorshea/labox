@@ -1,5 +1,6 @@
-from ardex.extra.json import JsonSerializer
-from ardex.extra.json import JsonStreamSerializer
+from labrary.extra.json import JsonSerializer
+from labrary.extra.json import JsonStreamSerializer
+
 from tests.serializer_utils import make_stream_serializer_test
 from tests.serializer_utils import make_value_serializer_test
 

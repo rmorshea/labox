@@ -9,22 +9,21 @@ from typing import TypeVar
 
 from anyio import create_task_group
 from anysync import contextmanager
+from labrary.core.schema import DataRelation
+from labrary.core.serializer import SerializerRegistry
+from labrary.core.serializer import StreamSerializer
+from labrary.core.storage import StorageRegistry
+from labrary.utils.anyio import TaskGroupFuture
+from labrary.utils.anyio import start_future
 from pybooster import injector
 from pybooster import required
-
-from ardex.core.schema import DataRelation
-from ardex.core.serializer import SerializerRegistry
-from ardex.core.serializer import StreamSerializer
-from ardex.core.storage import StorageRegistry
-from ardex.utils.anyio import TaskGroupFuture
-from ardex.utils.anyio import start_future
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable
     from collections.abc import AsyncIterator
 
-    from ardex.core.serializer import ValueSerializer
-    from ardex.core.storage import Storage
+    from labrary.core.serializer import ValueSerializer
+    from labrary.core.storage import Storage
 
 T = TypeVar("T")
 R = TypeVar("R", bound=DataRelation)

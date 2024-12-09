@@ -6,12 +6,11 @@ from io import StringIO
 from typing import TypeAlias
 
 from anysync.core import AsyncIterator
-
-from ardex.core.serializer import StreamDump
-from ardex.core.serializer import StreamSerializer
-from ardex.core.serializer import ValueDump
-from ardex.core.serializer import ValueSerializer
-from ardex.utils.stream import decode_byte_stream
+from labrary.core.serializer import StreamDump
+from labrary.core.serializer import StreamSerializer
+from labrary.core.serializer import ValueDump
+from labrary.core.serializer import ValueSerializer
+from labrary.utils.stream import decode_byte_stream
 
 JsonType: TypeAlias = "int | str | float | bool | dict[str, JsonType] | list[JsonType] | None"
 """A type alias for JSON data."""
@@ -27,7 +26,7 @@ JSON_STREAM_TYPES = (list, dict)
 class JsonSerializer(ValueSerializer[JsonType]):
     """A serializer for JSON data."""
 
-    name = "ardex.json.value"
+    name = "labrary.json.value"
     version = 1
     types = JSON_SCALAR_TYPES
     content_type = "application/json"
@@ -49,7 +48,7 @@ class JsonSerializer(ValueSerializer[JsonType]):
 class JsonStreamSerializer(StreamSerializer[JsonStreamType]):
     """A serializer for JSON data."""
 
-    name = "ardex.json.stream"
+    name = "labrary.json.stream"
     version = 1
     types = JSON_STREAM_TYPES
     content_type = "application/json"

@@ -8,22 +8,21 @@ from typing import Any
 from typing import Self
 from uuid import uuid4
 
-from ardex.core.schema import DataRelation
-from ardex.core.storage import Storage
+from labrary.core.schema import DataRelation
+from labrary.core.storage import Storage
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable
     from collections.abc import AsyncIterator
 
+    from labrary.core.storage import DumpDigest
     from paramorator import Callable
-
-    from ardex.core.storage import DumpDigest
 
 
 class TemporaryDirectoryStorage(Storage[DataRelation]):
     """A storage backend for testing that saves data to a temporary directory."""
 
-    name = "ardex.tempfile"
+    name = "labrary.tempfile"
     version = 1
     types = (DataRelation,)
 
