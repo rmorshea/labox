@@ -330,12 +330,16 @@ async def _load_arrow_record_batch_stream(
     byte_stream: AsyncIterable[bytes],
 ) -> AsyncIterator[pa.RecordBatch]:
     schema: pa.Schema | None = None
-    async for msg in _AsyncMessageReader(aiter(byte_stream)):
+    byte_stream_iter = aiter(byte_stream)
+    async for msg in _AsyncMessageReader(byte_stream_iter):
         if schema is None:
             # first message must be a schema
             schema = pa.ipc.read_schema(msg.serialize())
         else:
             yield pa.ipc.read_record_batch(msg.serialize(), schema)
+    # ensure the stream is consumed
+    async for _ in byte_stream_iter:
+        pass
 
 
 class _AsyncMessageReader(AsyncIterator[pa.Message]):
