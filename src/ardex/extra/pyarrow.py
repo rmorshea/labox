@@ -6,35 +6,35 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from anysync.core import AsyncIterator
 
-from ardex.core.serializer import SingleDump
-from ardex.core.serializer import SingleSerializer
+from ardex.core.serializer import ScalarDump
+from ardex.core.serializer import ScalarSerializer
 from ardex.core.serializer import StreamDump
 from ardex.core.serializer import StreamSerializer
 
 
-class ArrowTableSerializer(SingleSerializer[pa.Table]):
+class ArrowTableSerializer(ScalarSerializer[pa.Table]):
     """Serialize a PyArrow table to the arrow file format."""
 
-    name = "ardex.arrow.table.single"
+    name = "ardex.arrow.table.scalar"
     version = 1
     types = (pa.Table,)
     content_type = "application/vnd.apache.arrow.file"
 
-    def dump_single(self, value: pa.Table) -> SingleDump:
+    def dump_scalar(self, value: pa.Table) -> ScalarDump:
         """Serialize the given Arrow table."""
         sink = pa.BufferOutputStream()
         with pa.ipc.new_file(sink, value.schema) as writer:
             writer.write_table(value)
         return {
-            "content_single": sink.getvalue().to_pybytes(),
+            "content_scalar": sink.getvalue().to_pybytes(),
             "content_type": self.content_type,
             "serializer_name": self.name,
             "serializer_version": self.version,
         }
 
-    def load_single(self, dump: SingleDump) -> pa.Table:
+    def load_scalar(self, dump: ScalarDump) -> pa.Table:
         """Deserialize the given Arrow table."""
-        return pa.ipc.open_file(pa.BufferReader(dump["content_single"])).read_all()
+        return pa.ipc.open_file(pa.BufferReader(dump["content_scalar"])).read_all()
 
 
 class ParquetRecordBatchStreamSerializer(StreamSerializer[pa.RecordBatch]):

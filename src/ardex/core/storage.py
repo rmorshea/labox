@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from collections.abc import Callable
+import abc
 from typing import TYPE_CHECKING
+from typing import Generic
 from typing import LiteralString
-from typing import Protocol
 from typing import TypedDict
 from typing import TypeVar
 
@@ -12,12 +12,13 @@ from ardex.core.schema import DataRelation
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable
-
+    from collections.abc import Callable
+    from collections.abc import Sequence
 
 R = TypeVar("R", bound=DataRelation)
 
 
-class Storage(Protocol[R]):
+class Storage(Generic[R], abc.ABC):
     """A protocol for storing and retrieving data."""
 
     name: LiteralString
@@ -26,30 +27,34 @@ class Storage(Protocol[R]):
     """The types that the serializer can handle."""
     version: int
 
-    async def write_single(
+    @abc.abstractmethod
+    async def write_scalar(
         self,
         relation: R,
-        single: bytes,
+        scalar: bytes,
         digest: DumpDigest,
         /,
     ) -> R:
-        """Save the given single dump."""
+        """Save the given scalar dump."""
         ...
 
-    async def read_single(self, relation: R, /) -> bytes:
-        """Load the single dump for the given relation."""
+    @abc.abstractmethod
+    async def read_scalar(self, relation: R, /) -> bytes:
+        """Load the scalar dump for the given relation."""
         ...
 
+    @abc.abstractmethod
     async def write_stream(
         self,
         relation: R,
         stream: AsyncIterable[bytes],
-        get_digest: DumpDigestGetter,
+        get_digest: Callable[[], DumpDigest],
         /,
     ) -> R:
         """Save the given stream dump."""
         ...
 
+    @abc.abstractmethod
     def read_stream(self, relation: R, /) -> AsyncIterable[bytes]:
         """Load the stream dump for the given relation."""
         ...
@@ -68,15 +73,19 @@ class DumpDigest(TypedDict):
     """The MIME type of the data."""
 
 
-DumpDigestGetter = Callable[[], DumpDigest]
-"""A callable that returns a dump digest."""
-
-
 class StorageRegistry(Registry[Storage]):
     """A registry of storages."""
 
     item_description = "Storage"
 
-    if TYPE_CHECKING:
+    def __init__(self, items: Sequence[Storage]) -> None:
+        super().__init__(items)
+        self.by_type = {type_: storage for storage in self.items for type_ in storage.types}
 
-        def get_by_type_inference(self, cls: type[R]) -> Storage[R]: ...  # noqa: D102
+    def infer_from_data_relation_type(self, cls: type[R]) -> Storage[R]:
+        """Get the first item that can handle the given type or its parent classes."""
+        for base in cls.mro():
+            if item := self.by_type.get(base):
+                return item
+        msg = f"No {self.item_description.lower()} found for {cls}."
+        raise ValueError(msg)

@@ -10,10 +10,10 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from ardex.core.context import DatabaseSession
 from ardex.core.context import registries
 from ardex.core.schema import Base
-from ardex.core.serializer import SingleSerializerRegistry
-from ardex.core.serializer import StreamSerializerRegistry
+from ardex.core.serializer import SerializerRegistry
 from ardex.core.storage import StorageRegistry
-from ardex.extra.json import JsonSerializer
+from ardex.extra.json import JsonScalarSerializer
+from ardex.extra.json import JsonStreamSerializer
 from ardex.extra.tempfile import TemporaryDirectoryStorage
 
 
@@ -21,8 +21,7 @@ from ardex.extra.tempfile import TemporaryDirectoryStorage
 def registry_context():
     with registries(
         storages=StorageRegistry([TemporaryDirectoryStorage()]),
-        stream_serializers=StreamSerializerRegistry([JsonSerializer()]),
-        single_serializers=SingleSerializerRegistry([JsonSerializer()]),
+        serializers=SerializerRegistry([JsonScalarSerializer(), JsonStreamSerializer()]),
     ):
         yield
 

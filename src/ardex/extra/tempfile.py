@@ -15,8 +15,9 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterable
     from collections.abc import AsyncIterator
 
+    from paramorator import Callable
+
     from ardex.core.storage import DumpDigest
-    from ardex.core.storage import DumpDigestGetter
 
 
 class TemporaryDirectoryStorage(Storage[DataRelation]):
@@ -52,20 +53,20 @@ class TemporaryDirectoryStorage(Storage[DataRelation]):
     def __exit__(self, *_: Any) -> None:
         self.tempdir.cleanup()
 
-    async def write_single(
+    async def write_scalar(
         self,
         relation: DataRelation,
-        single: bytes,
+        scalar: bytes,
         digest: DumpDigest,
     ) -> DataRelation:
-        """Save the given single dump."""
+        """Save the given scalar dump."""
         content_path = self._get_content_path(digest["content_type"], digest["content_hash"])
         if not content_path.exists():
-            content_path.write_bytes(single)
+            content_path.write_bytes(scalar)
         return relation
 
-    async def read_single(self, relation: DataRelation) -> bytes:
-        """Load the single dump for the given relation."""
+    async def read_scalar(self, relation: DataRelation) -> bytes:
+        """Load the scalar dump for the given relation."""
         content_path = self._get_content_path(relation.rel_content_type, relation.rel_content_hash)
         return content_path.read_bytes()
 
@@ -73,7 +74,7 @@ class TemporaryDirectoryStorage(Storage[DataRelation]):
         self,
         relation: DataRelation,
         stream: AsyncIterable[bytes],
-        get_digest: DumpDigestGetter,
+        get_digest: Callable[[], DumpDigest],
     ) -> DataRelation:
         """Save the given stream dump."""
         scratch_path = self._get_scratch_path()

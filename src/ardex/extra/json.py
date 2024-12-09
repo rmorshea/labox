@@ -1,45 +1,73 @@
 import json
 from codecs import getincrementaldecoder
 from collections.abc import AsyncIterable
+from collections.abc import Sequence
+from io import StringIO
 from typing import TypeAlias
 
 from anysync.core import AsyncIterator
 
-from ardex.core.serializer import SingleDump
-from ardex.core.serializer import SingleSerializer
+from ardex.core.serializer import ScalarDump
+from ardex.core.serializer import ScalarSerializer
 from ardex.core.serializer import StreamDump
 from ardex.core.serializer import StreamSerializer
 from ardex.utils.stream import decode_byte_stream
 
-JsonType: TypeAlias = int | str | float | bool | dict[str, "JsonType"] | list["JsonType"] | None
+JsonType: TypeAlias = "int | str | float | bool | dict[str, JsonType] | list[JsonType] | None"
 """A type alias for JSON data."""
+JsonStreamType: TypeAlias = dict[str, JsonType] | list[JsonType]
+"""A type alias for a a value in a stream of JSON data."""
 
-JSON_TYPES = (int, str, float, bool, type(None), dict, list)
+JSON_SCALAR_TYPES = (int, str, float, bool, type(None), dict, list)
 """The types that can be serialized to JSON."""
+JSON_STREAM_TYPES = (list, dict)
+"""The types that can be serialized JSON in a stream."""
 
 
-class JsonSerializer(SingleSerializer[JsonType], StreamSerializer[JsonType]):
+class JsonScalarSerializer(ScalarSerializer[JsonType]):
     """A serializer for JSON data."""
 
-    name = "ardex.json"
+    name = "ardex.json.scalar"
     version = 1
-    types = JSON_TYPES
+    types = JSON_SCALAR_TYPES
     content_type = "application/json"
 
-    def dump_single(self, value: JsonType) -> SingleDump:
+    def dump_scalar(self, value: JsonType) -> ScalarDump:
         """Serialize the given value to JSON."""
         return {
-            "content_single": json.dumps(value).encode("utf-8"),
+            "content_scalar": json.dumps(value, separators=(",", ":")).encode("utf-8"),
             "content_type": self.content_type,
             "serializer_name": self.name,
             "serializer_version": self.version,
         }
 
-    def load_single(self, dump: SingleDump) -> JsonType:
+    def load_scalar(self, dump: ScalarDump) -> JsonType:
         """Deserialize the given JSON data."""
-        return json.loads(dump["content_single"].decode("utf-8"))
+        return json.loads(dump["content_scalar"].decode("utf-8"))
 
-    def dump_stream(self, stream: AsyncIterable[JsonType]) -> StreamDump:
+
+class JsonStreamSerializer(StreamSerializer[JsonStreamType]):
+    """A serializer for JSON data."""
+
+    name = "ardex.json.stream"
+    version = 1
+    types = JSON_STREAM_TYPES
+    content_type = "application/json"
+
+    def dump_scalar(self, value: Sequence[JsonStreamType]) -> ScalarDump:
+        """Serialize the given value to JSON."""
+        return {
+            "content_scalar": json.dumps(list(value), separators=(",", ":")).encode("utf-8"),
+            "content_type": self.content_type,
+            "serializer_name": self.name,
+            "serializer_version": self.version,
+        }
+
+    def load_scalar(self, dump: ScalarDump) -> Sequence[JsonStreamType]:
+        """Deserialize the given JSON data."""
+        return json.loads(dump["content_scalar"].decode("utf-8"))
+
+    def dump_stream(self, stream: AsyncIterable[JsonStreamType]) -> StreamDump:
         """Serialize the given stream of JSON data."""
         return {
             "content_stream": _dump_json_stream(stream),
@@ -48,53 +76,61 @@ class JsonSerializer(SingleSerializer[JsonType], StreamSerializer[JsonType]):
             "serializer_version": self.version,
         }
 
-    def load_stream(self, dump: StreamDump) -> AsyncIterator[JsonType]:
+    def load_stream(self, dump: StreamDump) -> AsyncIterator[JsonStreamType]:
         """Deserialize the given stream of JSON data."""
         return _load_json_stream(dump["content_stream"])
 
 
-async def _dump_json_stream(stream: AsyncIterable[JsonType]) -> AsyncIterator[bytes]:
+async def _dump_json_stream(stream: AsyncIterable[JsonStreamType]) -> AsyncIterator[bytes]:
     yield b"["
-    first = True
+    buffer = StringIO()
     async for chunk in stream:
-        content_body = json.dumps(chunk).encode("utf-8")
-        if first:
-            yield content_body
-            first = False
-        else:
-            yield b"," + content_body
+        if not isinstance(chunk, list | dict):
+            msg = f"Expected list or dict of JSON data, got {chunk!r}"
+            raise TypeError(msg)
+        json.dump(chunk, buffer, separators=(",", ":"))
+        yield buffer.getvalue().encode("utf-8")
+        buffer.seek(0)
+        buffer.write(",")
+        buffer.truncate()
     yield b"]"
 
 
-async def _load_json_stream(stream: AsyncIterable[bytes]) -> AsyncIterator[JsonType]:
-    buffer = ""
+async def _load_json_stream(stream: AsyncIterable[bytes]) -> AsyncIterator[JsonStreamType]:
+    buffer = StringIO()
     started = False
     decoder = json.JSONDecoder()
     async for chunk in decode_byte_stream(_GET_UTF_8_DECODER(), stream):
         if not started:
-            buffer += chunk.lstrip()
-            if not buffer.startswith("["):
-                msg = f"Expected '[' at start of JSON stream, got {buffer!r}"
-                raise ValueError(msg)
-            buffer = buffer[1:]
+            if chunk.startswith("["):
+                buffer.write(chunk[1:])
+            else:
+                buffer.write(chunk)
             started = True
+        elif not chunk:
+            break
         else:
-            buffer += chunk
-        if not chunk:
-            buffer = buffer.removesuffix("]")
-        while buffer:
+            buffer.write(chunk)
+
+        pos = 0
+        buffer.seek(pos)
+        while value := buffer.read():
             try:
-                buffer = buffer.lstrip()
-                obj, index = decoder.raw_decode(buffer)
+                offset = 1 if value.startswith(",") else 0
+                obj, index = decoder.raw_decode(value[offset:])
                 yield obj
-                buffer = buffer[index:].removeprefix(",")
+                pos += index + offset
+                buffer.seek(pos)
             except json.JSONDecodeError:
                 break
-    if not started:
-        msg = "Expected '[' at start of JSON stream, got EOF"
-        raise ValueError(msg)
-    if buffer:
-        msg = f"Expected ']' at end of JSON stream, got {buffer!r}"
+
+        remainder = buffer.read()
+        buffer.seek(0)
+        buffer.write(remainder)
+        buffer.truncate()
+
+    if (remainder := buffer.getvalue()) and remainder != "]":
+        msg = f"Expected end of JSON stream, got {remainder!r}"
         raise ValueError(msg)
 
 

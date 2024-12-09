@@ -23,8 +23,7 @@ from tenacity import stop_after_attempt
 
 from ardex.core.context import DatabaseSession
 from ardex.core.schema import DataRelation
-from ardex.core.serializer import SingleSerializerRegistry
-from ardex.core.serializer import StreamSerializerRegistry
+from ardex.core.serializer import SerializerRegistry
 from ardex.core.storage import StorageRegistry
 from ardex.utils.anyio import TaskGroupFuture
 from ardex.utils.anyio import start_future
@@ -37,12 +36,11 @@ if TYPE_CHECKING:
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
-    from ardex.core.serializer import SingleDump
-    from ardex.core.serializer import SingleSerializer
+    from ardex.core.serializer import ScalarDump
+    from ardex.core.serializer import ScalarSerializer
     from ardex.core.serializer import StreamDump
     from ardex.core.serializer import StreamSerializer
     from ardex.core.storage import DumpDigest
-    from ardex.core.storage import DumpDigestGetter
     from ardex.core.storage import Storage
 
 
@@ -54,58 +52,45 @@ _COMMIT_RETRIES = 3
 
 
 @contextmanager
-@injector.asynciterator(
-    requires=(
-        DatabaseSession,
-        StorageRegistry,
-        StreamSerializerRegistry,
-        SingleSerializerRegistry,
-    )
-)
+@injector.asynciterator(requires=(DatabaseSession, StorageRegistry, SerializerRegistry))
 async def data_saver(
     *,
     database_session: DatabaseSession | AsyncSession = required,
     storage_registry: StorageRegistry = required,
-    stream_serializer_registry: StreamSerializerRegistry = required,
-    single_serializer_registry: SingleSerializerRegistry = required,
-) -> AsyncIterator[_DataSaver]:
+    serializer_registry: SerializerRegistry = required,
+) -> AsyncIterator[DataSaver]:
     """Create a context manager for saving data."""
-    items: list[tuple[TaskGroupFuture[DataRelation], DataRelation, _SingleData | _StreamData]] = []
+    items: list[tuple[TaskGroupFuture[DataRelation], DataRelation, _ScalarData | _StreamData]] = []
 
-    yield _DataSaver(items)
+    yield DataSaver(items)
 
     await _save_data(
-        items,
-        database_session,
-        storage_registry,
-        stream_serializer_registry,
-        single_serializer_registry,
-        _COMMIT_RETRIES,
+        items, database_session, storage_registry, serializer_registry, _COMMIT_RETRIES
     )
 
 
-class _DataSaver:
+class DataSaver:
     """Defines a protocol for saving data."""
 
     def __init__(
         self,
-        items: list[tuple[TaskGroupFuture[DataRelation], DataRelation, _SingleData | _StreamData]],
+        items: list[tuple[TaskGroupFuture[DataRelation], DataRelation, _ScalarData | _StreamData]],
     ) -> None:
         self._items = items
 
-    def single(
+    def scalar(
         self,
         relation: Callable[P, R],
-        single: T,
-        serializer: SingleSerializer[T] | None = None,
+        scalar: T,
+        serializer: ScalarSerializer[T] | None = None,
         storage: Storage[R] | None = None,
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> TaskGroupFuture[R]:
-        """Save the given single data."""
+        """Save the given scalar data."""
         fut = TaskGroupFuture[R]()
         rel = relation(*args, **kwargs)
-        dat: _SingleData = {"single": single}
+        dat: _ScalarData = {"scalar": scalar}
         if serializer is not None:
             dat["serializer"] = serializer
         if storage is not None:
@@ -169,11 +154,10 @@ class _DataSaver:
 
 
 async def _save_data(
-    items: Sequence[tuple[TaskGroupFuture[DataRelation], DataRelation, _SingleData | _StreamData]],
+    items: Sequence[tuple[TaskGroupFuture[DataRelation], DataRelation, _ScalarData | _StreamData]],
     session: AsyncSession,
     storage_registry: StorageRegistry,
-    stream_serializer_registry: StreamSerializerRegistry,
-    single_serializer_registry: SingleSerializerRegistry,
+    serializer_registry: SerializerRegistry,
     retries,
 ) -> Sequence[DataRelation]:
     """Save the given data to the database."""
@@ -189,17 +173,17 @@ async def _save_data(
                         rel,
                         dat,
                         storage_registry,
-                        stream_serializer_registry,
+                        serializer_registry,
                     )
                 else:
                     start_future(
                         tg,
                         fut,
-                        _save_single,
+                        _save_scalar,
                         rel,
                         dat,
                         storage_registry,
-                        single_serializer_registry,
+                        serializer_registry,
                     )
         return [f.result() for f in relation_futures]
     finally:
@@ -207,28 +191,28 @@ async def _save_data(
         await _save_relations(session, relations, retries=retries)
 
 
-async def _save_single(
+async def _save_scalar(
     relation: DataRelation,
-    data: _SingleData,
+    data: _ScalarData,
     storage_registry: StorageRegistry,
-    serializer_registry: SingleSerializerRegistry,
+    serializer_registry: SerializerRegistry,
 ) -> DataRelation:
     match data:
-        case {"single": single, "serializer": serializer, "storage": storage}:
+        case {"scalar": scalar, "serializer": serializer, "storage": storage}:
             pass
-        case {"single": single, "serializer": serializer}:
-            storage = storage_registry.get_by_type_inference(type(relation))
-        case {"single": single, "storage": storage}:
-            serializer = serializer_registry.get_by_type_inference(type(single))
-        case {"single": single}:
-            storage = storage_registry.get_by_type_inference(type(relation))
-            serializer = serializer_registry.get_by_type_inference(type(single))
+        case {"scalar": scalar, "serializer": serializer}:
+            storage = storage_registry.infer_from_data_relation_type(type(relation))
+        case {"scalar": scalar, "storage": storage}:
+            serializer = serializer_registry.infer_from_scalar_type(type(scalar))
+        case {"scalar": scalar}:
+            storage = storage_registry.infer_from_data_relation_type(type(relation))
+            serializer = serializer_registry.infer_from_scalar_type(type(scalar))
         case _:
             msg = f"Invalid data dictionary: {data}"
             raise ValueError(msg)
 
-    dump = serializer.dump_single(single)
-    digest = _make_single_dump_digest(dump)
+    dump = serializer.dump_scalar(scalar)
+    digest = _make_scalar_dump_digest(dump)
 
     relation.rel_content_type = dump["content_type"]
     relation.rel_serializer_name = dump["serializer_name"]
@@ -236,9 +220,9 @@ async def _save_single(
     relation.rel_storage_name = storage.name
     relation.rel_storage_version = storage.version
 
-    relation = await storage.write_single(relation, dump["content_single"], digest)
+    relation = await storage.write_scalar(relation, dump["content_scalar"], digest)
 
-    relation.rel_content_size = len(dump["content_single"])
+    relation.rel_content_size = len(dump["content_scalar"])
     relation.rel_content_hash = digest["content_hash"]
     relation.rel_content_hash_algorithm = digest["content_hash_algorithm"]
 
@@ -249,18 +233,18 @@ async def _save_stream(
     relation: DataRelation,
     data: _StreamData,
     storage_registry: StorageRegistry,
-    serializer_registry: StreamSerializerRegistry,
+    serializer_registry: SerializerRegistry,
 ) -> DataRelation:
     match data:
         case {"stream": stream, "serializer": serializer, "storage": storage}:
             pass
         case {"stream": stream, "serializer": serializer}:
-            storage = storage_registry.get_by_type_inference(type(relation))
+            storage = storage_registry.infer_from_data_relation_type(type(relation))
         case {"stream": stream, "storage": storage, "type": type_}:
-            serializer = serializer_registry.get_by_type_inference(type_)
+            serializer = serializer_registry.infer_from_stream_type(type_)
         case {"stream": stream, "type": type_}:
-            serializer = serializer_registry.get_by_type_inference(type_)
-            storage = storage_registry.get_by_type_inference(type(relation))
+            serializer = serializer_registry.infer_from_stream_type(type_)
+            storage = storage_registry.infer_from_data_relation_type(type(relation))
         case _:
             msg = f"Invalid data dictionary: {data}"
             raise ValueError(msg)
@@ -311,9 +295,9 @@ async def _save_relations(
                 pass
 
 
-class _SingleData(Generic[T, R], TypedDict, total=False):
-    single: Required[T]
-    serializer: SingleSerializer[R]
+class _ScalarData(Generic[T, R], TypedDict, total=False):
+    scalar: Required[T]
+    serializer: ScalarSerializer[R]
     storage: Storage[R]
 
 
@@ -335,7 +319,7 @@ _StreamData = _KnownStreamData[T, R] | _InferStreamData[T, R]
 
 def _make_stream_dump_digest_getter(
     dump: StreamDump,
-) -> tuple[AsyncIterator[bytes], DumpDigestGetter]:
+) -> tuple[AsyncIterator[bytes], Callable[[], DumpDigest]]:
     stream = dump["content_stream"]
 
     content_hash = sha256()
@@ -365,12 +349,12 @@ def _make_stream_dump_digest_getter(
     return wrapper(), digest
 
 
-def _make_single_dump_digest(dump: SingleDump) -> DumpDigest:
-    single = dump["content_single"]
-    content_hash = sha256(single)
+def _make_scalar_dump_digest(dump: ScalarDump) -> DumpDigest:
+    scalar = dump["content_scalar"]
+    content_hash = sha256(scalar)
     return {
         "content_hash": content_hash.hexdigest(),
         "content_hash_algorithm": content_hash.name,
-        "content_size": len(single),
+        "content_size": len(scalar),
         "content_type": dump["content_type"],
     }

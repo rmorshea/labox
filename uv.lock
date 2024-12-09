@@ -172,7 +172,7 @@ all = [
     { name = "coverage", extras = ["toml"], specifier = "==7.6.1" },
     { name = "diff-cover", specifier = "==9.2.0" },
     { name = "doccmd", specifier = "==2024.11.14" },
-    { name = "ipykernel", specifier = ">=6.29.5" },
+    { name = "ipykernel", specifier = "==6.29.5" },
     { name = "mdformat", specifier = "==0.7.19" },
     { name = "mdformat-admon", git = "https://github.com/rmorshea/mdformat-admon.git?rev=0e513d7a2c265faf74441938ccbd1010660609f4#0e513d7a2c265faf74441938ccbd1010660609f4" },
     { name = "mdformat-mkdocs", specifier = "==3.1.1" },
@@ -194,14 +194,14 @@ all = [
 ]
 dev = [
     { name = "click", specifier = "==8.1.7" },
-    { name = "ipykernel", specifier = ">=6.29.5" },
+    { name = "ipykernel", specifier = "==6.29.5" },
 ]
 docs = [
     { name = "aiosqlite", specifier = "==0.20.0" },
     { name = "click", specifier = "==8.1.7" },
     { name = "coverage", extras = ["toml"], specifier = "==7.6.1" },
     { name = "diff-cover", specifier = "==9.2.0" },
-    { name = "ipykernel", specifier = ">=6.29.5" },
+    { name = "ipykernel", specifier = "==6.29.5" },
     { name = "mkdocs", specifier = "==1.6.1" },
     { name = "mkdocs-gen-files", specifier = "==0.5.0" },
     { name = "mkdocs-material", specifier = "==9.5.39" },
@@ -219,7 +219,7 @@ lint = [
     { name = "coverage", extras = ["toml"], specifier = "==7.6.1" },
     { name = "diff-cover", specifier = "==9.2.0" },
     { name = "doccmd", specifier = "==2024.11.14" },
-    { name = "ipykernel", specifier = ">=6.29.5" },
+    { name = "ipykernel", specifier = "==6.29.5" },
     { name = "mdformat", specifier = "==0.7.19" },
     { name = "mdformat-admon", git = "https://github.com/rmorshea/mdformat-admon.git?rev=0e513d7a2c265faf74441938ccbd1010660609f4#0e513d7a2c265faf74441938ccbd1010660609f4" },
     { name = "mdformat-mkdocs", specifier = "==3.1.1" },
@@ -238,7 +238,7 @@ test = [
     { name = "click", specifier = "==8.1.7" },
     { name = "coverage", extras = ["toml"], specifier = "==7.6.1" },
     { name = "diff-cover", specifier = "==9.2.0" },
-    { name = "ipykernel", specifier = ">=6.29.5" },
+    { name = "ipykernel", specifier = "==6.29.5" },
     { name = "pycobertura", specifier = "==3.3.2" },
     { name = "pytest", specifier = "==8.3.3" },
     { name = "pytest-asyncio", specifier = "==0.24.0" },

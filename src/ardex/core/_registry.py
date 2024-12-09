@@ -43,23 +43,6 @@ class Registry(Generic[T]):
         self.items = items
         self.by_name: Mapping[str, T] = {i.name: i for i in self.items}
 
-        by_type: dict[type, T] = {}
-        for i in reversed(self.items):  # reverse to prioritize first items
-            for t in i.types:
-                if t is object:
-                    msg = f"{t} is not a valid type for {self.item_description.lower()} {i}."
-                    raise ValueError(msg)
-                by_type[t] = i
-        self.by_type: Mapping[type, T] = by_type
-
-    def get_by_type_inference(self, cls: type) -> T:
-        """Get the first item that can handle the given type or its parent classes."""
-        for base in cls.mro():
-            if base in self.by_type:
-                return self.by_type[base]
-        msg = f"No {self.item_description.lower()} found for {cls}."
-        raise ValueError(msg)
-
     def check_registered(self, item: T) -> None:
         """Ensure that the given serializer is registered - raises a ValueError if not."""
         if (existing := self.by_name.get(item.name)) is not item:

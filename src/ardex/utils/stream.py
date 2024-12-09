@@ -11,4 +11,6 @@ async def decode_byte_stream(
     async for byte_chunk in stream:
         if str_chunk := decoder.decode(byte_chunk, final=False):
             yield str_chunk
-    yield decoder.decode(b"", final=True)
+    yield (last := decoder.decode(b"", final=True))
+    if last:
+        yield ""

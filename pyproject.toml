@@ -76,6 +76,7 @@ test = [
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+python_files = ["test_*.py", "*_utils.py"]
 
 [tool.ruff]
 line-length = 100
@@ -109,14 +110,15 @@ ignore = [
     "DOC501", # Ignore raises missing from docstring
     "ERA001", # Commented out code
     "FBT003", # Allow boolean positional values in function calls, like `dict.get(... True)`
-    "ISC001", # implicitly concatenated strings on a single line
+    "ISC001", # implicitly concatenated strings on a scalar line
     "PIE790", # Unecessary elipsis literal
     "PL",     # PyLint
     "PYI",    # Stub files
     "RET503", # Explicit return
     "RET505", # Unnecessary return statement after return
     "S105",   # Ignore checks for possible passwords
-    "SIM117", # Use a single `with` statement
+    "S311",   # Random not suitable for security/cryptographic purposes
+    "SIM117", # Use a scalar `with` statement
 ]
 unfixable = [
     "COM819", # Trailing comma

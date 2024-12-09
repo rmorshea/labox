@@ -6,8 +6,7 @@ from anysync.core import Iterator
 from pybooster import injector
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ardex.core.serializer import SingleSerializerRegistry
-from ardex.core.serializer import StreamSerializerRegistry
+from ardex.core.serializer import SerializerRegistry
 from ardex.core.storage import StorageRegistry
 
 DatabaseSession = NewType("DatabaseSession", AsyncSession)
@@ -18,16 +17,13 @@ DatabaseSession = NewType("DatabaseSession", AsyncSession)
 def registries(
     *,
     storages: StorageRegistry | None = None,
-    stream_serializers: StreamSerializerRegistry | None = None,
-    single_serializers: SingleSerializerRegistry | None = None,
+    serializers: SerializerRegistry | None = None,
 ) -> Iterator[None]:
     """Declare the set of storage and serializers to use for the duration of the context."""
     regs: list[tuple[type, Any]] = []
     if storages is not None:
         regs.append((StorageRegistry, storages))
-    if stream_serializers is not None:
-        regs.append((StreamSerializerRegistry, stream_serializers))
-    if single_serializers is not None:
-        regs.append((SingleSerializerRegistry, single_serializers))
+    if serializers is not None:
+        regs.append((SerializerRegistry, serializers))
     with injector.shared(*regs):
         yield None
