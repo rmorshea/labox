@@ -102,13 +102,13 @@ async def _load_json_stream(stream: AsyncIterable[bytes]) -> AsyncIterator[JsonS
     decoder = json.JSONDecoder()
     async for chunk in decode_byte_stream(_GET_UTF_8_DECODER(), stream):
         if not started:
-            if chunk.startswith("["):
-                buffer.write(chunk[1:])
-            else:
-                buffer.write(chunk)
+            if not chunk.startswith("["):
+                msg = f"Expected '[' at start of JSON stream, got {chunk!r}"
+                raise ValueError(msg)
+            buffer.write(chunk[1:])
             started = True
         elif not chunk:
-            break
+            continue
         else:
             buffer.write(chunk)
 
@@ -122,6 +122,7 @@ async def _load_json_stream(stream: AsyncIterable[bytes]) -> AsyncIterator[JsonS
                 pos += index + offset
                 buffer.seek(pos)
             except json.JSONDecodeError:
+                buffer.seek(pos)
                 break
 
         remainder = buffer.read()

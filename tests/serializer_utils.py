@@ -18,6 +18,24 @@ from ardex.core.serializer import StreamSerializer
 T = TypeVar("T")
 
 
+def make_scalar_serializer_test(
+    serializer: ScalarSerializer[T],
+    *cases: T,
+) -> Callable:
+    async def tester(checker, case):
+        if isawaitable(result := checker(case)):
+            await result
+
+    matrix = [(partial(_check_dump_scalar_load_scalar, serializer, None), case) for case in cases]
+
+    def get_id(x: Any) -> Any:
+        wrapped = getattr(x, "func", x)
+        return getattr(wrapped, "__name__", x)
+
+    arg_names = ("checker", "case")
+    return pytest.mark.parametrize(arg_names, matrix, ids=get_id)(tester)
+
+
 def make_stream_serializer_test(
     serializer: StreamSerializer[T],
     *cases: Sequence[T],
@@ -28,19 +46,19 @@ def make_stream_serializer_test(
 
     matrix = []
 
-    restreamers = (stream_random_chunks, stream_one_chunk, stream_one_byte_chunks)
+    restreamers = (_stream_random_chunks, _stream_one_chunk, _stream_one_byte_chunks)
 
     for case in cases:
         matrix.append(
             (
-                partial(check_dump_scalar_load_scalar, serializer),
+                partial(_check_dump_scalar_load_scalar, serializer),
                 None,
                 case,
             )
         )
         matrix.extend(
             (
-                partial(check_dump_scalar_load_stream, serializer),
+                partial(_check_dump_scalar_load_stream, serializer),
                 restreamer,
                 case,
             )
@@ -48,14 +66,14 @@ def make_stream_serializer_test(
         )
         matrix.append(
             (
-                partial(check_dump_stream_load_scalar, serializer),
+                partial(_check_dump_stream_load_scalar, serializer),
                 None,
                 case,
             )
         )
         matrix.extend(
             (
-                partial(check_dump_stream_load_stream, serializer),
+                partial(_check_dump_stream_load_stream, serializer),
                 restreamer,
                 case,
             )
@@ -63,14 +81,15 @@ def make_stream_serializer_test(
         )
 
     def get_id(x: Any) -> Any:
-        wrapped = getattr(x, "func", x)
-        return getattr(wrapped, "__name__", x)
+        if hasattr(wrapped := getattr(x, "func", x), "__name__"):
+            return wrapped.__name__.lstrip("_")
+        return x
 
     arg_names = ("checker", "restream", "case")
     return pytest.mark.parametrize(arg_names, matrix, ids=get_id)(tester)
 
 
-async def check_dump_scalar_load_stream(
+async def _check_dump_scalar_load_stream(
     serializer: StreamSerializer[Any],
     restream: Callable[[bytes], AsyncIterator[bytes]],
     value: Any,
@@ -93,7 +112,7 @@ async def check_dump_scalar_load_stream(
         assert loaded_values == [value]
 
 
-async def check_dump_stream_load_scalar(
+async def _check_dump_stream_load_scalar(
     serializer: StreamSerializer[Any],
     restream: Any,
     values: Sequence[Any],
@@ -110,7 +129,7 @@ async def check_dump_stream_load_scalar(
     assert list(serializer.load_scalar(scalar_dump)) == list(values)  # type: ignore[reportArgumentType]
 
 
-async def check_dump_stream_load_stream(
+async def _check_dump_stream_load_stream(
     serializer: StreamSerializer[Any],
     restream: Callable[[bytes], AsyncIterator[bytes]],
     values: Sequence[Any],
@@ -122,7 +141,7 @@ async def check_dump_stream_load_stream(
     assert [value async for value in loaded_stream] == list(values)
 
 
-def check_dump_scalar_load_scalar(
+def _check_dump_scalar_load_scalar(
     serializer: ScalarSerializer[Any] | StreamSerializer[Any],
     restream: None,
     value: Any,
@@ -135,7 +154,7 @@ async def _to_async_iterable(iterable: Iterable[Any]) -> AsyncIterator[Any]:
         yield value
 
 
-async def stream_random_chunks(content: bytes) -> AsyncIterator[bytes]:
+async def _stream_random_chunks(content: bytes) -> AsyncIterator[bytes]:
     random.seed(0)  # make the test deterministic
     while content:
         chunk_size = random.randint(1, len(content))
@@ -143,10 +162,10 @@ async def stream_random_chunks(content: bytes) -> AsyncIterator[bytes]:
         content = content[chunk_size:]
 
 
-async def stream_one_chunk(content: bytes) -> AsyncIterator[bytes]:
+async def _stream_one_chunk(content: bytes) -> AsyncIterator[bytes]:
     yield content
 
 
-async def stream_one_byte_chunks(content) -> AsyncIterator[bytes]:
-    for i in range(1, len(content) + 1):
+async def _stream_one_byte_chunks(content) -> AsyncIterator[bytes]:
+    for i in range(len(content)):
         yield content[i : i + 1]

@@ -279,11 +279,11 @@ async def _save_relations(
     retries: int,
 ) -> None:
     stop = stop_after_attempt(retries)
-    update_existing_stmt = (
-        update(DataRelation)
-        .values({DataRelation.rel_archived_at: func.now()})
-        .where(or_(*(r.rel_select_latest() for r in relations)))
-    )
+    update_existing_stmt = update(DataRelation).values({DataRelation.rel_archived_at: func.now()})
+    if relations:
+        update_existing_stmt = update_existing_stmt.where(
+            or_(*(r.rel_select_latest() for r in relations))
+        )
     async for attempt in AsyncRetrying(stop=stop):
         with attempt:
             try:
