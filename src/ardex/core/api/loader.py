@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 from typing import Any
 from typing import Literal
 from typing import ParamSpec
+from typing import TypeAlias
 from typing import TypeVar
 
 from anyio import create_task_group
@@ -40,14 +41,12 @@ async def data_loader(
     """Create a context manager for saving data."""
     items: list[tuple[TaskGroupFuture, DataRelation, Literal["value", "stream"]]] = []
 
-    yield DataLoader(items)
+    yield _DataLoader(items)
 
     await _load_data(items, storage_registry, serializer_registry)
 
 
-class DataLoader:
-    """Defines a protocol for saving data."""
-
+class _DataLoader:
     def __init__(
         self, items: list[tuple[TaskGroupFuture, DataRelation, Literal["value", "stream"]]]
     ) -> None:
@@ -66,6 +65,10 @@ class DataLoader:
         return fut
 
 
+DataLoader: TypeAlias = _DataLoader
+"""Defines a protocol for saving data."""
+
+
 async def _load_data(
     items: list[tuple[TaskGroupFuture, DataRelation, Literal["value", "stream"]]],
     storage_registry: StorageRegistry,
@@ -74,15 +77,15 @@ async def _load_data(
     async with create_task_group() as tg:
         for fut, rel, typ in items:
             if typ == "value":
-                serializer = serializer_registry.by_name[rel.rel_serializer_name]
-                storage = storage_registry.by_name[rel.rel_storage_name]
+                serializer = serializer_registry.get_by_name(rel.rel_serializer_name)
+                storage = storage_registry.get_by_name(rel.rel_storage_name)
                 start_future(tg, fut, _load_value, rel, serializer, storage)
             else:
-                stream_serializer = serializer_registry.by_name[rel.rel_serializer_name]
+                stream_serializer = serializer_registry.get_by_name(rel.rel_serializer_name)
                 if not isinstance(stream_serializer, StreamSerializer):
-                    msg = f"Data relation {rel} does not support streaming."
+                    msg = f"No stream serializer can load data relation {rel}."
                     raise ValueError(msg)
-                storage = storage_registry.by_name[rel.rel_storage_name]
+                storage = storage_registry.get_by_name(rel.rel_storage_name)
                 fut._result = _load_stream(rel, stream_serializer, storage)  # noqa: SLF001
 
 

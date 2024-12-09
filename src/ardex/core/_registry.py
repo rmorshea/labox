@@ -43,6 +43,14 @@ class Registry(Generic[T]):
         self.items = items
         self.by_name: Mapping[str, T] = {i.name: i for i in self.items}
 
+    def get_by_name(self, name: str) -> T:
+        """Get the item with the given name."""
+        try:
+            return self.by_name[name]
+        except KeyError:
+            msg = f"{self.item_description} {name!r} is not registered."
+            raise ValueError(msg) from None
+
     def check_registered(self, item: T) -> None:
         """Ensure that the given serializer is registered - raises a ValueError if not."""
         if (existing := self.by_name.get(item.name)) is not item:

@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from typing import Generic
 from typing import ParamSpec
 from typing import Required
+from typing import TypeAlias
 from typing import TypedDict
 from typing import TypeVar
 from typing import overload
@@ -69,8 +70,7 @@ async def data_saver(
     )
 
 
-class DataSaver:
-    """Defines a protocol for saving data."""
+class _DataSaver:
 
     def __init__(
         self,
@@ -151,6 +151,10 @@ class DataSaver:
             dat["storage"] = storage
         self._items.append((fut, rel, dat))  # type: ignore[reportArgumentType]
         return fut
+
+
+DataSaver: TypeAlias = _DataSaver
+"""Defines a protocol for saving data."""
 
 
 async def _save_data(
