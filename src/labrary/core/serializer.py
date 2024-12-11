@@ -33,12 +33,12 @@ class ValueSerializer(_BaseSerializer[T]):
     @abc.abstractmethod
     def dump_value(self, value: T, /) -> ValueDump:
         """Serialize the given value."""
-        ...
+        raise NotImplementedError
 
     @abc.abstractmethod
     def load_value(self, dump: ValueDump, /) -> T:
         """Deserialize the given value."""
-        ...
+        raise NotImplementedError
 
 
 class StreamSerializer(_BaseSerializer[T]):
@@ -47,25 +47,27 @@ class StreamSerializer(_BaseSerializer[T]):
     @abc.abstractmethod
     def dump_value(self, value: Iterable[T], /) -> ValueDump:
         """Serialize the given value."""
-        ...
+        raise NotImplementedError
 
     @abc.abstractmethod
     def load_value(self, dump: ValueDump, /) -> Iterable[T]:
         """Deserialize the given value."""
-        ...
+        raise NotImplementedError
 
     @abc.abstractmethod
     def dump_stream(self, stream: AsyncIterable[T], /) -> StreamDump:
         """Serialize the given stream."""
-        ...
+        raise NotImplementedError
 
     @abc.abstractmethod
     def load_stream(self, dump: StreamDump, /) -> AsyncIterator[T]:
         """Deserialize the given stream."""
-        ...
+        raise NotImplementedError
 
 
 class _BaseDump(TypedDict):
+    content_encoding: str | None
+    """The encoding of the data."""
     content_type: str
     """The MIME type of the data."""
     serializer_name: str

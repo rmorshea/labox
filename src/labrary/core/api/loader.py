@@ -9,14 +9,15 @@ from typing import TypeVar
 
 from anyio import create_task_group
 from anysync import contextmanager
+from pybooster import injector
+from pybooster import required
+
 from labrary.core.schema import DataRelation
 from labrary.core.serializer import SerializerRegistry
 from labrary.core.serializer import StreamSerializer
 from labrary.core.storage import StorageRegistry
 from labrary.utils.anyio import TaskGroupFuture
-from labrary.utils.anyio import start_future
-from pybooster import injector
-from pybooster import required
+from labrary.utils.anyio import start_given_future
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable
@@ -78,7 +79,7 @@ async def _load_data(
             if typ == "value":
                 serializer = serializer_registry.get_by_name(rel.rel_serializer_name)
                 storage = storage_registry.get_by_name(rel.rel_storage_name)
-                start_future(tg, fut, _load_value, rel, serializer, storage)
+                start_given_future(tg, fut, _load_value, rel, serializer, storage)
             else:
                 stream_serializer = serializer_registry.get_by_name(rel.rel_serializer_name)
                 if not isinstance(stream_serializer, StreamSerializer):
@@ -98,6 +99,7 @@ async def _load_value(
         {
             "value": await storage.read_value(relation),
             "content_type": relation.rel_content_type,
+            "content_encoding": relation.rel_content_encoding,
             "serializer_name": relation.rel_serializer_name,
             "serializer_version": relation.rel_serializer_version,
         }
@@ -114,6 +116,7 @@ def _load_stream(
         {
             "stream": storage.read_stream(relation),
             "content_type": relation.rel_content_type,
+            "content_encoding": relation.rel_content_encoding,
             "serializer_name": relation.rel_serializer_name,
             "serializer_version": relation.rel_serializer_version,
         }

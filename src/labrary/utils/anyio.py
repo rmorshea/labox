@@ -1,27 +1,94 @@
 from __future__ import annotations
 
+from contextlib import suppress
+from queue import Queue as ThreadQueue
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Generic
 from typing import ParamSpec
 from typing import TypeVar
+from typing import cast
 from typing import overload
+
+from anyio import ClosedResourceError
+from anyio import create_memory_object_stream
+from anyio.from_thread import run_sync as run_sync_from_thread
+from anyio.to_thread import run_sync as run_sync_to_thread
 
 from labrary.utils.misc import UNDEFINED
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterable
     from collections.abc import Awaitable
     from collections.abc import Callable
     from collections.abc import Coroutine
+    from collections.abc import Iterator
 
     from anyio.abc import TaskGroup
+    from anyio.streams.memory import MemoryObjectReceiveStream
 
 P = ParamSpec("P")
 R = TypeVar("R")
 D = TypeVar("D")
 
 
+def start_sync_iterator(task_group: TaskGroup, async_iter: AsyncIterable[R]) -> Iterator[R]:
+    """Create a synchronous iterator from an asynchronous iterator."""
+    done = cast("Any", object())
+    queue: ThreadQueue[R] = ThreadQueue()
+
+    async def exhaust_async_iter():
+        try:
+            async for value in async_iter:
+                queue.put_nowait(value)
+        finally:
+            queue.put_nowait(done)
+
+    future = start_future(task_group, exhaust_async_iter)
+
+    def sync_iterator():
+        while True:
+            value = queue.get()
+            if value is done:
+                break
+            yield value
+        future.result()
+
+    return sync_iterator()
+
+
+def start_async_iterator(
+    task_group: TaskGroup, sync_iter: Iterator[R]
+) -> MemoryObjectReceiveStream[R]:
+    """Create an asynchronous iterator from a synchronous iterator."""
+    send, recv = create_memory_object_stream[R]()
+
+    def exhause_sync_iter():
+        try:
+            with suppress(ClosedResourceError):
+                for value in sync_iter:
+                    run_sync_from_thread(send.send_nowait, value)
+        finally:
+            run_sync_from_thread(send.close)
+
+    task_group.start_soon(run_sync_to_thread, exhause_sync_iter)
+    return recv
+
+
 def start_future(
+    task_group: TaskGroup,
+    func: Callable[P, Coroutine[Any, Any, R]],
+    /,
+    *args: P.args,
+    **kwargs: P.kwargs,
+) -> TaskGroupFuture[R]:
+    """Start a future in a task group."""
+    future: TaskGroupFuture[R] = TaskGroupFuture()
+    start_given_future(task_group, future, func, *args, **kwargs)
+    return future
+
+
+def start_given_future(
     task_group: TaskGroup,
     future: TaskGroupFuture[R],
     func: Callable[P, Coroutine[Any, Any, R]],
@@ -29,7 +96,7 @@ def start_future(
     *args: P.args,
     **kwargs: P.kwargs,
 ) -> None:
-    """Start a future in a task group."""
+    """Start the given future in a task group."""
     task_group.start_soon(_set_future_result, func, args, kwargs, future)
 
 
@@ -39,7 +106,11 @@ async def _set_future_result(
     kwargs: dict[str, Any],
     future: TaskGroupFuture[R],
 ) -> None:
-    future._result = await func(*args, **kwargs)  # noqa: SLF001
+    try:
+        future._result = await func(*args, **kwargs)  # noqa: SLF001
+    except BaseException as exc:
+        future._exception = exc  # noqa: SLF001
+        raise
 
 
 class TaskGroupFuture(Generic[R]):
@@ -48,6 +119,7 @@ class TaskGroupFuture(Generic[R]):
     __slots__ = "_result"
 
     _result: R
+    _exception: BaseException
 
     @overload
     def result(self) -> R: ...
@@ -60,7 +132,10 @@ class TaskGroupFuture(Generic[R]):
         try:
             return self._result
         except AttributeError:
-            if default is not UNDEFINED:
-                return default
-            msg = "Future not completed"
-            raise RuntimeError(msg) from None
+            try:
+                raise self._exception from None
+            except AttributeError:
+                if default is not UNDEFINED:
+                    return default
+                msg = "Future not completed"
+                raise RuntimeError(msg) from None

@@ -29,6 +29,7 @@ dependencies = [
 ]
 [project.optional-dependencies]
 pyarrow = ["pyarrow>=18,<19"]
+aws = ["boto3>=1,<2"]
 [project.urls]
 Source = "https://github.com/rmorshea/labrary"
 
@@ -52,6 +53,7 @@ docs = [
 ]
 lint = [
     { include-group = "test" },
+    "doccmd==2024.11.14",
     "mdformat-admon @ git+https://github.com/rmorshea/mdformat-admon.git@0e513d7a2c265faf74441938ccbd1010660609f4",
     "mdformat-mkdocs==3.1.1",
     "mdformat-pyproject==0.0.1",
@@ -59,8 +61,9 @@ lint = [
     "mdformat==0.7.19",
     "pyright==1.1.389",
     "ruff==0.7.3",
+    "types-boto3-s3==1.35.76",
+    "types-boto3==1.35.76",
     "yamlfix==1.17.0",
-    "doccmd==2024.11.14",
 ]
 test = [
     { include-group = "dev" },
@@ -71,6 +74,7 @@ test = [
     "pytest-examples==0.0.13",
     "pytest==8.3.3",
     "aiosqlite==0.20.0",
+    "moto>=5.0.22",
 ]
 
 [tool.pytest.ini_options]

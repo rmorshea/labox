@@ -9,6 +9,7 @@ from typing import Any
 from typing import TypeVar
 
 import pytest
+
 from labrary.core.serializer import StreamDump
 from labrary.core.serializer import StreamSerializer
 from labrary.core.serializer import ValueDump
@@ -97,10 +98,11 @@ async def _check_dump_value_load_stream(
     value_dump = serializer.dump_value(value)
     content_stream = restream(value_dump["value"])
     stream_dump: StreamDump = {
-        "stream": content_stream,
+        "content_encoding": value_dump["content_encoding"],
         "content_type": value_dump["content_type"],
         "serializer_name": value_dump["serializer_name"],
         "serializer_version": value_dump["serializer_version"],
+        "stream": content_stream,
     }
     loaded_stream = serializer.load_stream(stream_dump)
 
@@ -118,10 +120,11 @@ async def _check_dump_stream_load_value(
     stream_dump = serializer.dump_stream(content_stream)
     content_value = b"".join([chunk async for chunk in stream_dump["stream"]])
     value_dump: ValueDump = {
-        "value": content_value,
+        "content_encoding": stream_dump["content_encoding"],
         "content_type": stream_dump["content_type"],
         "serializer_name": stream_dump["serializer_name"],
         "serializer_version": stream_dump["serializer_version"],
+        "value": content_value,
     }
     assert list(serializer.load_value(value_dump)) == list(values)  # type: ignore[reportArgumentType]
 

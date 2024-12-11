@@ -12,12 +12,6 @@ from typing import overload
 
 from anyio import create_task_group
 from anysync import contextmanager
-from labrary.core.context import DatabaseSession
-from labrary.core.schema import DataRelation
-from labrary.core.serializer import SerializerRegistry
-from labrary.core.storage import StorageRegistry
-from labrary.utils.anyio import TaskGroupFuture
-from labrary.utils.anyio import start_future
 from pybooster import injector
 from pybooster import required
 from sqlalchemy import func
@@ -28,19 +22,29 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from tenacity import AsyncRetrying
 from tenacity import stop_after_attempt
 
+from labrary.core.context import DatabaseSession
+from labrary.core.schema import DataRelation
+from labrary.core.serializer import SerializerRegistry
+from labrary.core.storage import GetStreamDigest
+from labrary.core.storage import StorageRegistry
+from labrary.core.storage import StreamDigest
+from labrary.utils.anyio import TaskGroupFuture
+from labrary.utils.anyio import start_given_future
+
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable
     from collections.abc import AsyncIterator
     from collections.abc import Callable
     from collections.abc import Sequence
 
+    from sqlalchemy.ext.asyncio import AsyncSession
+
     from labrary.core.serializer import StreamDump
     from labrary.core.serializer import StreamSerializer
     from labrary.core.serializer import ValueDump
     from labrary.core.serializer import ValueSerializer
-    from labrary.core.storage import DumpDigest
     from labrary.core.storage import Storage
-    from sqlalchemy.ext.asyncio import AsyncSession
+    from labrary.core.storage import ValueDigest
 
 
 T = TypeVar("T")
@@ -167,7 +171,7 @@ async def _save_data(
         async with create_task_group() as tg:
             for fut, rel, dat in items:
                 if "stream" in dat:
-                    start_future(
+                    start_given_future(
                         tg,
                         fut,
                         _save_stream,
@@ -177,7 +181,7 @@ async def _save_data(
                         serializer_registry,
                     )
                 else:
-                    start_future(
+                    start_given_future(
                         tg,
                         fut,
                         _save_value,
@@ -215,7 +219,6 @@ async def _save_value(
     dump = serializer.dump_value(value)
     digest = _make_value_dump_digest(dump)
 
-    relation.rel_content_type = dump["content_type"]
     relation.rel_serializer_name = dump["serializer_name"]
     relation.rel_serializer_version = dump["serializer_version"]
     relation.rel_storage_name = storage.name
@@ -223,9 +226,11 @@ async def _save_value(
 
     relation = await storage.write_value(relation, dump["value"], digest)
 
-    relation.rel_content_size = len(dump["value"])
+    relation.rel_content_encoding = dump.get("content_encoding")
     relation.rel_content_hash = digest["content_hash"]
     relation.rel_content_hash_algorithm = digest["content_hash_algorithm"]
+    relation.rel_content_size = len(dump["value"])
+    relation.rel_content_type = dump["content_type"]
 
     return relation
 
@@ -255,7 +260,6 @@ async def _save_stream(
 
     relation.rel_storage_name = storage.name
     relation.rel_storage_version = storage.version
-    relation.rel_content_type = dump["content_type"]
     relation.rel_serializer_name = dump["serializer_name"]
     relation.rel_serializer_version = dump["serializer_version"]
 
@@ -267,9 +271,11 @@ async def _save_stream(
         msg = f"Storage {storage.name} did not fully consume the stream for relation {relation}."
         raise RuntimeError(msg) from None
 
-    relation.rel_content_size = digest["content_size"]
+    relation.rel_content_encoding = dump.get("content_encoding")
     relation.rel_content_hash = digest["content_hash"]
     relation.rel_content_hash_algorithm = digest["content_hash_algorithm"]
+    relation.rel_content_size = digest["content_size"]
+    relation.rel_content_type = dump["content_type"]
 
     return relation
 
@@ -320,40 +326,42 @@ _StreamData = _KnownStreamData[T, R] | _InferStreamData[T, R]
 
 def _make_stream_dump_digest_getter(
     dump: StreamDump,
-) -> tuple[AsyncIterator[bytes], Callable[[], DumpDigest]]:
+) -> tuple[AsyncIterator[bytes], GetStreamDigest]:
     stream = dump["stream"]
 
     content_hash = sha256()
     size = 0
-    done = False
+    is_complete = False
 
     async def wrapper() -> AsyncIterator[bytes]:
-        nonlocal done, size
+        nonlocal is_complete, size
         async for chunk in stream:
             content_hash.update(chunk)
             size += len(chunk)
             yield chunk
-        done = True
+        is_complete = True
 
-    def digest() -> DumpDigest:
-        if not done:
-            msg = "The stream has not been fully consumed."
-            raise RuntimeError(msg)
-
+    def get_digest(*, allow_incomplete: bool = False) -> StreamDigest:
+        if not allow_incomplete and not is_complete:
+            msg = "The stream has not been fully read."
+            raise ValueError(msg)
         return {
+            "content_encoding": dump.get("content_encoding"),
             "content_hash": content_hash.hexdigest(),
             "content_hash_algorithm": content_hash.name,
             "content_size": size,
             "content_type": dump["content_type"],
+            "is_complete": is_complete,
         }
 
-    return wrapper(), digest
+    return wrapper(), get_digest
 
 
-def _make_value_dump_digest(dump: ValueDump) -> DumpDigest:
+def _make_value_dump_digest(dump: ValueDump) -> ValueDigest:
     value = dump["value"]
     content_hash = sha256(value)
     return {
+        "content_encoding": dump.get("content_encoding"),
         "content_hash": content_hash.hexdigest(),
         "content_hash_algorithm": content_hash.name,
         "content_size": len(value),

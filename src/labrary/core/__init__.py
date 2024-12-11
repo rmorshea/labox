@@ -7,19 +7,19 @@ from labrary.core.serializer import StreamDump
 from labrary.core.serializer import StreamSerializer
 from labrary.core.serializer import ValueDump
 from labrary.core.serializer import ValueSerializer
-from labrary.core.storage import DumpDigest
 from labrary.core.storage import Storage
 from labrary.core.storage import StorageRegistry
+from labrary.core.storage import ValueDigest
 
 __all__ = (
     "DataLoader",
     "DataSaver",
-    "DumpDigest",
     "SerializerRegistry",
     "Storage",
     "StorageRegistry",
     "StreamDump",
     "StreamSerializer",
+    "ValueDigest",
     "ValueDump",
     "ValueSerializer",
     "data_loader",

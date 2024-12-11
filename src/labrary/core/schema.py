@@ -80,6 +80,8 @@ class DataRelation(Base):
     """The timestamp when the pointer was archived."""
     rel_content_type: Mapped[str] = mapped_column(init=False)
     """The MIME type of the data."""
+    rel_content_encoding: Mapped[str | None] = mapped_column(init=False)
+    """The encoding of the data."""
     rel_content_hash: Mapped[str] = mapped_column(init=False)
     """The hash of the data."""
     rel_content_hash_algorithm: Mapped[str] = mapped_column(init=False)

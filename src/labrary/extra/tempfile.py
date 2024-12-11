@@ -9,14 +9,14 @@ from typing import Self
 from uuid import uuid4
 
 from labrary.core.schema import DataRelation
+from labrary.core.storage import GetStreamDigest
 from labrary.core.storage import Storage
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable
     from collections.abc import AsyncIterator
 
-    from labrary.core.storage import DumpDigest
-    from paramorator import Callable
+    from labrary.core.storage import ValueDigest
 
 
 class TemporaryDirectoryStorage(Storage[DataRelation]):
@@ -56,7 +56,7 @@ class TemporaryDirectoryStorage(Storage[DataRelation]):
         self,
         relation: DataRelation,
         value: bytes,
-        digest: DumpDigest,
+        digest: ValueDigest,
     ) -> DataRelation:
         """Save the given value dump."""
         content_path = self._get_content_path(digest["content_type"], digest["content_hash"])
@@ -73,7 +73,7 @@ class TemporaryDirectoryStorage(Storage[DataRelation]):
         self,
         relation: DataRelation,
         stream: AsyncIterable[bytes],
-        get_digest: Callable[[], DumpDigest],
+        get_digest: GetStreamDigest,
     ) -> DataRelation:
         """Save the given stream dump."""
         scratch_path = self._get_scratch_path()

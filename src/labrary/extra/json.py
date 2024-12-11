@@ -6,11 +6,12 @@ from io import StringIO
 from typing import TypeAlias
 
 from anysync.core import AsyncIterator
+
 from labrary.core.serializer import StreamDump
 from labrary.core.serializer import StreamSerializer
 from labrary.core.serializer import ValueDump
 from labrary.core.serializer import ValueSerializer
-from labrary.utils.stream import decode_byte_stream
+from labrary.utils.streaming import decode_async_byte_stream
 
 JsonType: TypeAlias = "int | str | float | bool | dict[str, JsonType] | list[JsonType] | None"
 """A type alias for JSON data."""
@@ -34,10 +35,11 @@ class JsonSerializer(ValueSerializer[JsonType]):
     def dump_value(self, value: JsonType) -> ValueDump:
         """Serialize the given value to JSON."""
         return {
-            "value": json.dumps(value, separators=(",", ":")).encode("utf-8"),
+            "content_encoding": "utf-8",
             "content_type": self.content_type,
             "serializer_name": self.name,
             "serializer_version": self.version,
+            "value": json.dumps(value, separators=(",", ":")).encode("utf-8"),
         }
 
     def load_value(self, dump: ValueDump) -> JsonType:
@@ -56,10 +58,11 @@ class JsonStreamSerializer(StreamSerializer[JsonStreamType]):
     def dump_value(self, value: Iterable[JsonStreamType]) -> ValueDump:
         """Serialize the given value to JSON."""
         return {
-            "value": json.dumps(list(value), separators=(",", ":")).encode("utf-8"),
+            "content_encoding": "utf-8",
             "content_type": self.content_type,
             "serializer_name": self.name,
             "serializer_version": self.version,
+            "value": json.dumps(list(value), separators=(",", ":")).encode("utf-8"),
         }
 
     def load_value(self, dump: ValueDump) -> list[JsonStreamType]:
@@ -69,10 +72,11 @@ class JsonStreamSerializer(StreamSerializer[JsonStreamType]):
     def dump_stream(self, stream: AsyncIterable[JsonStreamType]) -> StreamDump:
         """Serialize the given stream of JSON data."""
         return {
-            "stream": _dump_json_stream(stream),
+            "content_encoding": "utf-8",
             "content_type": self.content_type,
             "serializer_name": self.name,
             "serializer_version": self.version,
+            "stream": _dump_json_stream(stream),
         }
 
     def load_stream(self, dump: StreamDump) -> AsyncIterator[JsonStreamType]:
@@ -99,7 +103,7 @@ async def _load_json_stream(stream: AsyncIterable[bytes]) -> AsyncIterator[JsonS
     buffer = StringIO()
     started = False
     decoder = json.JSONDecoder()
-    async for chunk in decode_byte_stream(_GET_UTF_8_DECODER(), stream):
+    async for chunk in decode_async_byte_stream(_GET_UTF_8_DECODER(), stream):
         if not started:
             if not chunk.startswith("["):
                 msg = f"Expected '[' at start of JSON stream, got {chunk!r}"
