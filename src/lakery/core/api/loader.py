@@ -16,6 +16,7 @@ from lakery.core.schema import DataRelation
 from lakery.core.serializer import SerializerRegistry
 from lakery.core.serializer import StreamSerializer
 from lakery.core.storage import StorageRegistry
+from lakery.core.storage import StreamStorage
 from lakery.utils.anyio import TaskGroupFuture
 from lakery.utils.anyio import start_given_future
 
@@ -24,7 +25,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
     from lakery.core.serializer import ValueSerializer
-    from lakery.core.storage import Storage
+    from lakery.core.storage import ValueStorage
 
 T = TypeVar("T")
 R = TypeVar("R", bound=DataRelation)
@@ -86,13 +87,16 @@ async def _load_data(
                     msg = f"No stream serializer can load data relation {rel}."
                     raise ValueError(msg)
                 storage = storage_registry.get_by_name(rel.rel_storage_name)
+                if not isinstance(storage, StreamStorage):
+                    msg = f"No stream storage can load data relation {rel}."
+                    raise ValueError(msg)
                 fut._result = _load_stream(rel, stream_serializer, storage)  # noqa: SLF001
 
 
 async def _load_value(
     relation: DataRelation,
     serializer: ValueSerializer | StreamSerializer,
-    storage: Storage,
+    storage: ValueStorage,
 ) -> Any:
     """Load the given value data."""
     return serializer.load_value(
@@ -109,7 +113,7 @@ async def _load_value(
 def _load_stream(
     relation: DataRelation,
     serializer: StreamSerializer,
-    storage: Storage,
+    storage: StreamStorage,
 ) -> AsyncIterable[Any]:
     """Load the given stream data."""
     return serializer.load_stream(
