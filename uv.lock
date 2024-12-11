@@ -659,7 +659,7 @@ wheels = [
 ]
 
 [[package]]
-name = "labrary"
+name = "lakery"
 version = "0.0.1a1"
 source = { editable = "." }
 dependencies = [

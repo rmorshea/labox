@@ -22,14 +22,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from tenacity import AsyncRetrying
 from tenacity import stop_after_attempt
 
-from labrary.core.context import DatabaseSession
-from labrary.core.schema import DataRelation
-from labrary.core.serializer import SerializerRegistry
-from labrary.core.storage import GetStreamDigest
-from labrary.core.storage import StorageRegistry
-from labrary.core.storage import StreamDigest
-from labrary.utils.anyio import TaskGroupFuture
-from labrary.utils.anyio import start_given_future
+from lakery.core.context import DatabaseSession
+from lakery.core.schema import DataRelation
+from lakery.core.serializer import SerializerRegistry
+from lakery.core.storage import GetStreamDigest
+from lakery.core.storage import StorageRegistry
+from lakery.core.storage import StreamDigest
+from lakery.utils.anyio import TaskGroupFuture
+from lakery.utils.anyio import start_given_future
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable
@@ -39,13 +39,13 @@ if TYPE_CHECKING:
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
-    from labrary.core.serializer import StreamDump
-    from labrary.core.serializer import StreamSerializer
-    from labrary.core.serializer import ValueDump
-    from labrary.core.serializer import ValueSerializer
-    from labrary.core.storage import StreamStorage
-    from labrary.core.storage import ValueDigest
-    from labrary.core.storage import ValueStorage
+    from lakery.core.serializer import StreamDump
+    from lakery.core.serializer import StreamSerializer
+    from lakery.core.serializer import ValueDump
+    from lakery.core.serializer import ValueSerializer
+    from lakery.core.storage import StreamStorage
+    from lakery.core.storage import ValueDigest
+    from lakery.core.storage import ValueStorage
 
 
 T = TypeVar("T")

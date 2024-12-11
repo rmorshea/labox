@@ -7,7 +7,7 @@ from typing import LiteralString
 from typing import TypedDict
 from typing import TypeVar
 
-from labrary.core._registry import Registry
+from lakery.core._registry import Registry
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable

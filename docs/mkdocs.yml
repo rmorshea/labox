@@ -1,9 +1,9 @@
 ---
 site_author: Ryan Morshead
 site_description: An artifact management system for Python.
-site_name: labrary
+site_name: lakery
 docs_dir: src
-repo_url: https://github.com/rmorshea/labrary
+repo_url: https://github.com/rmorshea/lakery
 nav:
   - Home: index.md
 theme:

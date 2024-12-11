@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from mimetypes import guess_extension
 from typing import TYPE_CHECKING
 from typing import ParamSpec
 from typing import TypeVar
@@ -10,14 +9,15 @@ from anyio import create_task_group
 from anyio.to_thread import run_sync
 from sqlalchemy.util.typing import Protocol
 
-from labrary.core.schema import DataRelation
-from labrary.core.storage import GetStreamDigest
-from labrary.core.storage import StreamStorage
-from labrary.core.storage import ValueDigest
-from labrary.utils.anyio import start_async_iterator
-from labrary.utils.anyio import start_sync_iterator
-from labrary.utils.misc import slugify
-from labrary.utils.streaming import ByteStreamReader
+from lakery.core.schema import DataRelation
+from lakery.core.storage import GetStreamDigest
+from lakery.core.storage import StreamStorage
+from lakery.core.storage import ValueDigest
+from lakery.utils.anyio import start_async_iterator
+from lakery.utils.anyio import start_sync_iterator
+from lakery.utils.misc import StorageLocationMaker
+from lakery.utils.misc import make_data_relation_path
+from lakery.utils.streaming import ByteStreamReader
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable
@@ -31,24 +31,6 @@ if TYPE_CHECKING:
 
 P = ParamSpec("P")
 R = TypeVar("R")
-
-
-def make_data_relation_key(
-    relation: DataRelation,
-    content_type: str,
-    content_hash_algorithm: str,
-    content_hash: str,
-    storage_version: int,
-) -> str:
-    """Make a path for the given data relation."""
-    return "/".join(
-        (
-            f"v{storage_version}",
-            slugify(relation.rel_type),
-            slugify(content_hash_algorithm),
-            f"{slugify(content_hash)}.{guess_extension(content_type)}",
-        )
-    )
 
 
 class KeyMaker(Protocol):
@@ -67,7 +49,7 @@ class KeyMaker(Protocol):
 class S3Storage(StreamStorage[DataRelation]):
     """Storage for S3 data."""
 
-    name = "labrary.aws.boto3.s3"
+    name = "lakery.aws.boto3.s3"
     types = (DataRelation,)
     version = 1
 
@@ -76,7 +58,7 @@ class S3Storage(StreamStorage[DataRelation]):
         client: S3Client,
         bucket: str,
         limiter: CapacityLimiter | None = None,
-        make_key: KeyMaker = make_data_relation_key,
+        make_key: StorageLocationMaker = make_data_relation_path,
     ):
         self._client = client
         self._bucket = bucket
@@ -92,13 +74,7 @@ class S3Storage(StreamStorage[DataRelation]):
         """Save the given value dump."""
         put_request: PutObjectRequestRequestTypeDef = {
             "Bucket": self._bucket,
-            "Key": self._make_key(
-                relation,
-                digest["content_type"],
-                digest["content_hash_algorithm"],
-                digest["content_hash"],
-                self.version,
-            ),
+            "Key": self._make_key(self, relation, digest),
             "Body": value,
             "ContentType": digest["content_type"],
         }
@@ -113,11 +89,15 @@ class S3Storage(StreamStorage[DataRelation]):
             self._client.get_object,
             Bucket=self._bucket,
             Key=self._make_key(
+                self,
                 relation,
-                relation.rel_content_type,
-                relation.rel_content_hash_algorithm,
-                relation.rel_content_hash,
-                relation.rel_storage_version,
+                {
+                    "content_type": relation.rel_content_type,
+                    "content_hash_algorithm": relation.rel_content_hash_algorithm,
+                    "content_hash": relation.rel_content_hash,
+                    "content_size": relation.rel_content_size,
+                    "content_encoding": relation.rel_content_encoding,
+                },
             ),
         )
         return result["Body"].read()
@@ -155,13 +135,7 @@ class S3Storage(StreamStorage[DataRelation]):
                 self._client.copy_object,
                 Bucket=self._bucket,
                 CopySource={"Bucket": self._bucket, "Key": temp_key},
-                Key=self._make_key(
-                    relation,
-                    final_digest["content_type"],
-                    final_digest["content_hash_algorithm"],
-                    final_digest["content_hash"],
-                    self.version,
-                ),
+                Key=self._make_key(self, relation, final_digest),
             )
         finally:
             self._to_thread(self._client.delete_object, Bucket=self._bucket, Key=temp_key)
@@ -174,20 +148,21 @@ class S3Storage(StreamStorage[DataRelation]):
             self._client.get_object,
             Bucket=self._bucket,
             Key=self._make_key(
+                self,
                 relation,
-                relation.rel_content_type,
-                relation.rel_content_hash_algorithm,
-                relation.rel_content_hash,
-                relation.rel_storage_version,
+                {
+                    "content_type": relation.rel_content_type,
+                    "content_hash_algorithm": relation.rel_content_hash_algorithm,
+                    "content_hash": relation.rel_content_hash,
+                    "content_size": relation.rel_content_size,
+                    "content_encoding": relation.rel_content_encoding,
+                },
             ),
         )
         async with create_task_group() as tg:
-            iter_chunks = start_async_iterator(tg, result["Body"].iter_chunks())
-            try:
-                async for chunk in iter_chunks:
-                    yield chunk
-            finally:
-                iter_chunks.close()
+            with start_async_iterator(tg, result["Body"].iter_chunks()) as chunks:
+                async for c in chunks:
+                    yield c
 
     def _to_thread(self, func: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> Awaitable[R]:
         return run_sync(lambda: func(*args, **kwargs), limiter=self._limiter)

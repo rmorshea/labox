@@ -7,14 +7,14 @@ from pybooster import solved
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from labrary.core.context import DatabaseSession
-from labrary.core.context import registries
-from labrary.core.schema import Base
-from labrary.core.serializer import SerializerRegistry
-from labrary.core.storage import StorageRegistry
-from labrary.extra.json import JsonSerializer
-from labrary.extra.json import JsonStreamSerializer
-from labrary.extra.tempfile import TemporaryDirectoryStorage
+from lakery.core.context import DatabaseSession
+from lakery.core.context import registries
+from lakery.core.schema import Base
+from lakery.core.serializer import SerializerRegistry
+from lakery.core.storage import StorageRegistry
+from lakery.extra.json import JsonSerializer
+from lakery.extra.json import JsonStreamSerializer
+from lakery.extra.tempfile import TemporaryDirectoryStorage
 
 
 @pytest.fixture(autouse=True, scope="session")

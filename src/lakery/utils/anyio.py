@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import AbstractContextManager
 from contextlib import suppress
 from queue import Queue as ThreadQueue
 from typing import TYPE_CHECKING
@@ -15,7 +16,7 @@ from anyio import create_memory_object_stream
 from anyio.from_thread import run_sync as run_sync_from_thread
 from anyio.to_thread import run_sync as run_sync_to_thread
 
-from labrary.utils.misc import UNDEFINED
+from lakery.utils.misc import UNDEFINED
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable
@@ -59,7 +60,7 @@ def start_sync_iterator(task_group: TaskGroup, async_iter: AsyncIterable[R]) -> 
 
 def start_async_iterator(
     task_group: TaskGroup, sync_iter: Iterator[R]
-) -> MemoryObjectReceiveStream[R]:
+) -> AbstractContextManager[MemoryObjectReceiveStream[R]]:
     """Create an asynchronous iterator from a synchronous iterator."""
     send, recv = create_memory_object_stream[R]()
 

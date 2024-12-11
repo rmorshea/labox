@@ -10,8 +10,8 @@ from typing import TypedDict
 from typing import TypeVar
 from typing import overload
 
-from labrary.core._registry import Registry
-from labrary.core.schema import DataRelation
+from lakery.core._registry import Registry
+from lakery.core.schema import DataRelation
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable

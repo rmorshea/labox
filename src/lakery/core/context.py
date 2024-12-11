@@ -6,11 +6,11 @@ from anysync.core import Iterator
 from pybooster import injector
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from labrary.core.serializer import SerializerRegistry
-from labrary.core.storage import StorageRegistry
+from lakery.core.serializer import SerializerRegistry
+from lakery.core.storage import StorageRegistry
 
 DatabaseSession = NewType("DatabaseSession", AsyncSession)
-"""A type alias for an labrary database session."""
+"""A type alias for an lakery database session."""
 
 
 @contextmanager

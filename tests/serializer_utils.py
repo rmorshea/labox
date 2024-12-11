@@ -10,10 +10,10 @@ from typing import TypeVar
 
 import pytest
 
-from labrary.core.serializer import StreamDump
-from labrary.core.serializer import StreamSerializer
-from labrary.core.serializer import ValueDump
-from labrary.core.serializer import ValueSerializer
+from lakery.core.serializer import StreamDump
+from lakery.core.serializer import StreamSerializer
+from lakery.core.serializer import ValueDump
+from lakery.core.serializer import ValueSerializer
 
 T = TypeVar("T")
 

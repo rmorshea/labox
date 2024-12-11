@@ -7,11 +7,11 @@ from typing import TypeAlias
 
 from anysync.core import AsyncIterator
 
-from labrary.core.serializer import StreamDump
-from labrary.core.serializer import StreamSerializer
-from labrary.core.serializer import ValueDump
-from labrary.core.serializer import ValueSerializer
-from labrary.utils.streaming import decode_async_byte_stream
+from lakery.core.serializer import StreamDump
+from lakery.core.serializer import StreamSerializer
+from lakery.core.serializer import ValueDump
+from lakery.core.serializer import ValueSerializer
+from lakery.utils.streaming import decode_async_byte_stream
 
 JsonType: TypeAlias = "int | str | float | bool | dict[str, JsonType] | list[JsonType] | None"
 """A type alias for JSON data."""
@@ -27,7 +27,7 @@ JSON_STREAM_TYPES = (list, dict)
 class JsonSerializer(ValueSerializer[JsonType]):
     """A serializer for JSON data."""
 
-    name = "labrary.json.value"
+    name = "lakery.json.value"
     version = 1
     types = JSON_SCALAR_TYPES
     content_type = "application/json"
@@ -50,7 +50,7 @@ class JsonSerializer(ValueSerializer[JsonType]):
 class JsonStreamSerializer(StreamSerializer[JsonStreamType]):
     """A serializer for JSON data."""
 
-    name = "labrary.json.stream"
+    name = "lakery.json.stream"
     version = 1
     types = JSON_STREAM_TYPES
     content_type = "application/json"

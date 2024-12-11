@@ -12,19 +12,19 @@ from anysync import contextmanager
 from pybooster import injector
 from pybooster import required
 
-from labrary.core.schema import DataRelation
-from labrary.core.serializer import SerializerRegistry
-from labrary.core.serializer import StreamSerializer
-from labrary.core.storage import StorageRegistry
-from labrary.utils.anyio import TaskGroupFuture
-from labrary.utils.anyio import start_given_future
+from lakery.core.schema import DataRelation
+from lakery.core.serializer import SerializerRegistry
+from lakery.core.serializer import StreamSerializer
+from lakery.core.storage import StorageRegistry
+from lakery.utils.anyio import TaskGroupFuture
+from lakery.utils.anyio import start_given_future
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable
     from collections.abc import AsyncIterator
 
-    from labrary.core.serializer import ValueSerializer
-    from labrary.core.storage import Storage
+    from lakery.core.serializer import ValueSerializer
+    from lakery.core.storage import Storage
 
 T = TypeVar("T")
 R = TypeVar("R", bound=DataRelation)
