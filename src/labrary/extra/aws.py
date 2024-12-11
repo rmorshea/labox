@@ -12,7 +12,7 @@ from sqlalchemy.util.typing import Protocol
 
 from labrary.core.schema import DataRelation
 from labrary.core.storage import GetStreamDigest
-from labrary.core.storage import Storage
+from labrary.core.storage import StreamStorage
 from labrary.core.storage import ValueDigest
 from labrary.utils.anyio import start_async_iterator
 from labrary.utils.anyio import start_sync_iterator
@@ -64,7 +64,7 @@ class KeyMaker(Protocol):
     ) -> str: ...
 
 
-class S3Storage(Storage[DataRelation]):
+class S3Storage(StreamStorage[DataRelation]):
     """Storage for S3 data."""
 
     name = "labrary.aws.boto3.s3"

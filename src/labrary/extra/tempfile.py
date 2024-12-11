@@ -10,7 +10,7 @@ from uuid import uuid4
 
 from labrary.core.schema import DataRelation
 from labrary.core.storage import GetStreamDigest
-from labrary.core.storage import Storage
+from labrary.core.storage import StreamStorage
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from labrary.core.storage import ValueDigest
 
 
-class TemporaryDirectoryStorage(Storage[DataRelation]):
+class TemporaryDirectoryStorage(StreamStorage[DataRelation]):
     """A storage backend for testing that saves data to a temporary directory."""
 
     name = "labrary.tempfile"

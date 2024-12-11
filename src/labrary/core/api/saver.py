@@ -43,8 +43,9 @@ if TYPE_CHECKING:
     from labrary.core.serializer import StreamSerializer
     from labrary.core.serializer import ValueDump
     from labrary.core.serializer import ValueSerializer
-    from labrary.core.storage import Storage
+    from labrary.core.storage import StreamStorage
     from labrary.core.storage import ValueDigest
+    from labrary.core.storage import ValueStorage
 
 
 T = TypeVar("T")
@@ -84,7 +85,7 @@ class _DataSaver:
         relation: Callable[P, R],
         value: T,
         serializer: ValueSerializer[T] | None = None,
-        storage: Storage[R] | None = None,
+        storage: ValueStorage[R] | None = None,
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> TaskGroupFuture[R]:
@@ -105,7 +106,7 @@ class _DataSaver:
         relation: Callable[P, R],
         stream: tuple[type[T], AsyncIterable[T]],
         serializer: StreamSerializer[T] | None = ...,
-        storage: Storage[R] | None = ...,
+        storage: StreamStorage[R] | None = ...,
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> TaskGroupFuture[R]: ...
@@ -116,7 +117,7 @@ class _DataSaver:
         relation: Callable[P, R],
         stream: AsyncIterable[T],
         serializer: StreamSerializer[T],
-        storage: Storage[R] | None = None,
+        storage: StreamStorage[R] | None = None,
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> TaskGroupFuture[R]: ...
@@ -126,7 +127,7 @@ class _DataSaver:
         relation: Callable[P, R],
         stream: AsyncIterable[T] | tuple[type[T], AsyncIterable[T]],
         serializer: StreamSerializer[T] | None = None,
-        storage: Storage[R] | None = None,
+        storage: StreamStorage[R] | None = None,
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> TaskGroupFuture[R]:
@@ -245,12 +246,12 @@ async def _save_stream(
         case {"stream": stream, "serializer": serializer, "storage": storage}:
             pass
         case {"stream": stream, "serializer": serializer}:
-            storage = storage_registry.infer_from_data_relation_type(type(relation))
+            storage = storage_registry.infer_from_data_relation_type(type(relation), stream=True)
         case {"stream": stream, "storage": storage, "type": type_}:
             serializer = serializer_registry.infer_from_stream_type(type_)
         case {"stream": stream, "type": type_}:
             serializer = serializer_registry.infer_from_stream_type(type_)
-            storage = storage_registry.infer_from_data_relation_type(type(relation))
+            storage = storage_registry.infer_from_data_relation_type(type(relation), stream=True)
         case _:
             msg = f"Invalid data dictionary: {data}"
             raise ValueError(msg)
@@ -305,12 +306,12 @@ async def _save_relations(
 class _ValueData(Generic[T, R], TypedDict, total=False):
     value: Required[T]
     serializer: ValueSerializer[R]
-    storage: Storage[R]
+    storage: ValueStorage[R]
 
 
 class _BaseStreamData(Generic[T, R], TypedDict, total=False):
     stream: Required[AsyncIterable[T]]
-    storage: Storage[R]
+    storage: StreamStorage[R]
 
 
 class _InferStreamData(_BaseStreamData[T, R]):

@@ -3,10 +3,12 @@ from __future__ import annotations
 import abc
 from typing import TYPE_CHECKING
 from typing import Generic
+from typing import Literal
 from typing import LiteralString
 from typing import Protocol
 from typing import TypedDict
 from typing import TypeVar
+from typing import overload
 
 from labrary.core._registry import Registry
 from labrary.core.schema import DataRelation
@@ -19,8 +21,8 @@ if TYPE_CHECKING:
 R = TypeVar("R", bound=DataRelation)
 
 
-class Storage(Generic[R], abc.ABC):
-    """A protocol for storing and retrieving data."""
+class ValueStorage(Generic[R], abc.ABC):
+    """A protocol for storing and retrieving values."""
 
     name: LiteralString
     """The name of the storage backend."""
@@ -43,6 +45,10 @@ class Storage(Generic[R], abc.ABC):
     async def read_value(self, relation: R, /) -> bytes:
         """Load the value dump for the given relation."""
         raise NotImplementedError
+
+
+class StreamStorage(ValueStorage[R]):
+    """A protocol for storing and retrieving streams."""
 
     @abc.abstractmethod
     async def write_stream(
@@ -91,19 +97,37 @@ class GetStreamDigest(Protocol):
         ...
 
 
-class StorageRegistry(Registry[Storage]):
+class StorageRegistry(Registry[ValueStorage]):
     """A registry of storages."""
 
     item_description = "Storage"
 
-    def __init__(self, items: Sequence[Storage]) -> None:
+    def __init__(self, items: Sequence[ValueStorage]) -> None:
         super().__init__(items)
-        self.by_type = {type_: storage for storage in self.items for type_ in storage.types}
+        self.by_type = {
+            type_: storage
+            # sort stream storages last in order to prioritize them
+            for storage in sorted(self.items, key=lambda i: isinstance(i, StreamStorage))
+            for type_ in storage.types
+        }
 
-    def infer_from_data_relation_type(self, cls: type[R]) -> Storage[R]:
+    @overload
+    def infer_from_data_relation_type(
+        self, cls: type[R], *, stream: Literal[True]
+    ) -> StreamStorage[R]: ...
+
+    @overload
+    def infer_from_data_relation_type(
+        self, cls: type[R], *, stream: bool = ...
+    ) -> ValueStorage[R] | StreamStorage[R]: ...
+
+    def infer_from_data_relation_type(
+        self, cls: type[R], *, stream: bool = False
+    ) -> ValueStorage[R] | StreamStorage[R]:
         """Get the first item that can handle the given type or its parent classes."""
         for base in cls.mro():
-            if item := self.by_type.get(base):
+            if (item := self.by_type.get(base)) and (not stream or isinstance(item, StreamStorage)):
                 return item
-        msg = f"No {self.item_description.lower()} found for {cls}."
+        stream_msg = "stream " if stream else ""
+        msg = f"No {stream_msg}{self.item_description.lower()} found for {cls}."
         raise ValueError(msg)
