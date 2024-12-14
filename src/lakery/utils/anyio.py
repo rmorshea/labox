@@ -117,8 +117,6 @@ async def _set_future_result(
 class TaskGroupFuture(Generic[R]):
     """A future that is completed by a task group."""
 
-    __slots__ = "_result"
-
     _result: R
     _exception: BaseException
 

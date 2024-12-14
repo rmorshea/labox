@@ -1,9 +1,6 @@
 from codecs import IncrementalDecoder
 from collections.abc import AsyncIterable
 from collections.abc import AsyncIterator
-from collections.abc import Iterator
-from io import RawIOBase
-from threading import Lock as ThreadLock
 from typing import IO
 from typing import TypeVar
 
@@ -23,52 +20,17 @@ async def decode_async_byte_stream(
         yield ""
 
 
-class ByteStreamReader(RawIOBase, IO[bytes]):
-    """A file-like wrapper around a stream of bytes."""
-
-    def __init__(self, stream: Iterator[bytes]):
-        super().__init__()
-        self._stream = stream
-        self._buffer = b""
-        self._lock = ThreadLock()
-        self._closed = False
-
-    def readable(self):
-        """Whether the stream is readable - True."""
-        return True
-
-    def seekable(self) -> bool:
-        """Whether the stream is seekable - False."""
-        return False
-
-    def writable(self) -> bool:
-        """Whether the stream is writable - False."""
-        return False
-
-    def read(self, size=-1):
-        """Read at most size bytes from the stream - unused bytes are buffered."""
-        if self._closed:
-            msg = "Cannot read from a closed stream."
-            raise ValueError(msg)
-        with self._lock:
-            if size == -1:  # Read all
-                chunks = [self._buffer, *self._stream]
-                self._buffer = b""
-                return b"".join(chunks)
-            while len(self._buffer) < size:
-                try:
-                    self._buffer += next(self._stream)
-                except StopIteration:
-                    break
-            result, self._buffer = self._buffer[:size], self._buffer[size:]
-            return result
-
-    def close(self):
-        """Close the stream."""
-        self._closed = True
-        super().close()
-
-    @property
-    def closed(self):
-        """Whether the stream is closed."""
-        return self._closed
+async def write_async_byte_stream_into(
+    stream: AsyncIterable[bytes],
+    buffer: IO[bytes],
+    *,
+    min_size: int,
+) -> int | None:
+    """Write at least min_size bytes into the buffer and return the number of bytes written."""
+    wrote = 0
+    start = buffer.tell()
+    async for byte_chunk in stream:
+        buffer.write(byte_chunk)
+        if (wrote := buffer.tell() - start) >= min_size:
+            break
+    return wrote

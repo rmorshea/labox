@@ -81,7 +81,7 @@ test = [
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 python_files = ["test_*.py", "*_utils.py"]
-filterwarnings = ["error"]
+filterwarnings = ["error", "ignore:datetime.datetime.utcnow:DeprecationWarning"]
 
 [tool.ruff]
 line-length = 100

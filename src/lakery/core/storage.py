@@ -93,7 +93,15 @@ class GetStreamDigest(Protocol):
     """A protocol for getting the digest of a stream dump."""
 
     def __call__(self, *, allow_incomplete: bool = False) -> StreamDigest:
-        """Get the digest of a stream dump."""
+        """Get the digest of a stream dump.
+
+        Args:
+            allow_incomplete: Whether to allow the digest to be incomplete.
+               Raises an error if the digest is incomplete and this is False.
+
+        Raises:
+            ValueError: If the digest is incomplete and `allow_incomplete` is False.
+        """
         ...
 
 

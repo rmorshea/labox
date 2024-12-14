@@ -12,9 +12,8 @@ from anyio import create_task_group
 from lakery.core.schema import DataRelation
 from lakery.core.storage import GetStreamDigest
 from lakery.core.storage import StreamStorage
+from lakery.extra._utils import make_path_parts_from_digest
 from lakery.utils.anyio import start_async_iterator
-from lakery.utils.misc import StorageLocationMaker
-from lakery.utils.misc import make_data_relation_path
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable
@@ -35,7 +34,6 @@ class TemporaryDirectoryStorage(StreamStorage[DataRelation]):
         self,
         tempdir: TemporaryDirectory | str | None = None,
         chunk_size: int = 1024**2,  # 1MB chunk size by default
-        make_path: StorageLocationMaker = make_data_relation_path,
     ) -> None:
         match tempdir:
             case None:
@@ -48,7 +46,6 @@ class TemporaryDirectoryStorage(StreamStorage[DataRelation]):
                 self.path = Path(tempdir.name)
         self.chunk_size = chunk_size
         (self.path / "scratch").mkdir()
-        self._make_path = make_path
 
     def __enter__(self) -> Self:
         if not hasattr(self, "tempdir"):
@@ -66,24 +63,23 @@ class TemporaryDirectoryStorage(StreamStorage[DataRelation]):
         digest: ValueDigest,
     ) -> DataRelation:
         """Save the given value dump."""
-        content_path = Path(self._make_path(self, relation, digest))
+        content_path = self.path.joinpath(*make_path_parts_from_digest(digest))
         if not content_path.exists():
+            content_path.parent.mkdir(parents=True, exist_ok=True)
             content_path.write_bytes(value)
         return relation
 
     async def read_value(self, relation: DataRelation) -> bytes:
         """Load the value dump for the given relation."""
-        content_path = Path(
-            self._make_path(
-                self,
-                relation,
+        content_path = self.path.joinpath(
+            *make_path_parts_from_digest(
                 {
                     "content_type": relation.rel_content_type,
                     "content_hash_algorithm": relation.rel_content_hash_algorithm,
                     "content_hash": relation.rel_content_hash,
                     "content_size": relation.rel_content_size,
                     "content_encoding": relation.rel_content_encoding,
-                },
+                }
             )
         )
         return content_path.read_bytes()
@@ -101,19 +97,18 @@ class TemporaryDirectoryStorage(StreamStorage[DataRelation]):
                 file.write(chunk)
         try:
             final_digest = get_digest()
-            content_path = Path(self._make_path(self, relation, final_digest))
+            content_path = self.path.joinpath(*make_path_parts_from_digest(final_digest))
             if not content_path.exists():
-                scratch_path.replace(content_path)
+                content_path.parent.mkdir(parents=True, exist_ok=True)
+                scratch_path.rename(content_path)
         finally:
             scratch_path.unlink(missing_ok=True)
         return relation
 
     async def read_stream(self, relation: DataRelation) -> AsyncIterator[bytes]:
         """Load the stream dump for the given relation."""
-        path = Path(
-            self._make_path(
-                self,
-                relation,
+        path = self.path.joinpath(
+            *make_path_parts_from_digest(
                 {
                     "content_type": relation.rel_content_type,
                     "content_hash_algorithm": relation.rel_content_hash_algorithm,
