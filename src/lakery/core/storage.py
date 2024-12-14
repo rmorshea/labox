@@ -31,7 +31,7 @@ class ValueStorage(Generic[R], abc.ABC):
     version: int
 
     @abc.abstractmethod
-    async def write_value(
+    async def put_value(
         self,
         relation: R,
         value: bytes,
@@ -42,7 +42,7 @@ class ValueStorage(Generic[R], abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    async def read_value(self, relation: R, /) -> bytes:
+    async def get_value(self, relation: R, /) -> bytes:
         """Load the value dump for the given relation."""
         raise NotImplementedError
 
@@ -51,7 +51,7 @@ class StreamStorage(ValueStorage[R]):
     """A protocol for storing and retrieving streams."""
 
     @abc.abstractmethod
-    async def write_stream(
+    async def put_stream(
         self,
         relation: R,
         stream: AsyncIterable[bytes],
@@ -62,7 +62,7 @@ class StreamStorage(ValueStorage[R]):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def read_stream(self, relation: R, /) -> AsyncIterable[bytes]:
+    def get_stream(self, relation: R, /) -> AsyncIterable[bytes]:
         """Load the stream dump for the given relation."""
         raise NotImplementedError
 

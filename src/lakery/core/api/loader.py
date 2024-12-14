@@ -101,7 +101,7 @@ async def _load_value(
     """Load the given value data."""
     return serializer.load_value(
         {
-            "value": await storage.read_value(relation),
+            "value": await storage.get_value(relation),
             "content_type": relation.rel_content_type,
             "content_encoding": relation.rel_content_encoding,
             "serializer_name": relation.rel_serializer_name,
@@ -118,7 +118,7 @@ def _load_stream(
     """Load the given stream data."""
     return serializer.load_stream(
         {
-            "stream": storage.read_stream(relation),
+            "stream": storage.get_stream(relation),
             "content_type": relation.rel_content_type,
             "content_encoding": relation.rel_content_encoding,
             "serializer_name": relation.rel_serializer_name,

@@ -225,7 +225,7 @@ async def _save_value(
     relation.rel_storage_name = storage.name
     relation.rel_storage_version = storage.version
 
-    relation = await storage.write_value(relation, dump["value"], digest)
+    relation = await storage.put_value(relation, dump["value"], digest)
 
     relation.rel_content_encoding = dump.get("content_encoding")
     relation.rel_content_hash = digest["content_hash"]
@@ -264,7 +264,7 @@ async def _save_stream(
     relation.rel_serializer_name = dump["serializer_name"]
     relation.rel_serializer_version = dump["serializer_version"]
 
-    await storage.write_stream(relation, stream, get_digest)
+    await storage.put_stream(relation, stream, get_digest)
 
     try:
         digest = get_digest()

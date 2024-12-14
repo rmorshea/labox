@@ -30,6 +30,7 @@ dependencies = [
 [project.optional-dependencies]
 pyarrow = ["pyarrow>=18,<19"]
 aws = ["boto3>=1,<2"]
+azure = ["azure-storage-blob>=12.24.0,<13"]
 [project.urls]
 Source = "https://github.com/rmorshea/lakery"
 

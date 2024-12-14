@@ -32,16 +32,16 @@ def s3_bucket(s3_client) -> str:
     return bucket_name
 
 
-async def test_write_read_value(s3_bucket):
+async def test_put_get_value(s3_bucket):
     storage = S3Storage(s3_client=boto3.client("s3"), bucket=s3_bucket)
     relation, digest, value = make_fake_value_data(1024)
-    relation = await storage.write_value(relation, value, digest)
-    assert (await storage.read_value(relation)) == value
+    relation = await storage.put_value(relation, value, digest)
+    assert (await storage.get_value(relation)) == value
 
 
-async def test_write_read_stream(s3_bucket):
+async def test_write_get_stream(s3_bucket):
     storage = S3Storage(s3_client=boto3.client("s3"), bucket=s3_bucket)
     relation, digest, stream, expected_value = make_fake_stream_data(1024 * 10, chunk_size=1024)
-    relation = await storage.write_stream(relation, stream, digest)
-    actual_value = b"".join([chunk async for chunk in storage.read_stream(relation)])
+    relation = await storage.put_stream(relation, stream, digest)
+    actual_value = b"".join([chunk async for chunk in storage.get_stream(relation)])
     assert actual_value == expected_value

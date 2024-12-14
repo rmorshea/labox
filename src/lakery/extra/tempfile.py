@@ -56,7 +56,7 @@ class TemporaryDirectoryStorage(StreamStorage[DataRelation]):
     def __exit__(self, *_: Any) -> None:
         self.tempdir.cleanup()
 
-    async def write_value(
+    async def put_value(
         self,
         relation: DataRelation,
         value: bytes,
@@ -69,7 +69,7 @@ class TemporaryDirectoryStorage(StreamStorage[DataRelation]):
             content_path.write_bytes(value)
         return relation
 
-    async def read_value(self, relation: DataRelation) -> bytes:
+    async def get_value(self, relation: DataRelation) -> bytes:
         """Load the value dump for the given relation."""
         content_path = self.path.joinpath(
             *make_path_parts_from_digest(
@@ -84,7 +84,7 @@ class TemporaryDirectoryStorage(StreamStorage[DataRelation]):
         )
         return content_path.read_bytes()
 
-    async def write_stream(
+    async def put_stream(
         self,
         relation: DataRelation,
         stream: AsyncIterable[bytes],
@@ -105,7 +105,7 @@ class TemporaryDirectoryStorage(StreamStorage[DataRelation]):
             scratch_path.unlink(missing_ok=True)
         return relation
 
-    async def read_stream(self, relation: DataRelation) -> AsyncIterator[bytes]:
+    async def get_stream(self, relation: DataRelation) -> AsyncIterator[bytes]:
         """Load the stream dump for the given relation."""
         path = self.path.joinpath(
             *make_path_parts_from_digest(
