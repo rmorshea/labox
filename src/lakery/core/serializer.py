@@ -7,11 +7,12 @@ from typing import LiteralString
 from typing import TypedDict
 from typing import TypeVar
 
+from typing_extensions import AsyncGenerator
+
 from lakery.core._registry import Registry
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable
-    from collections.abc import AsyncIterator
     from collections.abc import Iterable
     from collections.abc import Sequence
 
@@ -60,7 +61,7 @@ class StreamSerializer(_BaseSerializer[T]):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def load_stream(self, dump: StreamDump, /) -> AsyncIterator[T]:
+    def load_stream(self, dump: StreamDump, /) -> AsyncGenerator[T]:
         """Deserialize the given stream."""
         raise NotImplementedError
 

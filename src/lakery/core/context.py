@@ -1,8 +1,8 @@
+from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import Any
 from typing import NewType
 
-from anysync.core import Iterator
 from pybooster import injector
 from sqlalchemy.ext.asyncio import AsyncSession
 

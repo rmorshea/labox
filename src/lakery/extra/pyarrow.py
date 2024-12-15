@@ -1,5 +1,7 @@
 import io
+from collections.abc import AsyncGenerator
 from collections.abc import AsyncIterable
+from collections.abc import AsyncIterator
 from collections.abc import Iterable
 from collections.abc import Iterator
 from collections.abc import Mapping
@@ -12,7 +14,6 @@ from typing import TypedDict
 import pyarrow as pa
 import pyarrow.fs as fs
 import pyarrow.parquet as pq
-from anysync.core import AsyncIterator
 
 from lakery.core.serializer import StreamDump
 from lakery.core.serializer import StreamSerializer
@@ -105,7 +106,7 @@ class ArrowRecordBatchStreamSerializer(StreamSerializer[pa.RecordBatch]):
             "stream": _dump_arrow_record_batch_stream(stream, self.write_options),
         }
 
-    def load_stream(self, dump: StreamDump) -> AsyncIterator[pa.RecordBatch]:
+    def load_stream(self, dump: StreamDump) -> AsyncGenerator[pa.RecordBatch]:
         """Deserialize the given stream of Arrow record batches."""
         return _load_arrow_record_batch_stream(dump["stream"])
 
@@ -258,7 +259,7 @@ class ParquetRecordBatchStreamSerializer(StreamSerializer[pa.RecordBatch]):
             ),
         }
 
-    def load_stream(self, dump: StreamDump) -> AsyncIterator[pa.RecordBatch]:
+    def load_stream(self, dump: StreamDump) -> AsyncGenerator[pa.RecordBatch]:
         """Deserialize the given stream of Arrow record batches."""
         return _load_parquet_record_batch_stream(dump["stream"], self.read_options)
 
@@ -267,7 +268,7 @@ async def _dump_parquet_record_batch_stream(
     record_batch_stream: AsyncIterable[pa.RecordBatch],
     write_options: ParquetWriteOptions,
     write_option_extras: Mapping[str, Any],
-) -> AsyncIterator[bytes]:
+) -> AsyncGenerator[bytes]:
     buffer = io.BytesIO()
     stream_writer = None
     with ExitStack() as stack:
@@ -291,7 +292,7 @@ async def _dump_parquet_record_batch_stream(
 async def _load_parquet_record_batch_stream(
     byte_stream: AsyncIterable[bytes],
     read_options: ParquetReadOptions,
-) -> AsyncIterator[pa.RecordBatch]:
+) -> AsyncGenerator[pa.RecordBatch]:
     buffer = io.BytesIO()
     stream_reader = None
     async for byte in byte_stream:
@@ -334,7 +335,7 @@ async def _dump_arrow_record_batch_stream(
 
 async def _load_arrow_record_batch_stream(
     byte_stream: AsyncIterable[bytes],
-) -> AsyncIterator[pa.RecordBatch]:
+) -> AsyncGenerator[pa.RecordBatch]:
     schema: pa.Schema | None = None
     byte_stream_iter = aiter(byte_stream)
     async for msg in _AsyncMessageReader(byte_stream_iter):

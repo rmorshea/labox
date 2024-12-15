@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import AsyncGenerator
 from collections.abc import Callable
+from collections.abc import Coroutine
 from tempfile import SpooledTemporaryFile
 from typing import IO
 from typing import TYPE_CHECKING
@@ -15,24 +17,22 @@ from typing_extensions import ContextManager
 
 from lakery.core.schema import DataRelation
 from lakery.core.storage import GetStreamDigest
-from lakery.core.storage import StreamDigest
 from lakery.core.storage import StreamStorage
 from lakery.core.storage import ValueDigest
-from lakery.extra._utils import make_path_parts_from_digest
+from lakery.extra._utils import make_path_from_digest
 from lakery.utils.anyio import start_async_iterator
 from lakery.utils.streaming import write_async_byte_stream_into
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable
 
-    from anysync.core import AsyncIterator
-    from anysync.core import Coroutine
     from types_boto3_s3 import S3Client
     from types_boto3_s3.type_defs import CreateMultipartUploadRequestRequestTypeDef
     from types_boto3_s3.type_defs import PutObjectRequestRequestTypeDef
 
 P = ParamSpec("P")
 R = TypeVar("R")
+D = TypeVar("D", bound=DataRelation)
 
 
 _5MB = 5 * (1024**2)
@@ -42,16 +42,16 @@ _5GB = 5 * (1024**3)
 _StreamBufferType = Callable[[], ContextManager[IO[bytes]]]
 
 
-class S3Storage(StreamStorage[DataRelation]):
+class S3Storage(StreamStorage[D]):
     """Storage for S3 data."""
 
     name = "lakery.aws.boto3.s3"
-    types = (DataRelation,)
     version = 1
 
     def __init__(
         self,
         *,
+        types: tuple[type[D], ...] = (DataRelation,),
         s3_client: S3Client,
         bucket: str,
         key_prefix: str = "",
@@ -67,6 +67,7 @@ class S3Storage(StreamStorage[DataRelation]):
                 "https://docs.aws.amazon.com/AmazonS3/latest/userguide/qfacts.html"
             )
             raise ValueError(msg)
+        self.types = types
         self._s3_client = s3_client
         self._bucket = bucket
         self._key_prefix = key_prefix
@@ -77,14 +78,14 @@ class S3Storage(StreamStorage[DataRelation]):
 
     async def put_value(
         self,
-        relation: DataRelation,
+        relation: D,
         value: bytes,
         digest: ValueDigest,
-    ) -> DataRelation:
+    ) -> D:
         """Save the given value dump."""
         put_request: PutObjectRequestRequestTypeDef = {
             "Bucket": self._bucket,
-            "Key": self._make_key(digest),
+            "Key": make_path_from_digest("/", digest, prefix=self._key_prefix),
             "Body": value,
             "ContentType": digest["content_type"],
         }
@@ -93,12 +94,13 @@ class S3Storage(StreamStorage[DataRelation]):
         await self._to_thread(self._s3_client.put_object, **put_request)
         return relation
 
-    async def get_value(self, relation: DataRelation) -> bytes:
+    async def get_value(self, relation: D) -> bytes:
         """Load the value dump for the given relation."""
         result = await self._to_thread(
             self._s3_client.get_object,
             Bucket=self._bucket,
-            Key=self._make_key(
+            Key=make_path_from_digest(
+                "/",
                 {
                     "content_type": relation.rel_content_type,
                     "content_hash_algorithm": relation.rel_content_hash_algorithm,
@@ -106,16 +108,17 @@ class S3Storage(StreamStorage[DataRelation]):
                     "content_size": relation.rel_content_size,
                     "content_encoding": relation.rel_content_encoding,
                 },
+                prefix=self._key_prefix,
             ),
         )
         return result["Body"].read()
 
     async def put_stream(
         self,
-        relation: DataRelation,
+        relation: D,
         stream: AsyncIterable[bytes],
         get_digest: GetStreamDigest,
-    ) -> DataRelation:
+    ) -> D:
         """Save the given stream dump.
 
         This works by first saving the stream to a temporary key becuase the content
@@ -186,7 +189,7 @@ class S3Storage(StreamStorage[DataRelation]):
                     self._s3_client.copy_object,
                     Bucket=self._bucket,
                     CopySource={"Bucket": self._bucket, "Key": temp_key},
-                    Key=self._make_key(final_digest),
+                    Key=make_path_from_digest("/", (final_digest), prefix=self._key_prefix),
                 )
             finally:
                 await self._to_thread(
@@ -195,12 +198,13 @@ class S3Storage(StreamStorage[DataRelation]):
 
         return relation
 
-    async def get_stream(self, relation: DataRelation) -> AsyncIterator[bytes]:
+    async def get_stream(self, relation: D) -> AsyncGenerator[bytes]:
         """Load the stream dump for the given relation."""
         result = await self._to_thread(
             self._s3_client.get_object,
             Bucket=self._bucket,
-            Key=self._make_key(
+            Key=make_path_from_digest(
+                "/",
                 {
                     "content_type": relation.rel_content_type,
                     "content_hash_algorithm": relation.rel_content_hash_algorithm,
@@ -208,6 +212,7 @@ class S3Storage(StreamStorage[DataRelation]):
                     "content_size": relation.rel_content_size,
                     "content_encoding": relation.rel_content_encoding,
                 },
+                prefix=self._key_prefix,
             ),
         )
 
@@ -227,12 +232,6 @@ class S3Storage(StreamStorage[DataRelation]):
     ) -> Coroutine[None, None, R]:
         return run_sync(lambda: func(*args, **kwargs), limiter=self._limiter)
 
-    def _make_key(self, digest: ValueDigest | StreamDigest) -> str:
-        parts = make_path_parts_from_digest(digest)
-        if self._key_prefix:
-            parts = (self._key_prefix, *parts)
-        return "/".join(parts)
-
 
 def _make_temp_key() -> str:
-    return f"temp/{uuid4()}"
+    return f"temp/{uuid4().hex}"

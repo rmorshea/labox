@@ -32,6 +32,7 @@ from lakery.utils.anyio import TaskGroupFuture
 from lakery.utils.anyio import start_given_future
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
     from collections.abc import AsyncIterable
     from collections.abc import AsyncIterator
     from collections.abc import Callable
@@ -327,14 +328,14 @@ _StreamData = _KnownStreamData[T, R] | _InferStreamData[T, R]
 
 def _make_stream_dump_digest_getter(
     dump: StreamDump,
-) -> tuple[AsyncIterator[bytes], GetStreamDigest]:
+) -> tuple[AsyncGenerator[bytes], GetStreamDigest]:
     stream = dump["stream"]
 
     content_hash = sha256()
     size = 0
     is_complete = False
 
-    async def wrapper() -> AsyncIterator[bytes]:
+    async def wrapper() -> AsyncGenerator[bytes]:
         nonlocal is_complete, size
         async for chunk in stream:
             content_hash.update(chunk)

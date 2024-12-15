@@ -14,55 +14,56 @@ from lakery.core._registry import Registry
 from lakery.core.schema import DataRelation
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
     from collections.abc import AsyncIterable
     from collections.abc import Sequence
 
 
-R = TypeVar("R", bound=DataRelation)
+D = TypeVar("D", bound=DataRelation)
 
 
-class ValueStorage(Generic[R], abc.ABC):
+class ValueStorage(Generic[D], abc.ABC):
     """A protocol for storing and retrieving values."""
 
     name: LiteralString
     """The name of the storage backend."""
-    types: tuple[type[R], ...]
+    types: tuple[type[D], ...] = ()
     """The types that the serializer can handle."""
     version: int
 
     @abc.abstractmethod
     async def put_value(
         self,
-        relation: R,
+        relation: D,
         value: bytes,
         digest: ValueDigest,
         /,
-    ) -> R:
+    ) -> D:
         """Save the given value dump."""
         raise NotImplementedError
 
     @abc.abstractmethod
-    async def get_value(self, relation: R, /) -> bytes:
+    async def get_value(self, relation: D, /) -> bytes:
         """Load the value dump for the given relation."""
         raise NotImplementedError
 
 
-class StreamStorage(ValueStorage[R]):
+class StreamStorage(ValueStorage[D]):
     """A protocol for storing and retrieving streams."""
 
     @abc.abstractmethod
     async def put_stream(
         self,
-        relation: R,
+        relation: D,
         stream: AsyncIterable[bytes],
         get_digest: GetStreamDigest,
         /,
-    ) -> R:
+    ) -> D:
         """Save the given stream dump."""
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_stream(self, relation: R, /) -> AsyncIterable[bytes]:
+    def get_stream(self, relation: D, /) -> AsyncGenerator[bytes]:
         """Load the stream dump for the given relation."""
         raise NotImplementedError
 
@@ -121,17 +122,17 @@ class StorageRegistry(Registry[ValueStorage]):
 
     @overload
     def infer_from_data_relation_type(
-        self, cls: type[R], *, stream: Literal[True]
-    ) -> StreamStorage[R]: ...
+        self, cls: type[D], *, stream: Literal[True]
+    ) -> StreamStorage[D]: ...
 
     @overload
     def infer_from_data_relation_type(
-        self, cls: type[R], *, stream: bool = ...
-    ) -> ValueStorage[R] | StreamStorage[R]: ...
+        self, cls: type[D], *, stream: bool = ...
+    ) -> ValueStorage[D] | StreamStorage[D]: ...
 
     def infer_from_data_relation_type(
-        self, cls: type[R], *, stream: bool = False
-    ) -> ValueStorage[R] | StreamStorage[R]:
+        self, cls: type[D], *, stream: bool = False
+    ) -> ValueStorage[D] | StreamStorage[D]:
         """Get the first item that can handle the given type or its parent classes."""
         for base in cls.mro():
             if (item := self.by_type.get(base)) and (not stream or isinstance(item, StreamStorage)):

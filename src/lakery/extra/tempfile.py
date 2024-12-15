@@ -5,6 +5,7 @@ from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Self
+from typing import TypeVar
 from uuid import uuid4
 
 from anyio import create_task_group
@@ -16,25 +17,29 @@ from lakery.extra._utils import make_path_parts_from_digest
 from lakery.utils.anyio import start_async_iterator
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
     from collections.abc import AsyncIterable
-    from collections.abc import AsyncIterator
     from collections.abc import Iterator
 
     from lakery.core.storage import ValueDigest
 
 
-class TemporaryDirectoryStorage(StreamStorage[DataRelation]):
+D = TypeVar("D", bound=DataRelation)
+
+
+class TemporaryDirectoryStorage(StreamStorage[D]):
     """A storage backend for testing that saves data to a temporary directory."""
 
     name = "lakery.tempfile"
     version = 1
-    types = (DataRelation,)
 
     def __init__(
         self,
+        types: tuple[type[D], ...] = (DataRelation,),
         tempdir: TemporaryDirectory | str | None = None,
         chunk_size: int = 1024**2,  # 1MB chunk size by default
     ) -> None:
+        self.types = types
         match tempdir:
             case None:
                 self.tempdir = TemporaryDirectory()
@@ -58,10 +63,10 @@ class TemporaryDirectoryStorage(StreamStorage[DataRelation]):
 
     async def put_value(
         self,
-        relation: DataRelation,
+        relation: D,
         value: bytes,
         digest: ValueDigest,
-    ) -> DataRelation:
+    ) -> D:
         """Save the given value dump."""
         content_path = self.path.joinpath(*make_path_parts_from_digest(digest))
         if not content_path.exists():
@@ -69,7 +74,7 @@ class TemporaryDirectoryStorage(StreamStorage[DataRelation]):
             content_path.write_bytes(value)
         return relation
 
-    async def get_value(self, relation: DataRelation) -> bytes:
+    async def get_value(self, relation: D) -> bytes:
         """Load the value dump for the given relation."""
         content_path = self.path.joinpath(
             *make_path_parts_from_digest(
@@ -86,10 +91,10 @@ class TemporaryDirectoryStorage(StreamStorage[DataRelation]):
 
     async def put_stream(
         self,
-        relation: DataRelation,
+        relation: D,
         stream: AsyncIterable[bytes],
         get_digest: GetStreamDigest,
-    ) -> DataRelation:
+    ) -> D:
         """Save the given stream dump."""
         scratch_path = self._get_scratch_path()
         with scratch_path.open("wb") as file:
@@ -105,7 +110,7 @@ class TemporaryDirectoryStorage(StreamStorage[DataRelation]):
             scratch_path.unlink(missing_ok=True)
         return relation
 
-    async def get_stream(self, relation: DataRelation) -> AsyncIterator[bytes]:
+    async def get_stream(self, relation: D) -> AsyncGenerator[bytes]:
         """Load the stream dump for the given relation."""
         path = self.path.joinpath(
             *make_path_parts_from_digest(

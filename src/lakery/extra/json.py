@@ -1,11 +1,10 @@
 import json
 from codecs import getincrementaldecoder
+from collections.abc import AsyncGenerator
 from collections.abc import AsyncIterable
 from collections.abc import Iterable
 from io import StringIO
 from typing import TypeAlias
-
-from anysync.core import AsyncIterator
 
 from lakery.core.serializer import StreamDump
 from lakery.core.serializer import StreamSerializer
@@ -79,12 +78,12 @@ class JsonStreamSerializer(StreamSerializer[JsonStreamType]):
             "stream": _dump_json_stream(stream),
         }
 
-    def load_stream(self, dump: StreamDump) -> AsyncIterator[JsonStreamType]:
+    def load_stream(self, dump: StreamDump) -> AsyncGenerator[JsonStreamType]:
         """Deserialize the given stream of JSON data."""
         return _load_json_stream(dump["stream"])
 
 
-async def _dump_json_stream(stream: AsyncIterable[JsonStreamType]) -> AsyncIterator[bytes]:
+async def _dump_json_stream(stream: AsyncIterable[JsonStreamType]) -> AsyncGenerator[bytes]:
     yield b"["
     buffer = StringIO()
     async for chunk in stream:
@@ -99,7 +98,7 @@ async def _dump_json_stream(stream: AsyncIterable[JsonStreamType]) -> AsyncItera
     yield b"]"
 
 
-async def _load_json_stream(stream: AsyncIterable[bytes]) -> AsyncIterator[JsonStreamType]:
+async def _load_json_stream(stream: AsyncIterable[bytes]) -> AsyncGenerator[JsonStreamType]:
     buffer = StringIO()
     started = False
     decoder = json.JSONDecoder()
