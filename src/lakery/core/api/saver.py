@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import aclosing
 from hashlib import sha256
 from typing import TYPE_CHECKING
 from typing import Generic
@@ -221,20 +222,17 @@ async def _save_value(
     dump = serializer.dump_value(value)
     digest = _make_value_dump_digest(dump)
 
-    relation.rel_serializer_name = dump["serializer_name"]
-    relation.rel_serializer_version = dump["serializer_version"]
-    relation.rel_storage_name = storage.name
-    relation.rel_storage_version = storage.version
-
-    relation = await storage.put_value(relation, dump["value"], digest)
-
     relation.rel_content_encoding = dump.get("content_encoding")
     relation.rel_content_hash = digest["content_hash"]
     relation.rel_content_hash_algorithm = digest["content_hash_algorithm"]
     relation.rel_content_size = len(dump["value"])
     relation.rel_content_type = dump["content_type"]
+    relation.rel_serializer_name = dump["serializer_name"]
+    relation.rel_serializer_version = dump["serializer_version"]
+    relation.rel_storage_name = storage.name
+    relation.rel_storage_version = storage.version
 
-    return relation
+    return await storage.put_value(relation, dump["value"], digest)
 
 
 async def _save_stream(
@@ -258,26 +256,23 @@ async def _save_stream(
             raise ValueError(msg)
 
     dump = serializer.dump_stream(stream)
-    stream, get_digest = _make_stream_dump_digest_getter(dump)
+    stream, get_digest = _wrap_stream_dump(relation, dump)
 
-    relation.rel_storage_name = storage.name
-    relation.rel_storage_version = storage.version
+    relation.rel_content_encoding = dump.get("content_encoding")
+    relation.rel_content_type = dump["content_type"]
     relation.rel_serializer_name = dump["serializer_name"]
     relation.rel_serializer_version = dump["serializer_version"]
+    relation.rel_storage_name = storage.name
+    relation.rel_storage_version = storage.version
 
-    await storage.put_stream(relation, stream, get_digest)
+    async with aclosing(stream):
+        await storage.put_stream(relation, stream, get_digest)
 
     try:
-        digest = get_digest()
+        get_digest()
     except RuntimeError:
         msg = f"Storage {storage.name} did not fully consume the stream for relation {relation}."
         raise RuntimeError(msg) from None
-
-    relation.rel_content_encoding = dump.get("content_encoding")
-    relation.rel_content_hash = digest["content_hash"]
-    relation.rel_content_hash_algorithm = digest["content_hash_algorithm"]
-    relation.rel_content_size = digest["content_size"]
-    relation.rel_content_type = dump["content_type"]
 
     return relation
 
@@ -326,21 +321,27 @@ class _KnownStreamData(_BaseStreamData[T, R]):
 _StreamData = _KnownStreamData[T, R] | _InferStreamData[T, R]
 
 
-def _make_stream_dump_digest_getter(
+def _wrap_stream_dump(
+    relation: DataRelation,
     dump: StreamDump,
 ) -> tuple[AsyncGenerator[bytes], GetStreamDigest]:
     stream = dump["stream"]
 
     content_hash = sha256()
-    size = 0
+    content_size = 0
     is_complete = False
 
     async def wrapper() -> AsyncGenerator[bytes]:
-        nonlocal is_complete, size
-        async for chunk in stream:
-            content_hash.update(chunk)
-            size += len(chunk)
-            yield chunk
+        nonlocal is_complete, content_size
+        try:
+            async for chunk in stream:
+                content_hash.update(chunk)
+                content_size += len(chunk)
+                yield chunk
+        finally:
+            relation.rel_content_hash = content_hash.hexdigest()
+            relation.rel_content_hash_algorithm = content_hash.name
+            relation.rel_content_size = content_size
         is_complete = True
 
     def get_digest(*, allow_incomplete: bool = False) -> StreamDigest:
@@ -351,7 +352,7 @@ def _make_stream_dump_digest_getter(
             "content_encoding": dump.get("content_encoding"),
             "content_hash": content_hash.hexdigest(),
             "content_hash_algorithm": content_hash.name,
-            "content_size": size,
+            "content_size": content_size,
             "content_type": dump["content_type"],
             "is_complete": is_complete,
         }

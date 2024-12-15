@@ -10,8 +10,9 @@ from typing import TypeVar
 
 import pytest
 
-from lakery.core.api.saver import _make_stream_dump_digest_getter
+from lakery.core.api.saver import _wrap_stream_dump
 from lakery.core.schema import DataRelation
+from lakery.utils.errors import NoStorageDataError
 
 if TYPE_CHECKING:
     from lakery.core.storage import GetStreamDigest
@@ -81,14 +82,14 @@ async def assert_storage_cleans_up_after_stream_error(storage: StreamStorage):
     with pytest.raises(ValueError, match="Bad stream"):
         await storage.put_stream(relation, make_bad_stream(), digest)
 
-    with pytest.raises(Exception):
+    with pytest.raises(NoStorageDataError):
         await storage.get_value(relation)
 
     load_stream = storage.get_stream(relation)
 
     async with aclosing(load_stream):
         iter_load_stream = aiter(load_stream)
-        with pytest.raises(Exception):
+        with pytest.raises(NoStorageDataError):
             await anext(iter_load_stream)
 
 
@@ -147,14 +148,15 @@ def make_fake_stream_data(
         for chunk in value_chunks:
             yield chunk
 
-    stream, get_digest = _make_stream_dump_digest_getter(
+    stream, get_digest = _wrap_stream_dump(
+        data_relation,
         {
             "content_encoding": None,
             "content_type": "application/octet-stream",
             "serializer_name": "fake",
             "serializer_version": 1,
             "stream": make_stream(),
-        }
+        },
     )
 
     return data_relation, get_digest, stream, b"".join(value_chunks)

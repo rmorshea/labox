@@ -21,6 +21,7 @@ from lakery.core.storage import StreamStorage
 from lakery.core.storage import ValueDigest
 from lakery.extra._utils import make_path_from_digest
 from lakery.utils.anyio import start_async_iterator
+from lakery.utils.errors import NoStorageDataError
 from lakery.utils.streaming import write_async_byte_stream_into
 
 if TYPE_CHECKING:
@@ -96,22 +97,26 @@ class S3Storage(StreamStorage[D]):
 
     async def get_value(self, relation: D) -> bytes:
         """Load the value dump for the given relation."""
-        result = await self._to_thread(
-            self._s3_client.get_object,
-            Bucket=self._bucket,
-            Key=make_path_from_digest(
-                "/",
-                {
-                    "content_type": relation.rel_content_type,
-                    "content_hash_algorithm": relation.rel_content_hash_algorithm,
-                    "content_hash": relation.rel_content_hash,
-                    "content_size": relation.rel_content_size,
-                    "content_encoding": relation.rel_content_encoding,
-                },
-                prefix=self._key_prefix,
-            ),
-        )
-        return result["Body"].read()
+        try:
+            result = await self._to_thread(
+                self._s3_client.get_object,
+                Bucket=self._bucket,
+                Key=make_path_from_digest(
+                    "/",
+                    {
+                        "content_type": relation.rel_content_type,
+                        "content_hash_algorithm": relation.rel_content_hash_algorithm,
+                        "content_hash": relation.rel_content_hash,
+                        "content_size": relation.rel_content_size,
+                        "content_encoding": relation.rel_content_encoding,
+                    },
+                    prefix=self._key_prefix,
+                ),
+            )
+            return result["Body"].read()
+        except self._s3_client.exceptions.NoSuchKey as error:
+            msg = f"No data found for {relation}."
+            raise NoStorageDataError(msg) from error
 
     async def put_stream(
         self,
@@ -200,21 +205,25 @@ class S3Storage(StreamStorage[D]):
 
     async def get_stream(self, relation: D) -> AsyncGenerator[bytes]:
         """Load the stream dump for the given relation."""
-        result = await self._to_thread(
-            self._s3_client.get_object,
-            Bucket=self._bucket,
-            Key=make_path_from_digest(
-                "/",
-                {
-                    "content_type": relation.rel_content_type,
-                    "content_hash_algorithm": relation.rel_content_hash_algorithm,
-                    "content_hash": relation.rel_content_hash,
-                    "content_size": relation.rel_content_size,
-                    "content_encoding": relation.rel_content_encoding,
-                },
-                prefix=self._key_prefix,
-            ),
-        )
+        try:
+            result = await self._to_thread(
+                self._s3_client.get_object,
+                Bucket=self._bucket,
+                Key=make_path_from_digest(
+                    "/",
+                    {
+                        "content_type": relation.rel_content_type,
+                        "content_hash_algorithm": relation.rel_content_hash_algorithm,
+                        "content_hash": relation.rel_content_hash,
+                        "content_size": relation.rel_content_size,
+                        "content_encoding": relation.rel_content_encoding,
+                    },
+                    prefix=self._key_prefix,
+                ),
+            )
+        except self._s3_client.exceptions.NoSuchKey as error:
+            msg = f"No data found for {relation}."
+            raise NoStorageDataError(msg) from error
 
         async with create_task_group() as tg:
             with start_async_iterator(
