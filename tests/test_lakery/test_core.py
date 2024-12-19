@@ -10,13 +10,9 @@ async def test_simple_value_data_saver_and_loader_usage():
         rel_fut = save.value(DataRelation, input_data)
     rel = rel_fut.result()
 
-    async with data_loader() as load:
-        val_fut = load.value(rel)
-    assert val_fut.result() == input_data
-
-    async with data_loader() as load:
-        stream_fut = load.stream(rel)
-    assert [item async for item in stream_fut.result()] == input_data
+    load = data_loader()
+    assert (await load.value(rel)) == input_data
+    assert [item async for item in load.stream(rel)] == input_data
 
 
 async def test_simple_stream_data_saver_and_loader_usage():
@@ -30,10 +26,6 @@ async def test_simple_stream_data_saver_and_loader_usage():
         rel_fut = save.stream(DataRelation, (dict, stream()))
     rel = rel_fut.result()
 
-    async with data_loader() as load:
-        value_fut = load.value(rel)
-    assert value_fut.result() == input_data
-
-    async with data_loader() as load:
-        stream_fut = load.stream(rel)
-    assert [item async for item in stream_fut.result()] == input_data
+    load = data_loader()
+    assert (await load.value(rel)) == input_data
+    assert [item async for item in load.stream(rel)] == input_data

@@ -175,23 +175,11 @@ async def _save_data(
             for fut, rel, dat in items:
                 if "stream" in dat:
                     start_given_future(
-                        tg,
-                        fut,
-                        _save_stream,
-                        rel,
-                        dat,
-                        storage_registry,
-                        serializer_registry,
+                        tg, fut, _save_stream, rel, dat, storage_registry, serializer_registry
                     )
                 else:
                     start_given_future(
-                        tg,
-                        fut,
-                        _save_value,
-                        rel,
-                        dat,
-                        storage_registry,
-                        serializer_registry,
+                        tg, fut, _save_value, rel, dat, storage_registry, serializer_registry
                     )
         return [f.result() for f in relation_futures]
     finally:
