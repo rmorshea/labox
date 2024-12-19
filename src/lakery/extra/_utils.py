@@ -14,7 +14,8 @@ def make_path_from_digest(sep: str, digest: ValueDigest | StreamDigest, *, prefi
 
 
 def make_path_parts_from_digest(digest: ValueDigest | StreamDigest) -> Sequence[str]:
-    return (
-        slugify(digest["content_hash_algorithm"]),
-        f"{slugify(digest["content_hash"])}{guess_extension(digest["content_type"])}",
-    )
+    if ext := guess_extension(digest["content_type"]):
+        name = f"{slugify(digest["content_hash"])}{ext}"
+    else:
+        name = slugify(digest["content_hash"])
+    return (slugify(digest["content_hash_algorithm"]), name)

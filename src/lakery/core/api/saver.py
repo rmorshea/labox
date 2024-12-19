@@ -334,10 +334,11 @@ def _wrap_stream_dump(
     async def wrapper() -> AsyncGenerator[bytes]:
         nonlocal is_complete, content_size
         try:
-            async for chunk in stream:
-                content_hash.update(chunk)
-                content_size += len(chunk)
-                yield chunk
+            async with aclosing(stream):
+                async for chunk in stream:
+                    content_hash.update(chunk)
+                    content_size += len(chunk)
+                    yield chunk
         finally:
             relation.rel_content_hash = content_hash.hexdigest()
             relation.rel_content_hash_algorithm = content_hash.name

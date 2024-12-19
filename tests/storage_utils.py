@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import os
 from collections.abc import AsyncGenerator
+from collections.abc import AsyncIterator
 from collections.abc import Callable
 from contextlib import aclosing
+from contextlib import asynccontextmanager
 from hashlib import sha256
 from typing import TYPE_CHECKING
 from typing import TypeVar
@@ -49,17 +51,27 @@ async def assert_storage_can_put_and_get_value(storage: ValueStorage) -> None:
 
 
 async def assert_storage_can_put_and_get_stream(storage: StreamStorage):
-    relation, digest, stream, expected_value = make_fake_stream_data(1024 * 10, chunk_size=1024)
-    relation = await storage.put_stream(relation, stream, digest)
-    actual_value = b"".join([chunk async for chunk in storage.get_stream(relation)])
-    assert actual_value == expected_value
+    async with make_fake_stream_data(1024 * 10, chunk_size=1024) as (
+        relation,
+        digest,
+        stream,
+        expected_value,
+    ):
+        relation = await storage.put_stream(relation, stream, digest)
+        actual_value = b"".join([chunk async for chunk in storage.get_stream(relation)])
+        assert actual_value == expected_value
 
 
 async def assert_storage_can_put_stream_and_get_value(storage: StreamStorage):
-    relation, digest, stream, expected_value = make_fake_stream_data(1024 * 10, chunk_size=1024)
-    relation = await storage.put_stream(relation, stream, digest)
-    actual_value = await storage.get_value(relation)
-    assert actual_value == expected_value
+    async with make_fake_stream_data(1024 * 10, chunk_size=1024) as (
+        relation,
+        digest,
+        stream,
+        expected_value,
+    ):
+        relation = await storage.put_stream(relation, stream, digest)
+        actual_value = await storage.get_value(relation)
+        assert actual_value == expected_value
 
 
 async def assert_storage_can_put_value_and_get_stream(storage: StreamStorage):
@@ -70,27 +82,38 @@ async def assert_storage_can_put_value_and_get_stream(storage: StreamStorage):
 
 
 async def assert_storage_cleans_up_after_stream_error(storage: StreamStorage):
-    relation, digest, stream, _ = make_fake_stream_data(1024 * 10, chunk_size=1024)
+    async with make_fake_stream_data(1024 * 10, chunk_size=1024) as (
+        relation,
+        digest,
+        stream,
+        _,
+    ):
 
-    async def make_bad_stream():
-        async with aclosing(stream):
+        async def make_bad_stream():
             async for chunk in stream:
                 yield chunk
                 msg = "Bad stream"
                 raise ValueError(msg)
 
-    with pytest.raises(ValueError, match="Bad stream"):
-        await storage.put_stream(relation, make_bad_stream(), digest)
+        with pytest.raises(ValueError, match="Bad stream"):
+            await storage.put_stream(relation, make_bad_stream(), digest)
 
-    with pytest.raises(NoStorageDataError):
-        await storage.get_value(relation)
+    try:
+        with pytest.raises(NoStorageDataError):
+            await storage.get_value(relation)
+    except Exception as error:
+        msg = "Expected a NoStorageDataError error - storage may not have cleaned up properly"
+        raise AssertionError(msg) from error
 
     load_stream = storage.get_stream(relation)
 
-    async with aclosing(load_stream):
+    try:
         iter_load_stream = aiter(load_stream)
         with pytest.raises(NoStorageDataError):
             await anext(iter_load_stream)
+    except Exception as error:
+        msg = "Expected a NoStorageDataError error - storage may not have cleaned up properly"
+        raise AssertionError(msg) from error
 
 
 def make_fake_value_data(size: int) -> tuple[DataRelation, ValueDigest, bytes]:
@@ -117,11 +140,12 @@ def make_fake_value_data(size: int) -> tuple[DataRelation, ValueDigest, bytes]:
     return data_relation, digest, value
 
 
-def make_fake_stream_data(
+@asynccontextmanager
+async def make_fake_stream_data(
     total_size: int,
     *,
     chunk_size: int,
-) -> tuple[DataRelation, GetStreamDigest, AsyncGenerator[bytes], bytes]:
+) -> AsyncIterator[tuple[DataRelation, GetStreamDigest, AsyncGenerator[bytes], bytes]]:
     current_size = 0
     current_hash = sha256()
 
@@ -159,4 +183,5 @@ def make_fake_stream_data(
         },
     )
 
-    return data_relation, get_digest, stream, b"".join(value_chunks)
+    async with aclosing(stream):
+        yield data_relation, get_digest, stream, b"".join(value_chunks)

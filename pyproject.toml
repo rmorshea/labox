@@ -1,6 +1,5 @@
 
 [tool.uv]
-default-groups = ["all"]
 cache-keys = [{ file = "pyproject.toml" }, { git = true }]
 
 [build-system]
@@ -35,14 +34,14 @@ azure = ["azure-storage-blob>=12.24.0,<13"]
 Source = "https://github.com/rmorshea/lakery"
 
 [dependency-groups]
-all = [
-    { include-group = "dev" },
+dev = [
+    { include-group = "util" },
     { include-group = "docs" },
     { include-group = "lint" },
     { include-group = "test" },
     { include-group = "extra" },
 ]
-dev = ["click==8.1.7", "ipykernel==6.29.5"]
+util = ["click==8.1.7", "ipykernel==6.29.5"]
 extra = ["pyarrow==18.0.0"]
 docs = [
     { include-group = "test" },
@@ -60,14 +59,14 @@ lint = [
     "mdformat-pyproject==0.0.1",
     "mdformat-tables==1.0.0",
     "mdformat==0.7.19",
-    "pyright==1.1.389",
+    "pyright==1.1.390",
     "ruff==0.7.3",
     "types-boto3-s3==1.35.76",
     "types-boto3==1.35.76",
     "yamlfix==1.17.0",
 ]
 test = [
-    { include-group = "dev" },
+    { include-group = "util" },
     "coverage[toml]==7.6.1",
     "diff-cover==9.2.0",
     "pycobertura==3.3.2",
@@ -76,6 +75,7 @@ test = [
     "pytest==8.3.3",
     "aiosqlite==0.20.0",
     "moto>=5.0.22",
+    "aiohttp>=3.11.10",
 ]
 
 [tool.pytest.ini_options]

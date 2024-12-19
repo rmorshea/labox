@@ -4,6 +4,7 @@ from typing import TypeVar
 from uuid import uuid4
 
 from anyio import CapacityLimiter
+from azure.core.exceptions import ResourceNotFoundError
 from azure.storage.blob import ContentSettings
 from azure.storage.blob.aio import ContainerClient
 
@@ -13,11 +14,12 @@ from lakery.core.storage import StreamDigest
 from lakery.core.storage import StreamStorage
 from lakery.core.storage import ValueDigest
 from lakery.extra._utils import make_path_from_digest
+from lakery.utils.errors import NoStorageDataError
 
 D = TypeVar("D", bound=DataRelation)
 
 
-class AzureBlobStorage(StreamStorage[D]):
+class BlobStorage(StreamStorage[D]):
     """Storage for Azure Blob data."""
 
     name = "lakery.azure.blob"
@@ -65,7 +67,12 @@ class AzureBlobStorage(StreamStorage[D]):
         }
         path = make_path_from_digest("/", digest, prefix=self._path_prefix)
         blob_client = self._container_client.get_blob_client(blob=path)
-        return await (await blob_client.download_blob()).readall()
+        try:
+            blob_reader = await blob_client.download_blob()
+        except ResourceNotFoundError as exc:
+            msg = f"Failed to load value from {path}"
+            raise NoStorageDataError(msg) from exc
+        return await blob_reader.readall()
 
     async def put_stream(
         self,
@@ -88,7 +95,7 @@ class AzureBlobStorage(StreamStorage[D]):
             final_blob_client = self._container_client.get_blob_client(
                 blob=make_path_from_digest("/", get_digest(), prefix=self._path_prefix)
             )
-            await final_blob_client.start_copy_from_url(temp_blob_client.url)
+            await final_blob_client.start_copy_from_url(temp_blob_client.url, requires_sync=True)
         finally:
             await temp_blob_client.delete_blob()
         return relation
@@ -105,7 +112,13 @@ class AzureBlobStorage(StreamStorage[D]):
         }
         path = make_path_from_digest("/", digest, prefix=self._path_prefix)
         blob_client = self._container_client.get_blob_client(blob=path)
-        async for chunk in (await blob_client.download_blob()).chunks():
+        try:
+            blob_reader = await blob_client.download_blob()
+        except ResourceNotFoundError as exc:
+            msg = f"Failed to load stream from {path}"
+            raise NoStorageDataError(msg) from exc
+
+        async for chunk in blob_reader.chunks():
             yield chunk
 
 

@@ -1,4 +1,5 @@
 import random
+from collections.abc import AsyncGenerator
 from collections.abc import AsyncIterator
 from collections.abc import Callable
 from collections.abc import Iterable
@@ -92,7 +93,7 @@ def make_stream_serializer_test(
 
 async def _check_dump_value_load_stream(
     serializer: StreamSerializer[Any],
-    restream: Callable[[bytes], AsyncIterator[bytes]],
+    restream: Callable[[bytes], AsyncGenerator[bytes]],
     value: Any,
 ) -> None:
     value_dump = serializer.dump_value(value)
@@ -131,7 +132,7 @@ async def _check_dump_stream_load_value(
 
 async def _check_dump_stream_load_stream(
     serializer: StreamSerializer[Any],
-    restream: Callable[[bytes], AsyncIterator[bytes]],
+    restream: Callable[[bytes], AsyncGenerator[bytes]],
     values: Sequence[Any],
 ) -> None:
     content_stream = _to_async_iterable(values)

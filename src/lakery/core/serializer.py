@@ -87,7 +87,7 @@ class ValueDump(_BaseDump):
 class StreamDump(_BaseDump):
     """The serialized representation of a stream of values."""
 
-    stream: AsyncIterable[bytes]
+    stream: AsyncGenerator[bytes]
     """The serialized data stream."""
 
 
