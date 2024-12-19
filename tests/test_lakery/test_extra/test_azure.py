@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 
 @parametrize_storage_assertions
-async def test_s3_storage(assertion):
+async def test_blob_storage(assertion):
     container_client = cast("ContainerClient", MockContainerClient())
     await assertion(BlobStorage(container_client=container_client))
 
