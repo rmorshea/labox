@@ -24,7 +24,7 @@ def make_path_from_data_relation(sep: str, relation: DataRelation, *, prefix: st
 
 def make_path_parts_from_digest(digest: ValueDigest | StreamDigest) -> Sequence[str]:
     if ext := guess_extension(digest["content_type"]):
-        name = f"{slugify(digest["content_hash"])}{ext}"
+        name = f"{slugify(digest['content_hash'])}{ext}"
     else:
         name = slugify(digest["content_hash"])
     return (slugify(digest["content_hash_algorithm"]), name)
