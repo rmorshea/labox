@@ -4,7 +4,6 @@ from collections.abc import AsyncGenerator
 from collections.abc import AsyncIterable
 from collections.abc import Iterable
 from io import StringIO
-from typing import TypeAlias
 
 from lakery.common.streaming import decode_async_byte_stream
 from lakery.core.serializer import StreamDump
@@ -12,9 +11,9 @@ from lakery.core.serializer import StreamSerializer
 from lakery.core.serializer import ValueDump
 from lakery.core.serializer import ValueSerializer
 
-JsonType: TypeAlias = "int | str | float | bool | dict[str, JsonType] | list[JsonType] | None"
+JsonType = int | str | float | bool | dict[str, "JsonType"] | list["JsonType"] | None
 """A type alias for JSON data."""
-JsonStreamType: TypeAlias = dict[str, JsonType] | list[JsonType]
+JsonStreamType = dict[str, JsonType] | list[JsonType]
 """A type alias for a a value in a stream of JSON data."""
 
 JSON_SCALAR_TYPES = (int, str, float, bool, type(None), dict, list)

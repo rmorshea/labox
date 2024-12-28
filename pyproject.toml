@@ -28,6 +28,7 @@ pyarrow = ["pyarrow>=18,<19"]
 aws = ["boto3>=1,<2"]
 azure = ["azure-storage-blob>=12,<13"]
 google = ["google-cloud-storage>=2,<3"]
+msgpack = ["msgpack>=1,<2"]
 [project.urls]
 Source = "https://github.com/rmorshea/lakery"
 
@@ -37,11 +38,9 @@ dev = [
     { include-group = "docs" },
     { include-group = "lint" },
     { include-group = "test" },
-    { include-group = "extra" },
     "lakery[all]",
 ]
 util = ["click==8.1.7", "ipykernel==6.29.5"]
-extra = ["pyarrow==18.0.0"]
 docs = [
     { include-group = "test" },
     "mkdocs-gen-files==0.5.0",
