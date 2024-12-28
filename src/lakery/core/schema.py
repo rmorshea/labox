@@ -9,7 +9,6 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 from typing import Annotated
 from typing import Any
-from typing import ClassVar
 from typing import Literal
 from typing import TypedDict
 from typing import TypeVar
@@ -56,7 +55,7 @@ class Base(MappedAsDataclass, DeclarativeBase, kw_only=True):
     """The base for lakery's schema classes."""
 
 
-_INFO_KEY = "__data_relation_info__"
+_INFO_KEY = "__lakery_info__"
 
 
 def is_unique(where: ColumnComparator = operator.eq) -> dict:
@@ -65,10 +64,10 @@ def is_unique(where: ColumnComparator = operator.eq) -> dict:
 
 
 class DataRelation(Base):
-    """A relationship between a value's metadata and where/how it was saved."""
+    """A record describing a value's metadata in addition to where and how that value was saved."""
 
     __tablename__ = "lakery_data_relations"
-    __mapper_args__: ClassVar[Mapping[str, Any]] = {"polymorphic_on": "rel_type"}  # type: ignore[reportIncompatibleVariableOverride]
+    __mapper_args__: Mapping[str, Any] = {"polymorphic_on": "rel_type"}
 
     rel_id: Mapped[UUID] = mapped_column(init=False, default_factory=uuid4, primary_key=True)
     """The ID of the relation."""

@@ -33,4 +33,4 @@ def s3_bucket(s3_client) -> str:
 
 @parametrize_storage_assertions
 async def test_s3_storage(assertion, s3_bucket):
-    await assertion(S3Storage(s3_client=boto3.client("s3"), bucket=s3_bucket))
+    await assertion(S3Storage(s3_client=boto3.client("s3"), bucket_name=s3_bucket))

@@ -1,7 +1,6 @@
 from collections.abc import AsyncGenerator
 from collections.abc import AsyncIterable
 from typing import TypeVar
-from uuid import uuid4
 
 from anyio import CapacityLimiter
 from azure.core.exceptions import ResourceNotFoundError
@@ -13,7 +12,9 @@ from lakery.core.storage import GetStreamDigest
 from lakery.core.storage import StreamDigest
 from lakery.core.storage import StreamStorage
 from lakery.core.storage import ValueDigest
+from lakery.extra._utils import make_path_from_data_relation
 from lakery.extra._utils import make_path_from_digest
+from lakery.extra._utils import make_temp_path
 from lakery.utils.errors import NoStorageDataError
 
 D = TypeVar("D", bound=DataRelation)
@@ -58,14 +59,7 @@ class BlobStorage(StreamStorage[D]):
 
     async def get_value(self, relation: D) -> bytes:
         """Load the value dump for the given relation."""
-        digest: ValueDigest = {
-            "content_encoding": relation.rel_content_encoding,
-            "content_type": relation.rel_content_type,
-            "content_hash": relation.rel_content_hash,
-            "content_hash_algorithm": relation.rel_content_hash_algorithm,
-            "content_size": relation.rel_content_size,
-        }
-        path = make_path_from_digest("/", digest, prefix=self._path_prefix)
+        path = make_path_from_data_relation("/", relation, prefix=self._path_prefix)
         blob_client = self._container_client.get_blob_client(blob=path)
         try:
             blob_reader = await blob_client.download_blob()
@@ -81,8 +75,9 @@ class BlobStorage(StreamStorage[D]):
         get_digest: GetStreamDigest,
     ) -> D:
         """Save the given stream dump."""
-        temp_path = _make_temp_path()
         initial_digest = get_digest(allow_incomplete=True)
+        temp_path = make_temp_path("/", initial_digest, prefix=self._path_prefix)
+
         temp_blob_client = self._container_client.get_blob_client(blob=temp_path)
         await temp_blob_client.upload_blob(
             stream,
@@ -120,7 +115,3 @@ class BlobStorage(StreamStorage[D]):
 
         async for chunk in blob_reader.chunks():
             yield chunk
-
-
-def _make_temp_path() -> str:
-    return f"temp/{uuid4().hex}"

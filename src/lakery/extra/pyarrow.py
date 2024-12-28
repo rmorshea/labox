@@ -318,7 +318,7 @@ async def _load_parquet_record_batch_stream(
 async def _dump_arrow_record_batch_stream(
     batch_stream: AsyncIterable[pa.RecordBatch],
     options: pa.ipc.IpcWriteOptions | None,
-) -> AsyncIterator[bytes]:
+) -> AsyncGenerator[bytes]:
     writer = None
     buffer = io.BytesIO()
     with ExitStack() as stack:
