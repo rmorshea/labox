@@ -10,11 +10,11 @@ from uuid import uuid4
 
 from anyio import create_task_group
 
+from lakery.common.anyio import start_async_iterator
 from lakery.core.schema import DataRelation
 from lakery.core.storage import GetStreamDigest
 from lakery.core.storage import StreamStorage
 from lakery.extra._utils import make_path_parts_from_digest
-from lakery.utils.anyio import start_async_iterator
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator

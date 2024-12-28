@@ -16,7 +16,7 @@ from anyio import create_memory_object_stream
 from anyio.from_thread import run_sync as run_sync_from_thread
 from anyio.to_thread import run_sync as run_sync_to_thread
 
-from lakery.utils.misc import UNDEFINED
+from lakery.common.misc import UNDEFINED
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable

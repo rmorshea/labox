@@ -119,6 +119,7 @@ ignore = [
     "FBT003", # Allow boolean positional values in function calls, like `dict.get(... True)`
     "ISC001", # implicitly concatenated strings on a single line
     "PIE790", # Unecessary elipsis literal
+    "N818",   # Exception name should end with "Error"
     "PL",     # PyLint
     "PYI",    # Stub files
     "RET503", # Explicit return

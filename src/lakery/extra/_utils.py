@@ -2,10 +2,10 @@ from collections.abc import Sequence
 from mimetypes import guess_extension
 from uuid import uuid4
 
+from lakery.common.misc import slugify
 from lakery.core.schema import DataRelation
 from lakery.core.storage import StreamDigest
 from lakery.core.storage import ValueDigest
-from lakery.utils.misc import slugify
 
 
 def make_temp_path(sep: str, digest: StreamDigest | ValueDigest, *, prefix: str = "") -> str:

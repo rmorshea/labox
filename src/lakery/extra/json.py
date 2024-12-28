@@ -6,11 +6,11 @@ from collections.abc import Iterable
 from io import StringIO
 from typing import TypeAlias
 
+from lakery.common.streaming import decode_async_byte_stream
 from lakery.core.serializer import StreamDump
 from lakery.core.serializer import StreamSerializer
 from lakery.core.serializer import ValueDump
 from lakery.core.serializer import ValueSerializer
-from lakery.utils.streaming import decode_async_byte_stream
 
 JsonType: TypeAlias = "int | str | float | bool | dict[str, JsonType] | list[JsonType] | None"
 """A type alias for JSON data."""

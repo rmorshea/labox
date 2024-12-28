@@ -16,6 +16,7 @@ from google.cloud.storage.fileio import BlobReader
 from google.cloud.storage.fileio import BlobWriter
 from typing_extensions import AsyncGenerator
 
+from lakery.common.exceptions import NoStorageData
 from lakery.core.schema import DataRelation
 from lakery.core.storage import GetStreamDigest
 from lakery.core.storage import StreamStorage
@@ -23,7 +24,6 @@ from lakery.core.storage import ValueDigest
 from lakery.extra._utils import make_path_from_data_relation
 from lakery.extra._utils import make_path_from_digest
 from lakery.extra._utils import make_temp_path
-from lakery.utils.errors import NoStorageDataError
 
 P = ParamSpec("P")
 R = TypeVar("R")
@@ -99,7 +99,7 @@ class BlobStorage(StreamStorage[D]):
                 return await self._to_thread(reader.read)
             except NotFound as error:
                 msg = f"Failed to load value from {name}"
-                raise NoStorageDataError(msg) from error
+                raise NoStorageData(msg) from error
 
     async def put_stream(
         self,
@@ -149,7 +149,7 @@ class BlobStorage(StreamStorage[D]):
                     yield chunk
             except NotFound as error:
                 msg = f"Failed to load stream from {name}"
-                raise NoStorageDataError(msg) from error
+                raise NoStorageData(msg) from error
 
     def _to_thread(
         self,

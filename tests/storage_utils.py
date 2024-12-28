@@ -12,9 +12,9 @@ from typing import TypeVar
 
 import pytest
 
+from lakery.common.exceptions import NoStorageData
 from lakery.core.api.saver import _wrap_stream_dump
 from lakery.core.schema import DataRelation
-from lakery.utils.errors import NoStorageDataError
 
 if TYPE_CHECKING:
     from lakery.core.storage import GetStreamDigest
@@ -99,7 +99,7 @@ async def assert_storage_cleans_up_after_stream_error(storage: StreamStorage):
             await storage.put_stream(relation, make_bad_stream(), digest)
 
     try:
-        with pytest.raises(NoStorageDataError):
+        with pytest.raises(NoStorageData):
             await storage.get_value(relation)
     except Exception as error:
         msg = "Expected a NoStorageDataError error - storage may not have cleaned up properly"
@@ -109,7 +109,7 @@ async def assert_storage_cleans_up_after_stream_error(storage: StreamStorage):
 
     try:
         iter_load_stream = aiter(load_stream)
-        with pytest.raises(NoStorageDataError):
+        with pytest.raises(NoStorageData):
             await anext(iter_load_stream)
     except Exception as error:
         msg = "Expected a NoStorageDataError error - storage may not have cleaned up properly"

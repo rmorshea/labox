@@ -7,6 +7,7 @@ from azure.core.exceptions import ResourceNotFoundError
 from azure.storage.blob import ContentSettings
 from azure.storage.blob.aio import ContainerClient
 
+from lakery.common.exceptions import NoStorageData
 from lakery.core.schema import DataRelation
 from lakery.core.storage import GetStreamDigest
 from lakery.core.storage import StreamDigest
@@ -15,7 +16,6 @@ from lakery.core.storage import ValueDigest
 from lakery.extra._utils import make_path_from_data_relation
 from lakery.extra._utils import make_path_from_digest
 from lakery.extra._utils import make_temp_path
-from lakery.utils.errors import NoStorageDataError
 
 D = TypeVar("D", bound=DataRelation)
 
@@ -65,7 +65,7 @@ class BlobStorage(StreamStorage[D]):
             blob_reader = await blob_client.download_blob()
         except ResourceNotFoundError as exc:
             msg = f"Failed to load value from {path}"
-            raise NoStorageDataError(msg) from exc
+            raise NoStorageData(msg) from exc
         return await blob_reader.readall()
 
     async def put_stream(
@@ -111,7 +111,7 @@ class BlobStorage(StreamStorage[D]):
             blob_reader = await blob_client.download_blob()
         except ResourceNotFoundError as exc:
             msg = f"Failed to load stream from {path}"
-            raise NoStorageDataError(msg) from exc
+            raise NoStorageData(msg) from exc
 
         async for chunk in blob_reader.chunks():
             yield chunk

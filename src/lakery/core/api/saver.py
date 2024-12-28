@@ -23,14 +23,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from tenacity import AsyncRetrying
 from tenacity import stop_after_attempt
 
+from lakery.common.anyio import TaskGroupFuture
+from lakery.common.anyio import start_given_future
 from lakery.core.context import DatabaseSession
 from lakery.core.schema import DataRelation
 from lakery.core.serializer import SerializerRegistry
 from lakery.core.storage import GetStreamDigest
 from lakery.core.storage import StorageRegistry
 from lakery.core.storage import StreamDigest
-from lakery.utils.anyio import TaskGroupFuture
-from lakery.utils.anyio import start_given_future
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator

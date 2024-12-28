@@ -14,6 +14,9 @@ from anyio.abc import CapacityLimiter
 from anyio.to_thread import run_sync
 from typing_extensions import ContextManager
 
+from lakery.common.anyio import start_async_iterator
+from lakery.common.exceptions import NoStorageData
+from lakery.common.streaming import write_async_byte_stream_into
 from lakery.core.schema import DataRelation
 from lakery.core.storage import GetStreamDigest
 from lakery.core.storage import StreamStorage
@@ -21,9 +24,6 @@ from lakery.core.storage import ValueDigest
 from lakery.extra._utils import make_path_from_data_relation
 from lakery.extra._utils import make_path_from_digest
 from lakery.extra._utils import make_temp_path
-from lakery.utils.anyio import start_async_iterator
-from lakery.utils.errors import NoStorageDataError
-from lakery.utils.streaming import write_async_byte_stream_into
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable
@@ -108,7 +108,7 @@ class S3Storage(StreamStorage[D]):
             return result["Body"].read()
         except self._client.exceptions.NoSuchKey as error:
             msg = f"No data found for {relation}."
-            raise NoStorageDataError(msg) from error
+            raise NoStorageData(msg) from error
 
     async def put_stream(
         self,
@@ -213,7 +213,7 @@ class S3Storage(StreamStorage[D]):
             )
         except self._client.exceptions.NoSuchKey as error:
             msg = f"No data found for {relation}."
-            raise NoStorageDataError(msg) from error
+            raise NoStorageData(msg) from error
 
         async with create_task_group() as tg:
             with start_async_iterator(
