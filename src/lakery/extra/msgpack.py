@@ -1,17 +1,11 @@
-import abc
 from collections.abc import AsyncGenerator
 from collections.abc import AsyncIterable
+from collections.abc import Callable
 from collections.abc import Iterable
 from typing import Any
-from typing import Generic
-from typing import TypeVar
-from typing import cast
 
-from msgpack import ExtType
 from msgpack import Packer
 from msgpack import Unpacker
-from msgpack import packb
-from msgpack import unpackb
 from msgpack.fallback import BytesIO
 
 from lakery.core.serializer import StreamDump
@@ -20,7 +14,8 @@ from lakery.core.serializer import ValueDump
 from lakery.core.serializer import ValueSerializer
 
 MsgPackType = (
-    int
+    Any  # Include any to account for msgpack extension types
+    | int
     | str
     | float
     | bool
@@ -28,80 +23,64 @@ MsgPackType = (
     | list["MsgPackType"]
     | None
 )
-
-H = TypeVar("H")
-T = TypeVar("T", default=None)
-
+"""A type alias for MessagePack data."""
 
 MSG_PACK_TYPES = (int, str, float, bool, type(None), dict, list)
 """The types that can be serialized to the MessagePack format."""
 
 
-class ExtensionHook(Generic[H], abc.ABC):
-    """A hook for serializing and deserializing custom types with MessagePack."""
+class _MsgPackBase:
+    types = MSG_PACK_TYPES
+    content_type = "application/msgpack"
 
-    @abc.abstractmethod
-    def dump(self, value: Any) -> ExtType:
-        """Serialize the given value to a MessagePack extension type."""
-        raise NotImplementedError
+    def __init__(
+        self,
+        *,
+        packer: Callable[[], Packer] = Packer,
+        unpacker: Callable[[], Unpacker] = Unpacker,
+    ) -> None:
+        self._packer = packer
+        self._unpacker = unpacker
 
-    @classmethod
-    @abc.abstractmethod
-    def load(cls, code: int, data: MsgPackType) -> H | ExtType:
-        """Deserialize the given MessagePack extension type."""
-        raise NotImplementedError
+    def _pack(self, value: Any) -> bytes:
+        return self._packer().pack(value)
+
+    def _unpack(self, data: bytes) -> Any:
+        unpacker = self._unpacker()
+        unpacker.feed(data)
+        return unpacker.unpack()
 
 
-class MsgPackSerializer(ValueSerializer[T | MsgPackType]):
+class MsgPackSerializer(_MsgPackBase, ValueSerializer[MsgPackType]):
     """A serializer for MessagePack data."""
 
     name = "lakery.msgpack.value"
     version = 1
-    types = MSG_PACK_TYPES
-    content_type = "application/msgpack"
 
-    def __init__(self, *, extension_hook: ExtensionHook[T] | None = None) -> None:
-        if extension_hook is None:
-            self._ext_dump_hook = None
-            self._ext_load_hook = None
-        else:
-            self._ext_dump_hook = extension_hook.dump
-            self._ext_load_hook = extension_hook.load
-
-    def dump_value(self, value: T | MsgPackType) -> ValueDump:
+    def dump_value(self, value: MsgPackType) -> ValueDump:
         """Serialize the given value to MessagePack."""
         return {
             "content_encoding": "binary",
             "content_type": self.content_type,
             "serializer_name": self.name,
             "serializer_version": self.version,
-            "value": cast("bytes", packb(value, default=self._ext_dump_hook)),
+            "value": self._pack(value),
         }
 
-    def load_value(self, dump: ValueDump) -> T | MsgPackType:
+    def load_value(self, dump: ValueDump) -> MsgPackType:
         """Deserialize the given MessagePack data."""
-        return unpackb(dump["value"], ext_hook=self._ext_load_hook)
+        return self._unpack(dump["value"])
 
 
-class MsgPackStreamSerializer(StreamSerializer[T | MsgPackType]):
+class MsgPackStreamSerializer(_MsgPackBase, StreamSerializer[MsgPackType]):
     """A serializer for MessagePack data."""
 
     name = "lakery.msgpack.stream"
     version = 1
-    types = (list, dict)
-    content_type = "application/msgpack"
 
-    def __init__(self, *, extension_hook: ExtensionHook[T] | None = None) -> None:
-        if extension_hook is None:
-            self._ext_dump_hook = None
-            self._ext_load_hook = None
-        else:
-            self._ext_dump_hook = extension_hook.dump
-            self._ext_load_hook = extension_hook.load
-
-    def dump_value(self, value: Iterable[T | MsgPackType]) -> ValueDump:
+    def dump_value(self, value: Iterable[MsgPackType]) -> ValueDump:
         """Serialize the given value to MessagePack."""
-        packer = Packer(default=self._ext_dump_hook)
+        packer = self._packer()
         buffer = BytesIO()
         for v in value:
             buffer.write(packer.pack(v))
@@ -113,24 +92,25 @@ class MsgPackStreamSerializer(StreamSerializer[T | MsgPackType]):
             "value": buffer.getvalue(),
         }
 
-    def load_value(self, dump: ValueDump) -> list[T | MsgPackType]:
+    def load_value(self, dump: ValueDump) -> list[MsgPackType]:
         """Deserialize the given MessagePack data."""
-        unpacker = Unpacker(BytesIO(dump["value"]), ext_hook=self._ext_load_hook)
+        unpacker = self._unpacker()
+        unpacker.feed(dump["value"])
         return list(unpacker)
 
-    def dump_stream(self, stream: AsyncIterable[T | MsgPackType], /) -> StreamDump:
+    def dump_stream(self, stream: AsyncIterable[MsgPackType]) -> StreamDump:
         """Serialize the given stream of MessagePack data."""
         return {
             "content_encoding": "binary",
             "content_type": self.content_type,
             "serializer_name": self.name,
             "serializer_version": self.version,
-            "stream": _stream_dump(Packer(default=self._ext_dump_hook), stream),
+            "stream": _stream_dump(self._packer(), stream),
         }
 
-    def load_stream(self, dump: StreamDump, /) -> AsyncGenerator[T | MsgPackType]:
+    def load_stream(self, dump: StreamDump, /) -> AsyncGenerator[MsgPackType]:
         """Deserialize the given stream of MessagePack data."""
-        return _stream_load(Unpacker(ext_hook=self._ext_load_hook), dump["stream"])
+        return _stream_load(self._unpacker(), dump["stream"])
 
 
 async def _stream_dump(packer: Packer, value_stream: AsyncIterable[Any]) -> AsyncGenerator[bytes]:
@@ -138,7 +118,7 @@ async def _stream_dump(packer: Packer, value_stream: AsyncIterable[Any]) -> Asyn
         yield packer.pack(value)
 
 
-async def _stream_load(unpacker: Unpacker, stream: AsyncIterable[bytes], /) -> AsyncGenerator[Any]:
+async def _stream_load(unpacker: Unpacker, stream: AsyncIterable[bytes]) -> AsyncGenerator[Any]:
     async for chunk in stream:
         unpacker.feed(chunk)
         for value in unpacker:

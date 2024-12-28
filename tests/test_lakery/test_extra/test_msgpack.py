@@ -20,11 +20,3 @@ test_msgpack_value_serializer = make_value_serializer_test(
     123,
     None,
 )
-
-
-def test_msgpack_value_serializer_with_ext_hook():
-    raise AssertionError
-
-
-def test_msgpack_stream_serializer_with_ext_hook():
-    raise AssertionError
