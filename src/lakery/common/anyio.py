@@ -2,13 +2,11 @@ from __future__ import annotations
 
 from contextlib import AbstractContextManager
 from contextlib import suppress
-from queue import Queue as ThreadQueue
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Generic
 from typing import ParamSpec
 from typing import TypeVar
-from typing import cast
 from typing import overload
 
 from anyio import ClosedResourceError
@@ -19,7 +17,6 @@ from anyio.to_thread import run_sync as run_sync_to_thread
 from lakery.common.utils import UNDEFINED
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterable
     from collections.abc import Awaitable
     from collections.abc import Callable
     from collections.abc import Coroutine
@@ -31,31 +28,6 @@ if TYPE_CHECKING:
 P = ParamSpec("P")
 R = TypeVar("R")
 D = TypeVar("D")
-
-
-def start_sync_iterator(task_group: TaskGroup, async_iter: AsyncIterable[R]) -> Iterator[R]:
-    """Create a synchronous iterator from an asynchronous iterator."""
-    done = cast("Any", object())
-    queue: ThreadQueue[R] = ThreadQueue()
-
-    async def exhaust_async_iter():
-        try:
-            async for value in async_iter:
-                queue.put_nowait(value)
-        finally:
-            queue.put_nowait(done)
-
-    future = start_future(task_group, exhaust_async_iter)
-
-    def sync_iterator():
-        while True:
-            value = queue.get()
-            if value is done:
-                break
-            yield value
-        future.result()
-
-    return sync_iterator()
 
 
 def start_async_iterator(
@@ -74,19 +46,6 @@ def start_async_iterator(
 
     task_group.start_soon(run_sync_to_thread, exhause_sync_iter)
     return recv
-
-
-def start_future(
-    task_group: TaskGroup,
-    func: Callable[P, Coroutine[Any, Any, R]],
-    /,
-    *args: P.args,
-    **kwargs: P.kwargs,
-) -> TaskGroupFuture[R]:
-    """Start a future in a task group."""
-    future: TaskGroupFuture[R] = TaskGroupFuture()
-    start_given_future(task_group, future, func, *args, **kwargs)
-    return future
 
 
 def start_given_future(

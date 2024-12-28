@@ -16,7 +16,7 @@ async def decode_async_byte_stream(
         if str_chunk := decoder.decode(byte_chunk, final=False):
             yield str_chunk
     yield (last := decoder.decode(b"", final=True))
-    if last:
+    if last:  # nocov (not worth trying to test this)
         yield ""
 
 
