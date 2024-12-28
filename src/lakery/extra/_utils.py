@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from mimetypes import guess_extension
 from uuid import uuid4
 
-from lakery.common.misc import slugify
+from lakery.common.utils import slugify
 from lakery.core.schema import DataRelation
 from lakery.core.storage import StreamDigest
 from lakery.core.storage import ValueDigest
