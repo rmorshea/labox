@@ -5,7 +5,6 @@ from collections.abc import Callable
 from collections.abc import Iterable
 from collections.abc import Sequence
 from functools import partial
-from inspect import isawaitable
 from typing import Any
 from typing import TypeVar
 
@@ -24,8 +23,7 @@ def make_value_serializer_test(
     *cases: T,
 ) -> Callable:
     async def tester(checker, case):
-        if isawaitable(result := checker(case)):
-            await result
+        await checker(case)
 
     matrix = [(partial(_check_dump_value_load_value, serializer, None), case) for case in cases]
 
@@ -43,8 +41,7 @@ def make_stream_serializer_test(
     *cases: Sequence[T],
 ) -> Callable:
     async def tester(checker, restream, case):
-        if isawaitable(result := checker(restream, case)):
-            await result
+        await checker(restream, case)
 
     matrix = []
 
@@ -142,7 +139,7 @@ async def _check_dump_stream_load_stream(
     assert [value async for value in loaded_stream] == list(values)
 
 
-def _check_dump_value_load_value(
+async def _check_dump_value_load_value(
     serializer: ValueSerializer[Any] | StreamSerializer[Any],
     restream: None,
     value: Any,

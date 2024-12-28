@@ -94,6 +94,7 @@ async def assert_storage_cleans_up_after_stream_error(storage: StreamStorage):
                 yield chunk
                 msg = "Bad stream"
                 raise ValueError(msg)
+            raise AssertionError
 
         with pytest.raises(ValueError, match="Bad stream"):
             await storage.put_stream(relation, make_bad_stream(), digest)
@@ -101,7 +102,7 @@ async def assert_storage_cleans_up_after_stream_error(storage: StreamStorage):
     try:
         with pytest.raises(NoStorageData):
             await storage.get_value(relation)
-    except Exception as error:
+    except Exception as error:  # nocov
         msg = "Expected a NoStorageDataError error - storage may not have cleaned up properly"
         raise AssertionError(msg) from error
 
@@ -111,7 +112,7 @@ async def assert_storage_cleans_up_after_stream_error(storage: StreamStorage):
         iter_load_stream = aiter(load_stream)
         with pytest.raises(NoStorageData):
             await anext(iter_load_stream)
-    except Exception as error:
+    except Exception as error:  # nocov
         msg = "Expected a NoStorageDataError error - storage may not have cleaned up properly"
         raise AssertionError(msg) from error
 

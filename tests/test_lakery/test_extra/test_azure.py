@@ -78,7 +78,7 @@ class MockBlobClient:
                 assert isinstance(chunk, bytes), "Only bytes are supported in the mock"
                 chunks.append(chunk)
             self._state[self.url] = {"data": chunks}
-        else:
+        else:  # nocov
             msg = "Only bytes and async iterable of bytes are supported in the mock"
             raise TypeError(msg)
 
@@ -96,7 +96,7 @@ class MockBlobClient:
         assert not kwargs, "Extra arguments are not supported in the mock"
         try:
             del self._state[self.url]
-        except KeyError:
+        except KeyError:  # nocov
             raise ResourceNotFoundError from None
 
     async def start_copy_from_url(
@@ -114,7 +114,7 @@ class MockBlobClient:
         assert requires_sync, "Non-sync copy is not supported in the mock"
         try:
             self._state[self.url] = self._state[source_url]
-        except KeyError:
+        except KeyError:  # nocov
             raise ResourceNotFoundError from None
         return {
             "copy_status": "success",

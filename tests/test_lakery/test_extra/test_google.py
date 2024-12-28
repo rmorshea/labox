@@ -11,8 +11,6 @@ from lakery.extra.google import BlobStorage
 from tests.storage_utils import parametrize_storage_assertions
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
-
     from google.cloud.storage import Blob
     from google.cloud.storage import Bucket
 
@@ -118,7 +116,3 @@ class MockBlobReader:
 
 class MockBlobState(TypedDict):
     data: bytes
-
-
-def _make_chunks(data: bytes, chunk_size: int) -> Sequence[bytes]:
-    return [data[i : i + chunk_size] for i in range(0, len(data), chunk_size)]
