@@ -24,7 +24,6 @@ class ParquetDumpArgs(TypedDict, total=False):
     pyarrow_options: dict[str, Any] | None
     partition_by: str | Sequence[str] | None
     partition_chunk_size_bytes: int
-    storage_options: dict[str, Any] | None
     credential_provider: pl.CredentialProviderFunction | Literal["auto"] | None
     retries: int
 
