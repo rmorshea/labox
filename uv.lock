@@ -1028,6 +1028,7 @@ all = [
     { name = "azure-storage-blob" },
     { name = "boto3" },
     { name = "google-cloud-storage" },
+    { name = "msgpack" },
     { name = "pyarrow" },
 ]
 aws = [
@@ -1152,6 +1153,7 @@ requires-dist = [
     { name = "lakery", extras = ["aws"], marker = "extra == 'all'" },
     { name = "lakery", extras = ["azure"], marker = "extra == 'all'" },
     { name = "lakery", extras = ["google"], marker = "extra == 'all'" },
+    { name = "lakery", extras = ["msgpack"], marker = "extra == 'all'" },
     { name = "lakery", extras = ["pyarrow"], marker = "extra == 'all'" },
     { name = "msgpack", marker = "extra == 'msgpack'", specifier = ">=1,<2" },
     { name = "pyarrow", marker = "extra == 'pyarrow'", specifier = ">=18,<19" },

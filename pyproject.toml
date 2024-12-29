@@ -23,7 +23,13 @@ dependencies = [
     "tenacity>=9.0.0,<10",
 ]
 [project.optional-dependencies]
-all = ["lakery[aws]", "lakery[azure]", "lakery[google]", "lakery[pyarrow]"]
+all = [
+    "lakery[aws]",
+    "lakery[azure]",
+    "lakery[google]",
+    "lakery[pyarrow]",
+    "lakery[msgpack]",
+]
 pyarrow = ["pyarrow>=18,<19"]
 aws = ["boto3>=1,<2"]
 azure = ["azure-storage-blob>=12,<13"]
