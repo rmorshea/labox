@@ -9,10 +9,9 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 from typing import Annotated
 from typing import Any
-from typing import Literal
 from typing import TypedDict
 from typing import TypeVar
-from typing import overload
+from typing import cast
 from uuid import UUID
 from uuid import uuid4
 
@@ -54,12 +53,21 @@ class Base(DeclarativeBase):
     """The base for lakery's schema classes."""
 
 
-_INFO_KEY = "__lakery_info__"
+def archived_on(comparator: ColumnComparator = operator.eq) -> dict[str, Any]:
+    """Info indicating that a column defines a unique constraint on the latest value.
 
+    When saving a new record, if an existing one conflicts, the existing record will be
+    "archived". A record has been "archived" if it's `rel_archived_at` is not `NEVER`.
+    The process of archiving a record involves setting the `rel_archived_at` column to
+    the current time before saving the new one.
 
-def is_unique(where: ColumnComparator = operator.eq) -> dict:
-    """Indicate that a column defines a unique constraint on the latest value."""
-    return {_INFO_KEY: {"unique_on": {"comparator": where}}}
+    Args:
+        comparator:
+            The function that determins whether two records conflict. Accepts two
+            arguments, the column and the value to compare against and should
+            return a boolean expression.
+    """
+    return {"lakery.unique_on_comparator": comparator}
 
 
 class DataRelation(Base):
@@ -70,11 +78,11 @@ class DataRelation(Base):
 
     rel_id: Mapped[UUID] = mapped_column(default=uuid4, primary_key=True)
     """The ID of the relation."""
-    rel_type: Mapped[str] = mapped_column(info=is_unique())
+    rel_type: Mapped[str] = mapped_column(info=archived_on())
     """The type of relation."""
     rel_created_at: Mapped[DateTimeTZ] = mapped_column(default=func.now())
     """The timestamp when the pointer was created."""
-    rel_archived_at: Mapped[DateTimeTZ] = mapped_column(default=NEVER, info=is_unique())
+    rel_archived_at: Mapped[DateTimeTZ] = mapped_column(default=NEVER, info=archived_on())
     """The timestamp when the pointer was archived."""
     rel_content_type: Mapped[str] = mapped_column()
     """The MIME type of the data."""
@@ -96,11 +104,11 @@ class DataRelation(Base):
     """The version of the storage backend used to store the data."""
 
     def rel_select_latest(self) -> ColumnElement[bool]:
-        """Get the expression to select the latest relation that conflicts with this one."""
+        """Get an expression to select the latest relation that conflicts with this one."""
         exprs: list[ColumnElement[bool]] = []
-        for name, col in self._rel_columns_with_data_relation_info().items():
-            match _get_column_info(col.info):
-                case {"latest": {"comparator": comparator}}:
+        for name, col, info in self._rel_column_into_items():
+            match info:
+                case {"lakery.unique_on_comparator": comparator}:
                     exprs.append(comparator(col, getattr(self, name)))
         return sql.and_(*exprs)
 
@@ -113,18 +121,13 @@ class DataRelation(Base):
     def _rel_make_unique_constraint(cls) -> UniqueConstraint:
         """Get the unique constraint for the latest relations."""
         return UniqueConstraint(
-            *cls._rel_unique_constraint_columns(),
+            *[
+                col
+                for _, col, info in cls._rel_column_into_items()
+                if "lakery.unique_on_comparator" in info
+            ],
             **cls._rel_unique_constraint_kwargs(),
         )
-
-    @classmethod
-    def _rel_unique_constraint_columns(cls) -> Sequence[NamedColumn]:
-        """Get the columns that make up the unique constraint for the latest relations."""
-        return [
-            col
-            for col in cls._rel_columns_with_data_relation_info().values()
-            if "latest" in _get_column_info(col.info)
-        ]
 
     @classmethod
     def _rel_unique_constraint_kwargs(cls) -> dict[str, Any]:
@@ -132,15 +135,15 @@ class DataRelation(Base):
         return {}
 
     @classmethod
-    def _rel_columns_with_data_relation_info(cls) -> dict[str, NamedColumn]:
+    def _rel_column_into_items(cls) -> Sequence[tuple[str, NamedColumn, DataRelationColumnInfo]]:
         """Get the columns with data relation info."""
-        return {
-            k: v.columns[0]
+        return [
+            (k, col, info)
             for k, v in cls.__mapper__.attrs.items()
             if isinstance(v, ColumnProperty)
             and len(v.columns) == 1
-            and _get_column_info(v.info, missing_ok=True)
-        }
+            and (info := _get_column_info((col := v.columns[0]).info))
+        ]
 
     if not TYPE_CHECKING:
 
@@ -149,42 +152,16 @@ class DataRelation(Base):
             cls._rel_init_subclass()
 
 
-@overload
-def _get_column_info(
-    info: dict, *, missing_ok: Literal[True]
-) -> _DataRelationColumnInfo | None: ...
-
-
-@overload
-def _get_column_info(
-    info: dict, *, missing_ok: Literal[False] = ...
-) -> _DataRelationColumnInfo: ...
-
-
-def _get_column_info(info: dict, *, missing_ok: bool = False) -> _DataRelationColumnInfo | None:
+def _get_column_info(info: dict) -> DataRelationColumnInfo:
     """Get the data relation info from a column."""
-    if missing_ok:
-        return info.get(_INFO_KEY)
-    else:
-        try:
-            return info[_INFO_KEY]
-        except KeyError:
-            msg = f"Missing data relation info in {info}"
-            raise ValueError(msg) from None
+    return cast(
+        "DataRelationColumnInfo",
+        {k: info[k] for k in info | DataRelationColumnInfo.__annotations__},
+    )
 
 
-def _set_column_info(info: dict, data_relation_info: _DataRelationColumnInfo) -> None:
-    """Set the data relation info on a column."""
-    info[_INFO_KEY] = data_relation_info
-
-
-class _DataRelationColumnInfo(TypedDict, total=False):
-    """A dictionary of metadata about a column."""
-
-    unique_on: _UniqueOnInfo
-
-
-class _UniqueOnInfo(TypedDict):
-    """A dictionary of metadata about the latest value of a column."""
-
-    comparator: ColumnComparator
+DataRelationColumnInfo = TypedDict(
+    "DataRelationColumnInfo",
+    {"lakery.unique_on_comparator": ColumnComparator},
+)
+"""The info for a column that is part of a data relation."""
