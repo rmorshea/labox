@@ -29,7 +29,7 @@ class _BaseSerializer(abc.ABC, Generic[T]):
 
 
 class ValueSerializer(_BaseSerializer[T]):
-    """A protocol for serializing/deserializing objects from value values."""
+    """A protocol for serializing/deserializing values."""
 
     @abc.abstractmethod
     def dump_value(self, value: T, /) -> ValueDump:
@@ -43,7 +43,7 @@ class ValueSerializer(_BaseSerializer[T]):
 
 
 class StreamSerializer(_BaseSerializer[T]):
-    """A protocol for serializing/deserializing objects from streams of values."""
+    """A protocol for serializing/deserializing streams of values."""
 
     @abc.abstractmethod
     def dump_value(self, value: Iterable[T], /) -> ValueDump:
@@ -80,14 +80,14 @@ class _BaseDump(TypedDict):
 class ValueDump(_BaseDump):
     """The serialized representation of a value value."""
 
-    value: bytes
+    content_value: bytes
     """The serialized data."""
 
 
 class StreamDump(_BaseDump):
     """The serialized representation of a stream of values."""
 
-    stream: AsyncGenerator[bytes]
+    content_stream: AsyncGenerator[bytes]
     """The serialized data stream."""
 
 

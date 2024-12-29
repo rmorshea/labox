@@ -32,11 +32,11 @@ def make_path_parts_from_digest(digest: ValueDigest | StreamDigest) -> Sequence[
 
 def _make_digest_from_data_relation(relation: DataRelation) -> ValueDigest:
     return {
-        "content_type": relation.rel_content_type,
-        "content_hash_algorithm": relation.rel_content_hash_algorithm,
-        "content_hash": relation.rel_content_hash,
-        "content_size": relation.rel_content_size,
         "content_encoding": relation.rel_content_encoding,
+        "content_hash": relation.rel_content_hash,
+        "content_hash_algorithm": relation.rel_content_hash_algorithm,
+        "content_size": relation.rel_content_size,
+        "content_type": relation.rel_content_type,
     }
 
 

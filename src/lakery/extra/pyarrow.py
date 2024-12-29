@@ -47,17 +47,17 @@ class ArrowTableSerializer(_ArrowTableBase, ValueSerializer[pa.Table]):
         with pa.ipc.new_file(sink, value.schema, options=self._write_options) as writer:
             writer.write_table(value)
         return {
-            "content_encoding": "binary",
+            "content_encoding": None,
             "content_type": self.content_type,
+            "content_value": sink.getvalue().to_pybytes(),
             "serializer_name": self.name,
             "serializer_version": self.version,
-            "value": sink.getvalue().to_pybytes(),
         }
 
     def load_value(self, dump: ValueDump) -> pa.Table:
         """Deserialize the given Arrow table."""
         return pa.ipc.open_file(
-            pa.BufferReader(dump["value"]), options=self._read_options
+            pa.BufferReader(dump["content_value"]), options=self._read_options
         ).read_all()
 
 
@@ -78,30 +78,30 @@ class ArrowRecordBatchStreamSerializer(_ArrowTableBase, StreamSerializer[pa.Reco
             for item in value_iter:
                 writer.write_batch(item)
         return {
-            "content_encoding": "binary",
+            "content_encoding": None,
             "content_type": self.content_type,
+            "content_value": buffer.getvalue(),
             "serializer_name": self.name,
             "serializer_version": self.version,
-            "value": buffer.getvalue(),
         }
 
     def load_value(self, dump: ValueDump) -> Iterator[pa.RecordBatch]:
         """Deserialize the given stream of Arrow record batches."""
-        return pa.ipc.open_stream(dump["value"], options=self._read_options)
+        return pa.ipc.open_stream(dump["content_value"], options=self._read_options)
 
     def dump_stream(self, stream: AsyncIterable[pa.RecordBatch]) -> StreamDump:
         """Serialize the given stream of Arrow record batches."""
         return {
-            "content_encoding": "binary",
+            "content_encoding": None,
+            "content_stream": _dump_arrow_record_batch_stream(stream, self._write_options),
             "content_type": self.content_type,
             "serializer_name": self.name,
             "serializer_version": self.version,
-            "stream": _dump_arrow_record_batch_stream(stream, self._write_options),
         }
 
     def load_stream(self, dump: StreamDump) -> AsyncGenerator[pa.RecordBatch]:
         """Deserialize the given stream of Arrow record batches."""
-        return _load_arrow_record_batch_stream(dump["stream"])
+        return _load_arrow_record_batch_stream(dump["content_stream"])
 
 
 class ParquetWriteOptions(TypedDict, total=False):
@@ -178,16 +178,16 @@ class ParquetTableSerializer(ValueSerializer[pa.Table]):
         ) as writer:
             writer.write_table(value)
         return {
-            "content_encoding": "binary",
+            "content_encoding": None,
             "content_type": self.content_type,
+            "content_value": buffer.getvalue(),
             "serializer_name": self.name,
             "serializer_version": self.version,
-            "value": buffer.getvalue(),
         }
 
     def load_value(self, dump: ValueDump) -> pa.Table:
         """Deserialize the given Arrow table."""
-        return pq.ParquetFile(pa.BufferReader(dump["value"]), **self.read_options).read()
+        return pq.ParquetFile(pa.BufferReader(dump["content_value"]), **self.read_options).read()
 
 
 class ParquetRecordBatchStreamSerializer(StreamSerializer[pa.RecordBatch]):
@@ -224,16 +224,16 @@ class ParquetRecordBatchStreamSerializer(StreamSerializer[pa.RecordBatch]):
             for item in value_iter:
                 writer.write_batch(item)
         return {
-            "content_encoding": "binary",
+            "content_encoding": None,
             "content_type": self.content_type,
             "serializer_name": self.name,
             "serializer_version": self.version,
-            "value": buffer.getvalue(),
+            "content_value": buffer.getvalue(),
         }
 
     def load_value(self, dump: ValueDump) -> Iterator[pa.RecordBatch]:
         """Deserialize the given stream of Arrow record batches."""
-        with pq.ParquetFile(pa.BufferReader(dump["value"]), **self.read_options) as reader:
+        with pq.ParquetFile(pa.BufferReader(dump["content_value"]), **self.read_options) as reader:
             for row_group_index in range(reader.num_row_groups):
                 row_group: pa.Table = reader.read_row_group(row_group_index)
                 yield from row_group.to_batches()
@@ -241,11 +241,11 @@ class ParquetRecordBatchStreamSerializer(StreamSerializer[pa.RecordBatch]):
     def dump_stream(self, stream: AsyncIterable[pa.RecordBatch]) -> StreamDump:
         """Serialize the given stream of Arrow record batches."""
         return {
-            "content_encoding": "binary",
+            "content_encoding": None,
             "content_type": self.content_type,
             "serializer_name": self.name,
             "serializer_version": self.version,
-            "stream": _dump_parquet_record_batch_stream(
+            "content_stream": _dump_parquet_record_batch_stream(
                 stream,
                 self.write_options,
                 self.write_option_extras,
@@ -254,7 +254,7 @@ class ParquetRecordBatchStreamSerializer(StreamSerializer[pa.RecordBatch]):
 
     def load_stream(self, dump: StreamDump) -> AsyncGenerator[pa.RecordBatch]:
         """Deserialize the given stream of Arrow record batches."""
-        return _load_parquet_record_batch_stream(dump["stream"], self.read_options)
+        return _load_parquet_record_batch_stream(dump["content_stream"], self.read_options)
 
 
 async def _dump_parquet_record_batch_stream(

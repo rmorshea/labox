@@ -99,10 +99,10 @@ class BlobStorage(StreamStorage[D]):
         """Load the stream dump for the given relation."""
         digest: StreamDigest = {
             "content_encoding": relation.rel_content_encoding,
-            "content_type": relation.rel_content_type,
             "content_hash": relation.rel_content_hash,
             "content_hash_algorithm": relation.rel_content_hash_algorithm,
             "content_size": relation.rel_content_size,
+            "content_type": relation.rel_content_type,
             "is_complete": True,
         }
         path = make_path_from_digest("/", digest, prefix=self._path_prefix)

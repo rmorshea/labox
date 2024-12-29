@@ -213,14 +213,14 @@ async def _save_value(
     relation.rel_content_encoding = dump.get("content_encoding")
     relation.rel_content_hash = digest["content_hash"]
     relation.rel_content_hash_algorithm = digest["content_hash_algorithm"]
-    relation.rel_content_size = len(dump["value"])
+    relation.rel_content_size = len(dump["content_value"])
     relation.rel_content_type = dump["content_type"]
     relation.rel_serializer_name = dump["serializer_name"]
     relation.rel_serializer_version = dump["serializer_version"]
     relation.rel_storage_name = storage.name
     relation.rel_storage_version = storage.version
 
-    return await storage.put_value(relation, dump["value"], digest)
+    return await storage.put_value(relation, dump["content_value"], digest)
 
 
 async def _save_stream(
@@ -313,7 +313,7 @@ def _wrap_stream_dump(
     relation: DataRelation,
     dump: StreamDump,
 ) -> tuple[AsyncGenerator[bytes], GetStreamDigest]:
-    stream = dump["stream"]
+    stream = dump["content_stream"]
 
     content_hash = sha256()
     content_size = 0
@@ -350,7 +350,7 @@ def _wrap_stream_dump(
 
 
 def _make_value_dump_digest(dump: ValueDump) -> ValueDigest:
-    value = dump["value"]
+    value = dump["content_value"]
     content_hash = sha256(value)
     return {
         "content_encoding": dump.get("content_encoding"),

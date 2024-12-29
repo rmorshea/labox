@@ -23,7 +23,6 @@ from sqlalchemy import func
 from sqlalchemy.orm import ColumnProperty
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
-from sqlalchemy.orm import MappedAsDataclass
 from sqlalchemy.orm import MappedColumn
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.sql import expression as sql
@@ -51,7 +50,7 @@ https://www.psycopg.org/psycopg3/docs/advanced/adapt.html#example-handling-infin
 """
 
 
-class Base(MappedAsDataclass, DeclarativeBase, kw_only=True):
+class Base(DeclarativeBase):
     """The base for lakery's schema classes."""
 
 
@@ -69,31 +68,31 @@ class DataRelation(Base):
     __tablename__ = "lakery_data_relations"
     __mapper_args__: Mapping[str, Any] = {"polymorphic_on": "rel_type"}
 
-    rel_id: Mapped[UUID] = mapped_column(init=False, default_factory=uuid4, primary_key=True)
+    rel_id: Mapped[UUID] = mapped_column(default=uuid4, primary_key=True)
     """The ID of the relation."""
-    rel_type: Mapped[str] = mapped_column(init=False, info=is_unique())
+    rel_type: Mapped[str] = mapped_column(info=is_unique())
     """The type of relation."""
-    rel_created_at: Mapped[DateTimeTZ] = mapped_column(init=False, default=func.now())
+    rel_created_at: Mapped[DateTimeTZ] = mapped_column(default=func.now())
     """The timestamp when the pointer was created."""
-    rel_archived_at: Mapped[DateTimeTZ] = mapped_column(init=False, default=NEVER, info=is_unique())
+    rel_archived_at: Mapped[DateTimeTZ] = mapped_column(default=NEVER, info=is_unique())
     """The timestamp when the pointer was archived."""
-    rel_content_type: Mapped[str] = mapped_column(init=False)
+    rel_content_type: Mapped[str] = mapped_column()
     """The MIME type of the data."""
-    rel_content_encoding: Mapped[str | None] = mapped_column(init=False)
+    rel_content_encoding: Mapped[str | None] = mapped_column()
     """The encoding of the data."""
-    rel_content_hash: Mapped[str] = mapped_column(init=False)
+    rel_content_hash: Mapped[str] = mapped_column()
     """The hash of the data."""
-    rel_content_hash_algorithm: Mapped[str] = mapped_column(init=False)
+    rel_content_hash_algorithm: Mapped[str] = mapped_column()
     """The algorithm used to hash the data."""
-    rel_content_size: Mapped[int] = mapped_column(init=False)
+    rel_content_size: Mapped[int] = mapped_column()
     """The size of the data in bytes"""
-    rel_serializer_name: Mapped[str] = mapped_column(init=False)
+    rel_serializer_name: Mapped[str] = mapped_column()
     """The name of the serializer used to serialize the data."""
-    rel_serializer_version: Mapped[int] = mapped_column(init=False)
+    rel_serializer_version: Mapped[int] = mapped_column()
     """The version of the serializer used to serialize the data."""
-    rel_storage_name: Mapped[str] = mapped_column(init=False)
+    rel_storage_name: Mapped[str] = mapped_column()
     """The name of the storage backend used to store the data."""
-    rel_storage_version: Mapped[int] = mapped_column(init=False)
+    rel_storage_version: Mapped[int] = mapped_column()
     """The version of the storage backend used to store the data."""
 
     def rel_select_latest(self) -> ColumnElement[bool]:

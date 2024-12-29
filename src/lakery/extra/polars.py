@@ -72,11 +72,11 @@ class ParquetDataFrameSerializer(ValueSerializer[pl.DataFrame]):
         return {
             "content_encoding": None,
             "content_type": self.content_type,
+            "content_value": buffer.getvalue(),
             "serializer_name": self.name,
             "serializer_version": self.version,
-            "value": buffer.getvalue(),
         }
 
     def load_value(self, dump: ValueDump, /) -> pl.DataFrame:
         """Deserialize the given DataFrame."""
-        return pl.read_parquet(BytesIO(dump["value"]), **self._load_args)
+        return pl.read_parquet(BytesIO(dump["content_value"]), **self._load_args)

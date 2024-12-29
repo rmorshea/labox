@@ -50,9 +50,9 @@ class _DataLoader:
         storage = self._storage_registry.get_by_name(relation.rel_storage_name)
         return serializer.load_value(
             {
-                "value": await storage.get_value(relation),
-                "content_type": relation.rel_content_type,
                 "content_encoding": relation.rel_content_encoding,
+                "content_type": relation.rel_content_type,
+                "content_value": await storage.get_value(relation),
                 "serializer_name": relation.rel_serializer_name,
                 "serializer_version": relation.rel_serializer_version,
             }
@@ -70,9 +70,9 @@ class _DataLoader:
             raise TypeError(msg)
         return serializer.load_stream(
             {
-                "stream": storage.get_stream(relation),
-                "content_type": relation.rel_content_type,
                 "content_encoding": relation.rel_content_encoding,
+                "content_stream": storage.get_stream(relation),
+                "content_type": relation.rel_content_type,
                 "serializer_name": relation.rel_serializer_name,
                 "serializer_version": relation.rel_serializer_version,
             }

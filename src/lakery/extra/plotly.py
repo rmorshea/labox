@@ -50,12 +50,12 @@ class FigureSerializer(ValueSerializer[go.Figure]):
         return {
             "content_encoding": "utf-8",
             "content_type": self.content_type,
+            "content_value": data.encode("utf-8"),
             "serializer_name": self.name,
             "serializer_version": self.version,
-            "value": data.encode("utf-8"),
         }
 
     def load_value(self, dump: ValueDump, /) -> go.Figure:
         """Deserialize the given figure."""
-        data = dump["value"].decode("utf-8")
+        data = dump["content_value"].decode("utf-8")
         return from_json(data, **self._load_args)
