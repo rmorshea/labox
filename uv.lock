@@ -1030,6 +1030,7 @@ all = [
     { name = "boto3" },
     { name = "google-cloud-storage" },
     { name = "msgpack" },
+    { name = "numpy" },
     { name = "pandas" },
     { name = "plotly" },
     { name = "pyarrow" },
@@ -1045,6 +1046,9 @@ google = [
 ]
 msgpack = [
     { name = "msgpack" },
+]
+numpy = [
+    { name = "numpy" },
 ]
 pandas = [
     { name = "pandas" },
@@ -1164,11 +1168,13 @@ requires-dist = [
     { name = "lakery", extras = ["azure"], marker = "extra == 'all'" },
     { name = "lakery", extras = ["google"], marker = "extra == 'all'" },
     { name = "lakery", extras = ["msgpack"], marker = "extra == 'all'" },
+    { name = "lakery", extras = ["numpy"], marker = "extra == 'all'" },
     { name = "lakery", extras = ["pandas"], marker = "extra == 'all'" },
     { name = "lakery", extras = ["plotly"], marker = "extra == 'all'" },
     { name = "lakery", extras = ["pyarrow"], marker = "extra == 'all'" },
     { name = "lakery", extras = ["pyarrow"], marker = "extra == 'pandas'" },
     { name = "msgpack", marker = "extra == 'msgpack'", specifier = ">=1,<2" },
+    { name = "numpy", marker = "extra == 'numpy'", specifier = ">=2,<3" },
     { name = "pandas", marker = "extra == 'pandas'", specifier = ">=2,<3" },
     { name = "plotly", marker = "extra == 'plotly'", specifier = ">=5,<6" },
     { name = "pyarrow", marker = "extra == 'pyarrow'", specifier = ">=18,<19" },
