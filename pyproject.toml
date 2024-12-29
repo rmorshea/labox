@@ -31,6 +31,7 @@ all = [
     "lakery[numpy]",
     "lakery[pandas]",
     "lakery[plotly]",
+    "lakery[polars]",
     "lakery[pyarrow]",
 ]
 aws = ["boto3>=1,<2"]
@@ -40,6 +41,7 @@ msgpack = ["msgpack>=1,<2"]
 numpy = ["numpy>=2,<3"]
 pandas = ["pandas>=2,<3", "lakery[pyarrow]"]
 plotly = ["plotly>=5,<6"]
+polars = ["polars>=1.18.0"]
 pyarrow = ["pyarrow>=18,<19"]
 [project.urls]
 Source = "https://github.com/rmorshea/lakery"
