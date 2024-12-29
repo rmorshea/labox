@@ -1,10 +1,10 @@
 # Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
-_commit: v0.0.4
+_commit: v0.0.6
 _src_path: https://github.com/rmorshea/python-copier-template
 author_email: ryan.morshead@gmail.com
 author_name: Ryan Morshead
 project_description: An artifact management system for Python.
 project_title: lakery
 python_package_name: lakery
-python_version_range: ">=3.11,<4"
+python_version_range: '>=3.11'
 repo_url: https://github.com/rmorshea/lakery
