@@ -21,12 +21,7 @@ from lakery.core.serializer import ValueDump
 from lakery.core.serializer import ValueSerializer
 
 
-class ArrowTableSerializer(ValueSerializer[pa.Table]):
-    """Serialize a PyArrow table to the arrow file format."""
-
-    name = "lakery.pyarrow.arrow.file"
-    version = 1
-    types = (pa.Table,)
+class _ArrowTableBase:
     content_type = "application/vnd.apache.arrow.file"
 
     def __init__(
@@ -35,13 +30,21 @@ class ArrowTableSerializer(ValueSerializer[pa.Table]):
         write_options: pa.ipc.IpcReadOptions | None = None,
         read_options: pa.ipc.IpcReadOptions | None = None,
     ) -> None:
-        self.write_options = write_options
-        self.read_options = read_options
+        self._write_options = write_options
+        self._read_options = read_options
+
+
+class ArrowTableSerializer(_ArrowTableBase, ValueSerializer[pa.Table]):
+    """Serialize a PyArrow table to the arrow file format."""
+
+    name = "lakery.pyarrow.arrow.file"
+    version = 1
+    types = (pa.Table,)
 
     def dump_value(self, value: pa.Table) -> ValueDump:
         """Serialize the given Arrow table."""
         sink = pa.BufferOutputStream()
-        with pa.ipc.new_file(sink, value.schema, options=self.write_options) as writer:
+        with pa.ipc.new_file(sink, value.schema, options=self._write_options) as writer:
             writer.write_table(value)
         return {
             "content_encoding": "binary",
@@ -54,33 +57,23 @@ class ArrowTableSerializer(ValueSerializer[pa.Table]):
     def load_value(self, dump: ValueDump) -> pa.Table:
         """Deserialize the given Arrow table."""
         return pa.ipc.open_file(
-            pa.BufferReader(dump["value"]), options=self.read_options
+            pa.BufferReader(dump["value"]), options=self._read_options
         ).read_all()
 
 
-class ArrowRecordBatchStreamSerializer(StreamSerializer[pa.RecordBatch]):
+class ArrowRecordBatchStreamSerializer(_ArrowTableBase, StreamSerializer[pa.RecordBatch]):
     """Serialize a stream of PyArrow record batches to the arrow stream format."""
 
     name = "lakery.arrow.record_batch.stream"
     version = 1
     types = (pa.RecordBatch,)
-    content_type = "application/vnd.apache.arrow.stream"
-
-    def __init__(
-        self,
-        *,
-        write_options: pa.ipc.IpcReadOptions | None = None,
-        read_options: pa.ipc.IpcReadOptions | None = None,
-    ) -> None:
-        self.write_options = write_options
-        self.read_options = read_options
 
     def dump_value(self, value: Iterable[pa.RecordBatch]) -> ValueDump:
         """Serialize the given stream of Arrow record batches."""
         buffer = io.BytesIO()
         value_iter = iter(value)
         item = next(value_iter)
-        with pa.ipc.new_stream(buffer, item.schema, options=self.write_options) as writer:
+        with pa.ipc.new_stream(buffer, item.schema, options=self._write_options) as writer:
             writer.write_batch(item)
             for item in value_iter:
                 writer.write_batch(item)
@@ -94,7 +87,7 @@ class ArrowRecordBatchStreamSerializer(StreamSerializer[pa.RecordBatch]):
 
     def load_value(self, dump: ValueDump) -> Iterator[pa.RecordBatch]:
         """Deserialize the given stream of Arrow record batches."""
-        return pa.ipc.open_stream(dump["value"], options=self.read_options)
+        return pa.ipc.open_stream(dump["value"], options=self._read_options)
 
     def dump_stream(self, stream: AsyncIterable[pa.RecordBatch]) -> StreamDump:
         """Serialize the given stream of Arrow record batches."""
@@ -103,7 +96,7 @@ class ArrowRecordBatchStreamSerializer(StreamSerializer[pa.RecordBatch]):
             "content_type": self.content_type,
             "serializer_name": self.name,
             "serializer_version": self.version,
-            "stream": _dump_arrow_record_batch_stream(stream, self.write_options),
+            "stream": _dump_arrow_record_batch_stream(stream, self._write_options),
         }
 
     def load_stream(self, dump: StreamDump) -> AsyncGenerator[pa.RecordBatch]:

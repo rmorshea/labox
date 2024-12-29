@@ -17,15 +17,24 @@ from lakery.core.serializer import ValueSerializer
 
 T = TypeVar("T")
 
+AssertionFunc = Callable[[T, T], None]
+
+
+def _assert_equal(a: Any, b: Any) -> None:
+    assert a == b
+
 
 def make_value_serializer_test(
     serializer: ValueSerializer[T],
     *cases: T,
+    assertion: AssertionFunc[T] = _assert_equal,
 ) -> Callable:
     async def tester(checker, case):
         await checker(case)
 
-    matrix = [(partial(_check_dump_value_load_value, serializer, None), case) for case in cases]
+    matrix = [
+        (partial(_check_dump_value_load_value, assertion, serializer, None), c) for c in cases
+    ]
 
     def get_id(x: Any) -> Any:
         if hasattr(wrapped := getattr(x, "func", x), "__name__"):
@@ -39,6 +48,7 @@ def make_value_serializer_test(
 def make_stream_serializer_test(
     serializer: StreamSerializer[T],
     *cases: Sequence[T],
+    assertion: AssertionFunc[T] = _assert_equal,
 ) -> Callable:
     async def tester(checker, restream, case):
         await checker(restream, case)
@@ -50,14 +60,14 @@ def make_stream_serializer_test(
     for case in cases:
         matrix.append(
             (
-                partial(_check_dump_value_load_value, serializer, conv=list),
+                partial(_check_dump_value_load_value, assertion, serializer, conv=list),
                 None,
                 case,
             )
         )
         matrix.extend(
             (
-                partial(_check_dump_value_load_stream, serializer),
+                partial(_check_dump_value_load_stream, assertion, serializer),
                 restreamer,
                 case,
             )
@@ -65,14 +75,14 @@ def make_stream_serializer_test(
         )
         matrix.append(
             (
-                partial(_check_dump_stream_load_value, serializer),
+                partial(_check_dump_stream_load_value, assertion, serializer),
                 None,
                 case,
             )
         )
         matrix.extend(
             (
-                partial(_check_dump_stream_load_stream, serializer),
+                partial(_check_dump_stream_load_stream, assertion, serializer),
                 restreamer,
                 case,
             )
@@ -89,6 +99,7 @@ def make_stream_serializer_test(
 
 
 async def _check_dump_value_load_stream(
+    assertion: AssertionFunc[Any],
     serializer: StreamSerializer[Any],
     restream: Callable[[bytes], AsyncGenerator[bytes]],
     value: Any,
@@ -106,10 +117,11 @@ async def _check_dump_value_load_stream(
 
     loaded_values = [value async for value in loaded_stream]
 
-    assert loaded_values == list(value)
+    assertion(loaded_values, list(value))
 
 
 async def _check_dump_stream_load_value(
+    assertion: AssertionFunc[T],
     serializer: StreamSerializer[Any],
     restream: Any,
     values: Sequence[Any],
@@ -124,10 +136,11 @@ async def _check_dump_stream_load_value(
         "serializer_version": stream_dump["serializer_version"],
         "value": content_value,
     }
-    assert list(serializer.load_value(value_dump)) == list(values)  # type: ignore[reportArgumentType]
+    assertion(list(serializer.load_value(value_dump)), list(values))  # type: ignore[reportArgumentType]
 
 
 async def _check_dump_stream_load_stream(
+    assertion: AssertionFunc[T],
     serializer: StreamSerializer[Any],
     restream: Callable[[bytes], AsyncGenerator[bytes]],
     values: Sequence[Any],
@@ -136,16 +149,17 @@ async def _check_dump_stream_load_stream(
     stream_dump = serializer.dump_stream(content_stream)
     stream = restream(b"".join([chunk async for chunk in stream_dump["stream"]]))
     loaded_stream = serializer.load_stream({**stream_dump, "stream": stream})
-    assert [value async for value in loaded_stream] == list(values)
+    assertion([value async for value in loaded_stream], list(values))  # type: ignore[reportArgumentType]
 
 
 async def _check_dump_value_load_value(
+    assertion: AssertionFunc[T],
     serializer: ValueSerializer[Any] | StreamSerializer[Any],
     restream: None,
     value: Any,
     conv: Callable[[Any], Any] = lambda x: x,
 ) -> None:
-    assert conv(serializer.load_value(serializer.dump_value(value))) == conv(value)
+    assertion(conv(serializer.load_value(serializer.dump_value(value))), conv(value))
 
 
 async def _to_async_iterable(iterable: Iterable[Any]) -> AsyncIterator[Any]:
