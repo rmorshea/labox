@@ -1,15 +1,21 @@
-from collections.abc import Sequence
+from __future__ import annotations
+
 from io import BytesIO
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import Literal
 from typing import TypedDict
 
 import polars as pl
-from polars._typing import ParallelStrategy
-from polars._typing import ParquetCompression
 
 from lakery.core.serializer import ValueDump
 from lakery.core.serializer import ValueSerializer
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from polars._typing import ParallelStrategy
+    from polars._typing import ParquetCompression
 
 
 class ParquetDumpArgs(TypedDict, total=False):

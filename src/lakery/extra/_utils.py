@@ -1,11 +1,17 @@
-from collections.abc import Sequence
+from __future__ import annotations
+
 from mimetypes import guess_extension
+from typing import TYPE_CHECKING
 from uuid import uuid4
 
 from lakery.common.utils import slugify
-from lakery.core.schema import DataRelation
-from lakery.core.storage import StreamDigest
-from lakery.core.storage import ValueDigest
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from lakery.core.schema import DataRelation
+    from lakery.core.storage import StreamDigest
+    from lakery.core.storage import ValueDigest
 
 
 def make_temp_path(sep: str, digest: StreamDigest | ValueDigest, *, prefix: str = "") -> str:

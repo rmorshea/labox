@@ -1,7 +1,6 @@
-from collections.abc import AsyncGenerator
-from collections.abc import AsyncIterable
-from collections.abc import Callable
-from collections.abc import Iterable
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 from typing import Any
 
 from msgpack import Packer
@@ -12,6 +11,12 @@ from lakery.core.serializer import StreamDump
 from lakery.core.serializer import StreamSerializer
 from lakery.core.serializer import ValueDump
 from lakery.core.serializer import ValueSerializer
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+    from collections.abc import AsyncIterable
+    from collections.abc import Callable
+    from collections.abc import Iterable
 
 MsgPackType = (
     Any  # Include any to account for msgpack extension types

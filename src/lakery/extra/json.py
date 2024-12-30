@@ -1,15 +1,20 @@
+from __future__ import annotations
+
 import json
 from codecs import getincrementaldecoder
-from collections.abc import AsyncGenerator
-from collections.abc import AsyncIterable
-from collections.abc import Iterable
 from io import StringIO
+from typing import TYPE_CHECKING
 
 from lakery.common.streaming import decode_async_byte_stream
 from lakery.core.serializer import StreamDump
 from lakery.core.serializer import StreamSerializer
 from lakery.core.serializer import ValueDump
 from lakery.core.serializer import ValueSerializer
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+    from collections.abc import AsyncIterable
+    from collections.abc import Iterable
 
 JsonType = int | str | float | bool | dict[str, "JsonType"] | list["JsonType"] | None
 """A type alias for JSON data."""

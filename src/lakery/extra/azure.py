@@ -1,11 +1,11 @@
-from collections.abc import AsyncGenerator
-from collections.abc import AsyncIterable
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 from typing import TypeVar
 
 from anyio import CapacityLimiter
 from azure.core.exceptions import ResourceNotFoundError
 from azure.storage.blob import ContentSettings
-from azure.storage.blob.aio import ContainerClient
 
 from lakery.common.exceptions import NoStorageData
 from lakery.core.schema import DataRelation
@@ -16,6 +16,12 @@ from lakery.core.storage import ValueDigest
 from lakery.extra._utils import make_path_from_data_relation
 from lakery.extra._utils import make_path_from_digest
 from lakery.extra._utils import make_temp_path
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+    from collections.abc import AsyncIterable
+
+    from azure.storage.blob.aio import ContainerClient
 
 D = TypeVar("D", bound=DataRelation)
 

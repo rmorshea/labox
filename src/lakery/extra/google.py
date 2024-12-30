@@ -1,7 +1,7 @@
-from collections.abc import AsyncIterable
-from collections.abc import Callable
-from collections.abc import Coroutine
+from __future__ import annotations
+
 from contextlib import closing
+from typing import TYPE_CHECKING
 from typing import ParamSpec
 from typing import Protocol
 from typing import TypeVar
@@ -9,8 +9,6 @@ from typing import TypeVar
 from anyio import CapacityLimiter
 from anyio.to_thread import run_sync
 from google.api_core.exceptions import NotFound
-from google.cloud.storage import Blob
-from google.cloud.storage import Bucket
 from google.cloud.storage.fileio import DEFAULT_CHUNK_SIZE
 from google.cloud.storage.fileio import BlobReader
 from google.cloud.storage.fileio import BlobWriter
@@ -24,6 +22,14 @@ from lakery.core.storage import ValueDigest
 from lakery.extra._utils import make_path_from_data_relation
 from lakery.extra._utils import make_path_from_digest
 from lakery.extra._utils import make_temp_path
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterable
+    from collections.abc import Callable
+    from collections.abc import Coroutine
+
+    from google.cloud.storage import Blob
+    from google.cloud.storage import Bucket
 
 P = ParamSpec("P")
 R = TypeVar("R")
