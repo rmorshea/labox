@@ -50,7 +50,7 @@ https://www.psycopg.org/psycopg3/docs/advanced/adapt.html#example-handling-infin
 
 
 class Base(DeclarativeBase):
-    """The base for lakery's schema classes."""
+    """The base for lakery's core schema classes."""
 
 
 def archived_on(comparator: ColumnComparator = operator.eq) -> dict[str, Any]:
