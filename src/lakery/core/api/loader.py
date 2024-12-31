@@ -27,8 +27,10 @@ P = ParamSpec("P")
 @injector.function(requires=(StorageRegistry, SerializerRegistry))
 def data_loader(
     *,
-    storage_registry: StorageRegistry = required,
-    serializer_registry: SerializerRegistry = required,
+    session: DatabaseSession = required,
+    compositors: CompositorRegistry = required,
+    serializers: SerializerRegistry = required,
+    storages: StorageRegistry = required,
 ) -> DataLoader:
     """Create a context manager for saving data."""
     return _DataLoader(storage_registry=storage_registry, serializer_registry=serializer_registry)

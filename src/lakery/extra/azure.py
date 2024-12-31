@@ -8,12 +8,11 @@ from azure.core.exceptions import ResourceNotFoundError
 from azure.storage.blob import ContentSettings
 
 from lakery.common.exceptions import NoStorageData
-from lakery.core.schema import DataRelation
+from lakery.core.schema import DataDescriptor
 from lakery.core.storage import GetStreamDigest
-from lakery.core.storage import StreamDigest
-from lakery.core.storage import StreamStorage
+from lakery.core.storage import Storage
 from lakery.core.storage import ValueDigest
-from lakery.extra._utils import make_path_from_data_relation
+from lakery.extra._utils import make_path_from_descriptor
 from lakery.extra._utils import make_path_from_digest
 from lakery.extra._utils import make_temp_path
 
@@ -23,10 +22,10 @@ if TYPE_CHECKING:
 
     from azure.storage.blob.aio import ContainerClient
 
-D = TypeVar("D", bound=DataRelation)
+D = TypeVar("D", bound=DataDescriptor)
 
 
-class BlobStorage(StreamStorage[D]):
+class BlobStorage(Storage[D]):
     """Storage for Azure Blob data."""
 
     name = "lakery.azure.blob"
@@ -35,7 +34,7 @@ class BlobStorage(StreamStorage[D]):
     def __init__(
         self,
         *,
-        types: tuple[type[D], ...] = (DataRelation,),
+        types: tuple[type[D], ...] = (DataDescriptor,),
         container_client: ContainerClient,
         path_prefix: str = "",
         max_concurrency: int | None = None,
@@ -65,7 +64,7 @@ class BlobStorage(StreamStorage[D]):
 
     async def get_value(self, relation: D) -> bytes:
         """Load the value dump for the given relation."""
-        path = make_path_from_data_relation("/", relation, prefix=self._path_prefix)
+        path = make_path_from_descriptor("/", relation, prefix=self._path_prefix)
         blob_client = self._container_client.get_blob_client(blob=path)
         try:
             blob_reader = await blob_client.download_blob()
@@ -103,15 +102,7 @@ class BlobStorage(StreamStorage[D]):
 
     async def get_stream(self, relation: D) -> AsyncGenerator[bytes]:
         """Load the stream dump for the given relation."""
-        digest: StreamDigest = {
-            "content_encoding": relation.rel_content_encoding,
-            "content_hash": relation.rel_content_hash,
-            "content_hash_algorithm": relation.rel_content_hash_algorithm,
-            "content_size": relation.rel_content_size,
-            "content_type": relation.rel_content_type,
-            "is_complete": True,
-        }
-        path = make_path_from_digest("/", digest, prefix=self._path_prefix)
+        path = make_path_from_descriptor("/", relation, prefix=self._path_prefix)
         blob_client = self._container_client.get_blob_client(blob=path)
         try:
             blob_reader = await blob_client.download_blob()

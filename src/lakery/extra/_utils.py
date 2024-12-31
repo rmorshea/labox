@@ -9,7 +9,7 @@ from lakery.common.utils import slugify
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from lakery.core.schema import DataRelation
+    from lakery.core.schema import DataDescriptor
     from lakery.core.storage import StreamDigest
     from lakery.core.storage import ValueDigest
 
@@ -24,8 +24,8 @@ def make_path_from_digest(sep: str, digest: ValueDigest | StreamDigest, *, prefi
     return _join_with_prefix(sep, parts, prefix)
 
 
-def make_path_from_data_relation(sep: str, relation: DataRelation, *, prefix: str = "") -> str:
-    return make_path_from_digest(sep, _make_digest_from_data_relation(relation), prefix=prefix)
+def make_path_from_descriptor(sep: str, relation: DataDescriptor, *, prefix: str = "") -> str:
+    return make_path_from_digest(sep, _make_digest_from_descriptor(relation), prefix=prefix)
 
 
 def make_path_parts_from_digest(digest: ValueDigest | StreamDigest) -> Sequence[str]:
@@ -36,7 +36,7 @@ def make_path_parts_from_digest(digest: ValueDigest | StreamDigest) -> Sequence[
     return (slugify(digest["content_hash_algorithm"]), name)
 
 
-def _make_digest_from_data_relation(relation: DataRelation) -> ValueDigest:
+def _make_digest_from_descriptor(relation: DataDescriptor) -> ValueDigest:
     return {
         "content_encoding": relation.rel_content_encoding,
         "content_hash": relation.rel_content_hash,

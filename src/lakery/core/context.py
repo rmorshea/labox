@@ -8,6 +8,7 @@ from typing import NewType
 from pybooster import injector
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from lakery.core.compositor import CompositorRegistry
 from lakery.core.serializer import SerializerRegistry
 from lakery.core.storage import StorageRegistry
 
@@ -21,14 +22,19 @@ DatabaseSession = NewType("DatabaseSession", AsyncSession)
 @contextmanager
 def registries(
     *,
-    storages: StorageRegistry | None = None,
+    compositors: CompositorRegistry | None = None,
     serializers: SerializerRegistry | None = None,
+    storages: StorageRegistry | None = None,
 ) -> Iterator[None]:
     """Declare the set of storage and serializers to use for the duration of the context."""
     regs: list[tuple[type, Any]] = []
-    if storages is not None:
-        regs.append((StorageRegistry, storages))
+
     if serializers is not None:
         regs.append((SerializerRegistry, serializers))
+    if compositors is not None:
+        regs.append((CompositorRegistry, compositors))
+    if storages is not None:
+        regs.append((StorageRegistry, storages))
+
     with injector.shared(*regs):
         yield None

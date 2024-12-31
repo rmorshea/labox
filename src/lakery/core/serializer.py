@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import abc
+from collections.abc import Iterable
 from typing import TYPE_CHECKING
 from typing import Generic
 from typing import LiteralString
@@ -13,23 +14,20 @@ from lakery.core._registry import Registry
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable
-    from collections.abc import Iterable
     from collections.abc import Sequence
 
 
 T = TypeVar("T")
 
 
-class _BaseSerializer(abc.ABC, Generic[T]):
+class ValueSerializer(Generic[T]):
+    """A protocol for serializing/deserializing values."""
+
     name: LiteralString
     """The name of the serializer."""
     types: tuple[type[T], ...]
     """The types that the serializer can handle."""
     version: int
-
-
-class ValueSerializer(_BaseSerializer[T]):
-    """A protocol for serializing/deserializing values."""
 
     @abc.abstractmethod
     def dump_value(self, value: T, /) -> ValueDump:
@@ -42,18 +40,8 @@ class ValueSerializer(_BaseSerializer[T]):
         raise NotImplementedError
 
 
-class StreamSerializer(_BaseSerializer[T]):
+class StreamSerializer(ValueSerializer[Iterable[T]]):
     """A protocol for serializing/deserializing streams of values."""
-
-    @abc.abstractmethod
-    def dump_value(self, value: Iterable[T], /) -> ValueDump:
-        """Serialize the given value."""
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def load_value(self, dump: ValueDump, /) -> Iterable[T]:
-        """Deserialize the given value."""
-        raise NotImplementedError
 
     @abc.abstractmethod
     def dump_stream(self, stream: AsyncIterable[T], /) -> StreamDump:
@@ -120,9 +108,9 @@ class SerializerRegistry(Registry[ValueSerializer | StreamSerializer]):
         raise ValueError(msg)
 
     def infer_from_stream_type(self, cls: type[T]) -> StreamSerializer[T]:
-        """Get the first serializer that can handle the given type or its parent classes."""
+        """Get the first serializer that can handle the given type or its base classes."""
         for base in cls.mro():
             if item := self.by_stream_type.get(base):
                 return item
-        msg = f"No serializer found for {cls}."
+        msg = f"No {self.item_description.lower()} found for {cls}."
         raise ValueError(msg)

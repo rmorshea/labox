@@ -17,11 +17,11 @@ from typing_extensions import ContextManager
 from lakery.common.anyio import start_async_iterator
 from lakery.common.exceptions import NoStorageData
 from lakery.common.streaming import write_async_byte_stream_into
-from lakery.core.schema import DataRelation
+from lakery.core.schema import DataDescriptor
 from lakery.core.storage import GetStreamDigest
-from lakery.core.storage import StreamStorage
+from lakery.core.storage import Storage
 from lakery.core.storage import ValueDigest
-from lakery.extra._utils import make_path_from_data_relation
+from lakery.extra._utils import make_path_from_descriptor
 from lakery.extra._utils import make_path_from_digest
 from lakery.extra._utils import make_temp_path
 
@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 
 P = ParamSpec("P")
 R = TypeVar("R")
-D = TypeVar("D", bound=DataRelation)
+D = TypeVar("D", bound=DataDescriptor)
 
 
 _5MB = 5 * (1024**2)
@@ -45,7 +45,7 @@ StreamBufferType = Callable[[], ContextManager[IO[bytes]]]
 """A function that returns a context manager for a stream buffer."""
 
 
-class S3Storage(StreamStorage[D]):
+class S3Storage(Storage[D]):
     """Storage for S3 data."""
 
     name = "lakery.aws.s3"
@@ -54,7 +54,7 @@ class S3Storage(StreamStorage[D]):
     def __init__(
         self,
         *,
-        types: tuple[type[D], ...] = (DataRelation,),
+        types: tuple[type[D], ...] = (DataDescriptor,),
         s3_client: S3Client,
         bucket_name: str,
         object_key_prefix: str = "",
@@ -103,7 +103,7 @@ class S3Storage(StreamStorage[D]):
             result = await self._to_thread(
                 self._client.get_object,
                 Bucket=self._bucket_name,
-                Key=make_path_from_data_relation("/", relation, prefix=self._object_key_prefix),
+                Key=make_path_from_descriptor("/", relation, prefix=self._object_key_prefix),
             )
             return result["Body"].read()
         except self._client.exceptions.NoSuchKey as error:
@@ -199,17 +199,7 @@ class S3Storage(StreamStorage[D]):
             result = await self._to_thread(
                 self._client.get_object,
                 Bucket=self._bucket_name,
-                Key=make_path_from_digest(
-                    "/",
-                    {
-                        "content_encoding": relation.rel_content_encoding,
-                        "content_hash": relation.rel_content_hash,
-                        "content_hash_algorithm": relation.rel_content_hash_algorithm,
-                        "content_size": relation.rel_content_size,
-                        "content_type": relation.rel_content_type,
-                    },
-                    prefix=self._object_key_prefix,
-                ),
+                Key=make_path_from_descriptor("/", relation, prefix=self._object_key_prefix),
             )
         except self._client.exceptions.NoSuchKey as error:
             msg = f"No data found for {relation}."

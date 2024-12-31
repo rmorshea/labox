@@ -15,11 +15,11 @@ from google.cloud.storage.fileio import BlobWriter
 from typing_extensions import AsyncGenerator
 
 from lakery.common.exceptions import NoStorageData
-from lakery.core.schema import DataRelation
+from lakery.core.schema import DataDescriptor
 from lakery.core.storage import GetStreamDigest
-from lakery.core.storage import StreamStorage
+from lakery.core.storage import Storage
 from lakery.core.storage import ValueDigest
-from lakery.extra._utils import make_path_from_data_relation
+from lakery.extra._utils import make_path_from_descriptor
 from lakery.extra._utils import make_path_from_digest
 from lakery.extra._utils import make_temp_path
 
@@ -33,7 +33,7 @@ if TYPE_CHECKING:
 
 P = ParamSpec("P")
 R = TypeVar("R")
-D = TypeVar("D", bound=DataRelation)
+D = TypeVar("D", bound=DataDescriptor)
 
 
 class WriterType(Protocol):
@@ -52,7 +52,7 @@ class ReaderType(Protocol):
         ...
 
 
-class BlobStorage(StreamStorage[D]):
+class BlobStorage(Storage[D]):
     """A storage backend that uses Google Cloud Storage."""
 
     name = "lakery.google.blob"
@@ -61,7 +61,7 @@ class BlobStorage(StreamStorage[D]):
     def __init__(
         self,
         *,
-        types: tuple[type[D], ...] = (DataRelation,),
+        types: tuple[type[D], ...] = (DataDescriptor,),
         bucket_client: Bucket,
         object_name_prefix: str = "",
         object_chunk_size: int = DEFAULT_CHUNK_SIZE,
@@ -97,7 +97,7 @@ class BlobStorage(StreamStorage[D]):
 
     async def get_value(self, relation: D) -> bytes:
         """Load the value dump for the given relation."""
-        name = make_path_from_data_relation("/", relation, prefix=self._object_name_prefix)
+        name = make_path_from_descriptor("/", relation, prefix=self._object_name_prefix)
         with closing(
             self._reader_type(self._bucket.blob(name, chunk_size=self._object_chunk_size))
         ) as reader:
@@ -147,7 +147,7 @@ class BlobStorage(StreamStorage[D]):
 
     async def get_stream(self, relation: D) -> AsyncGenerator[bytes]:
         """Load the stream dump for the given relation."""
-        name = make_path_from_data_relation("/", relation, prefix=self._object_name_prefix)
+        name = make_path_from_descriptor("/", relation, prefix=self._object_name_prefix)
         blob = self._bucket.blob(name, chunk_size=self._object_chunk_size)
         with closing(self._reader_type(blob)) as reader:
             try:
