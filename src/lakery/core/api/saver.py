@@ -5,10 +5,10 @@ from hashlib import sha256
 from typing import TYPE_CHECKING
 from typing import Generic
 from typing import ParamSpec
-from typing import Required
 from typing import TypeAlias
 from typing import TypedDict
 from typing import TypeVar
+from uuid import UUID
 
 from anyio import create_task_group
 from anysync import contextmanager
@@ -23,12 +23,14 @@ from tenacity import AsyncRetrying
 from tenacity import stop_after_attempt
 
 from lakery.common.anyio import TaskGroupFuture
-from lakery.common.anyio import start_given_future
-from lakery.core.compositor import DEFAULT_COMPOSITOR
-from lakery.core.compositor import CompositorRegistry
+from lakery.common.anyio import start_future
 from lakery.core.context import DatabaseSession
+from lakery.core.model import ModelRegistry
 from lakery.core.schema import DataDescriptor
+from lakery.core.schema import DataRecord
 from lakery.core.serializer import SerializerRegistry
+from lakery.core.serializer import StreamSerializer
+from lakery.core.serializer import ValueSerializer
 from lakery.core.storage import GetStreamDigest
 from lakery.core.storage import Storage
 from lakery.core.storage import StorageRegistry
@@ -43,229 +45,202 @@ if TYPE_CHECKING:
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
-    from lakery.core.compositor import Compositor
+    from lakery.core.model import StorageModel
     from lakery.core.serializer import StreamDump
-    from lakery.core.serializer import StreamSerializer
     from lakery.core.serializer import ValueDump
-    from lakery.core.serializer import ValueSerializer
-    from lakery.core.storage import StreamStorage
+    from lakery.core.storage import Storage
     from lakery.core.storage import ValueDigest
-    from lakery.core.storage import ValueStorage
 
 
 T = TypeVar("T")
 P = ParamSpec("P")
 D = TypeVar("D", bound=DataDescriptor)
 
-_SaverItem: TypeAlias = tuple[
-    TaskGroupFuture[DataDescriptor],
-    DataDescriptor,
-    "_ValueData | _StreamData",
-]
+_ItemToSave: TypeAlias = tuple[DataDescriptor, "_ValueToSave | _StreamToSave | _ModelToSave"]
 
 _COMMIT_RETRIES = 3
 
 
 @contextmanager
 @injector.asynciterator(
-    requires=(DatabaseSession, CompositorRegistry, SerializerRegistry, StorageRegistry)
+    requires=(DatabaseSession, ModelRegistry, SerializerRegistry, StorageRegistry)
 )
-async def data_saver(
+async def saver(
     *,
     session: DatabaseSession = required,
-    compositors: CompositorRegistry = required,
+    models: ModelRegistry = required,
     serializers: SerializerRegistry = required,
     storages: StorageRegistry = required,
-) -> AsyncIterator[DataSaver]:
+) -> AsyncIterator[_Saver]:
     """Create a context manager for saving data."""
-    items: list[_SaverItem] = []
-    yield DataSaver(items)
-    await _save(
-        items,
-        database_session,
-        storage_registry,
-        serializer_registry,
-        reducer_registry,
-        _COMMIT_RETRIES,
-    )
+    to_save: list[_ItemToSave] = []
+    yield DataSaver(to_save, models, serializers, storages)
+    await _save_items(to_save, session, serializers, _COMMIT_RETRIES)
 
 
-class _DataSaver:
-    def __init__(self, items: list[_SaverItem]) -> None:
-        self._items = items
-
-    def value(
+class _Saver:
+    def __init__(
         self,
-        descriptor: Callable[P, D],
-        entity: T,
-        compositor: Compositor[T] = DEFAULT_COMPOSITOR,
-        storage: Storage[D] | None = None,
+        to_save: list[_ItemToSave],
+        models: ModelRegistry,
+        serializers: SerializerRegistry,
+        storages: StorageRegistry,
+    ):
+        self._to_save = to_save
+        self._models = models
+        self._serializers = serializers
+        self._storages = storages
+
+    def __call__(
+        self,
+        name: str,
+        model: StorageModel,
+        descriptor: Callable[P, D] = DataDescriptor,
         *args: P.args,
         **kwargs: P.kwargs,
-    ) -> TaskGroupFuture[D]:
+    ) -> D:
         """Save the given value data."""
-        if serializer is not None and compositor is not None:
-            msg = "Cannot specify both a serializer and a reducer."
-            raise ValueError(msg)
-
-        fut = TaskGroupFuture[D]()
+        if args:
+            msg = "Positional arguments are not allowed."
+            raise TypeError(msg)
         des = descriptor(*args, **kwargs)
-        dat: _ValueData = {"value": value}
-
-        if serializer is not None:
-            dat["serializer"] = serializer
-        if compositor is not None:
-            dat["compositor"] = compositor
-        if storage is not None:
-            dat["storage"] = storage
-
-        self._items.append((fut, des, dat))  # type: ignore[reportArgumentType]
-        return fut
+        des.descriptor_name = name
+        des.descriptor_storage_model_id = UUID(model.storage_model_id)
+        des.descriptor_storage_model_version = model.storage_model_version
+        self._to_save.append(
+            (
+                des,
+                {
+                    "value": value,
+                    "serializer": serializer
+                    or self._serializers.infer_from_value_type(type(value)),
+                    "storage": storage or self._storages.infer_from_data_relation_type(type(des)),
+                },
+            )
+        )
+        return des
 
     def stream(
         self,
         descriptor: Callable[P, D],
-        type: type[T],  # noqa: A002
         stream: AsyncIterable[T],
-        serializer: StreamSerializer[T] | None = None,
-        storage: StreamStorage[D] | None = None,
+        serializer: StreamSerializer[T] | type[T],
+        storage: Storage[D] | None = None,
         *args: P.args,
         **kwargs: P.kwargs,
-    ) -> TaskGroupFuture[D]:
+    ) -> D:
         """Save the given stream data."""
-        fut = TaskGroupFuture[D]()
         des = descriptor(*args, **kwargs)
-        dat: _StreamData = {"type": type, "stream": stream}
+        self._to_save.append(
+            (
+                des,
+                {
+                    "stream": stream,
+                    "serializer": self._serializers.infer_from_stream_type(serializer)
+                    if isinstance(serializer, type)
+                    else serializer,
+                    "storage": storage or self._storages.infer_from_data_relation_type(type(des)),
+                },
+            )
+        )
+        return des
 
-        if serializer is not None:
-            dat["serializer"] = serializer
-        if reducer is not None:
-            dat["reducer"] = reducer
-        if storage is not None:
-            dat["storage"] = storage
-
-        self._items.append((fut, des, dat))  # type: ignore[reportArgumentType]
-        return fut
+    def model(
+        self,
+        descriptor: Callable[P, D],
+        model: T,
+        modeler: Modeler[T] | None = None,
+        storage: Storage[D] | None = None,
+        *args: P.args,
+        **kwargs: P.kwargs,
+    ) -> D:
+        """Save the given model data."""
+        des = descriptor(*args, **kwargs)
+        self._to_save.append(
+            (
+                des,
+                {
+                    "model": model,
+                    "modeler": modeler or self._modelers.infer_from_type(type(model)),
+                    "storage": storage or self._storages.infer_from_data_relation_type(type(des)),
+                },
+            )
+        )
+        return des
 
 
 DataSaver: TypeAlias = _DataSaver
 """Defines a protocol for saving data."""
 
 
-async def _save(
-    items: Sequence[_SaverItem],
+async def _save_items(
+    items_to_save: Sequence[_ItemToSave],
     session: AsyncSession,
-    storage_registry: StorageRegistry,
-    serializer_registry: SerializerRegistry,
-    reducer_registry: ReducerRegistry,
+    serializers: SerializerRegistry,
     retries,
-) -> Sequence[DataDescriptor]:
+) -> None:
     """Save the given data to the database."""
-    relation_futures: list[TaskGroupFuture[DataDescriptor]] = []
+    descriptors = _prepare_descriptors(items_to_save)
+    await _save_descriptors(session, descriptors, retries=retries)
+    pointers: list[TaskGroupFuture[Sequence[DataRecord]]] = []
     try:
         async with create_task_group() as tg:
-            for fut, des, dat in items:
-                if "stream" in dat:
-                    start_given_future(
-                        tg,
-                        fut,
-                        _save_stream,
-                        des,
-                        dat,
-                        storage_registry,
-                        serializer_registry,
-                        reducer_registry,
-                    )
-                else:
-                    start_given_future(
-                        tg,
-                        fut,
-                        _save_value,
-                        des,
-                        dat,
-                        storage_registry,
-                        serializer_registry,
-                        reducer_registry,
-                    )
-        return [f.result() for f in relation_futures]
+            for descriptor, item in items_to_save:
+                if "value" in item:
+                    pointers.append(start_future(tg, _save_value, descriptor, item))
+                if "stream" in item:
+                    pointers.append(start_future(tg, _save_stream, descriptor, item))
+                if "model" in item:
+                    pointers.append(start_future(tg, _save_model, descriptor, item, serializers))
+                else:  # noco
+                    msg = f"Unknown item {item} to save for relation {descriptor}."
+                    raise AssertionError(msg)
     finally:
-        relations = [r for f in relation_futures if (r := f.result(default=None)) is not None]
-        await _save_relations(session, relations, retries=retries)
+        await _save_pointers(session, descriptors, [p.result(default=None) for p in pointers])
+
+
+def _prepare_descriptors(items_to_save: Sequence[_ItemToSave]) -> Sequence[DataDescriptor]:
+    descriptors: list[DataDescriptor] = []
+    for descriptor, item in items_to_save:
+        if "model" in item:
+            modeler = item["modeler"]
+            descriptor.data_modeler_name = modeler.name
+            descriptor.data_modeler_version = modeler.version
+        else:
+            descriptor.data_modeler_name = None
+            descriptor.data_modeler_version = None
+        descriptors.append(descriptor)
+    return descriptors
 
 
 async def _save_value(
     descriptor: DataDescriptor,
-    data: _ValueData,
-    storage_registry: StorageRegistry,
-    serializer_registry: SerializerRegistry,
-    reducer_registry: ReducerRegistry,
-) -> DataDescriptor:
-    match data:
-        case {"value": value, "serializer": serializer, "storage": storage}:
-            reduction = {None: serializer.dump_value(value)}
-        case {"value": value, "reducer": reducer, "storage": storage}:
-            serializer = None
-        case {"value": value, "serializer": serializer}:
-            storage = storage_registry.infer_from_data_relation_type(type(descriptor))
-        case {"value": value, "reducer": reducer}:
-            storage = storage_registry.infer_from_data_relation_type(type(descriptor))
-        case {"value": value, "storage": storage}:
-            value_type = type(value)
-            if (reducer := reducer_registry.infer_from_type(type, missing_ok=True)) is None:
-                serializer = serializer_registry.infer_from_value_type(type(value))
-        case {"value": value}:
-            storage = storage_registry.infer_from_data_relation_type(type(descriptor))
-            serializer = serializer_registry.infer_from_value_type(type(value))
-        case _:
-            msg = f"Invalid data dictionary: {data}"
-            raise ValueError(msg)
+    to_save: _ValueToSave,
+    model_key: str | None = None,
+) -> Sequence[DataRecord]:
+    value = to_save["value"]
+    serializer = to_save["serializer"]
+    storage = to_save["storage"]
 
     dump = serializer.dump_value(value)
     digest = _make_value_dump_digest(dump)
 
-    descriptor.rel_content_encoding = dump.get("content_encoding")
-    descriptor.rel_content_hash = digest["content_hash"]
-    descriptor.rel_content_hash_algorithm = digest["content_hash_algorithm"]
-    descriptor.rel_content_size = len(dump["content_value"])
-    descriptor.rel_content_type = dump["content_type"]
-    descriptor.rel_serializer_name = dump["serializer_name"]
-    descriptor.rel_serializer_version = dump["serializer_version"]
-    descriptor.rel_storage_name = storage.name
-    descriptor.rel_storage_version = storage.version
+    await storage.put_value(descriptor, dump["content_value"], digest)
 
-    return await storage.put_value(descriptor, dump["content_value"], digest)
+    return []
 
 
 async def _save_stream(
     descriptor: DataDescriptor,
-    data: _StreamData,
-    storage_registry: StorageRegistry,
-    serializer_registry: SerializerRegistry,
-    reducer_registry: ReducerRegistry,
-) -> DataDescriptor:
-    match data:
-        case {"stream": stream, "serializer": serializer, "storage": storage}:
-            pass
-        case {"stream": stream, "serializer": serializer}:
-            storage = storage_registry.infer_from_data_relation_type(type(descriptor), stream=True)
-        case {"stream": stream, "storage": storage, "type": type_}:
-            serializer = serializer_registry.infer_from_stream_type(type_)
-        case {"stream": stream, "type": type_}:
-            serializer = serializer_registry.infer_from_stream_type(type_)
-            storage = storage_registry.infer_from_data_relation_type(type(descriptor), stream=True)
-        case _:
-            msg = f"Invalid data dictionary: {data}"
-            raise ValueError(msg)
+    to_save: _StreamToSave,
+    model_key: str | None = None,
+) -> Sequence[DataRecord]:
+    stream = to_save["stream"]
+    serializer = to_save["serializer"]
+    storage = to_save["storage"]
 
     dump = serializer.dump_stream(stream)
     stream, get_digest = _wrap_stream_dump(descriptor, dump)
-
-    descriptor.rel_content_encoding = dump.get("content_encoding")
-    descriptor.rel_content_type = dump["content_type"]
-    descriptor.rel_serializer_name = dump["serializer_name"]
-    descriptor.rel_serializer_version = dump["serializer_version"]
-    descriptor.rel_storage_name = storage.name
-    descriptor.rel_storage_version = storage.version
 
     async with aclosing(stream):
         await storage.put_stream(descriptor, stream, get_digest)
@@ -276,45 +251,65 @@ async def _save_stream(
         msg = f"Storage {storage.name} did not fully consume the stream for relation {descriptor}."
         raise RuntimeError(msg) from None
 
-    return descriptor
+    return []
 
 
-async def _save_relations(
+async def _save_model(
+    descriptor: DataDescriptor,
+    to_save: _ModelToSave,
+    serializers: SerializerRegistry,
+) -> Sequence[DataRecord]:
+    model = to_save["model"]
+    modeler = to_save["modeler"]
+    storage = to_save["storage"]
+
+    dump = modeler.dump_model(model, serializers)
+
+    ...
+
+    return []
+
+
+async def _save_descriptors(
     session: AsyncSession,
-    descriptor: Sequence[DataDescriptor],
+    descriptors: Sequence[DataDescriptor],
     retries: int,
 ) -> None:
     stop = stop_after_attempt(retries)
     update_existing_stmt = update(DataDescriptor).values(
-        {DataDescriptor.rel_archived_at: func.now()}
+        {DataDescriptor.data_archived_at: func.now()}
     )
-    if descriptor:
+    if descriptors:
         update_existing_stmt = update_existing_stmt.where(
-            or_(*(r.data_where_latest() for r in descriptor))
+            or_(*(d.where_latest() for d in descriptors))
         )
     async for attempt in AsyncRetrying(stop=stop):
         with attempt:
             try:
                 async with session.begin_nested():
                     await session.execute(update_existing_stmt)
-                    session.add_all(descriptor)
+                    session.add_all(descriptors)
                     await session.commit()
             except IntegrityError:
                 pass
 
 
-class _ValueData(Generic[T, D], TypedDict, total=False):
-    value: Required[T]
+class _ValueToSave(Generic[T, D], TypedDict):
+    value: T
     serializer: ValueSerializer[T]
-    compositor: Compositor[T]
-    storage: ValueStorage[D]
+    storage: Storage
 
 
-class _StreamData(Generic[T, D], TypedDict, total=False):
-    type: Required[type[T]]
-    stream: Required[AsyncIterable[T]]
+class _StreamToSave(Generic[T, D], TypedDict):
+    stream: AsyncIterable[T]
     serializer: StreamSerializer[T]
-    storage: StreamStorage[D]
+    storage: Storage
+
+
+class _ModelToSave(Generic[T, D], TypedDict):
+    model: T
+    modeler: Modeler[T]
+    storage: Storage
 
 
 def _wrap_stream_dump(

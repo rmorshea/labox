@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import AsyncGenerator
 from collections.abc import Callable
 from collections.abc import Coroutine
+from contextlib import AbstractContextManager
 from tempfile import SpooledTemporaryFile
 from typing import IO
 from typing import TYPE_CHECKING
@@ -12,16 +13,13 @@ from typing import TypeVar
 from anyio import create_task_group
 from anyio.abc import CapacityLimiter
 from anyio.to_thread import run_sync
-from typing_extensions import ContextManager
 
 from lakery.common.anyio import start_async_iterator
 from lakery.common.exceptions import NoStorageData
 from lakery.common.streaming import write_async_byte_stream_into
-from lakery.core.schema import DataDescriptor
 from lakery.core.storage import GetStreamDigest
 from lakery.core.storage import Storage
 from lakery.core.storage import ValueDigest
-from lakery.extra._utils import make_path_from_descriptor
 from lakery.extra._utils import make_path_from_digest
 from lakery.extra._utils import make_temp_path
 
@@ -34,18 +32,17 @@ if TYPE_CHECKING:
 
 P = ParamSpec("P")
 R = TypeVar("R")
-D = TypeVar("D", bound=DataDescriptor)
 
 
 _5MB = 5 * (1024**2)
 _5GB = 5 * (1024**3)
 
 
-StreamBufferType = Callable[[], ContextManager[IO[bytes]]]
+StreamBufferType = Callable[[], AbstractContextManager[IO[bytes]]]
 """A function that returns a context manager for a stream buffer."""
 
 
-class S3Storage(Storage[D]):
+class S3Storage(Storage[str]):
     """Storage for S3 data."""
 
     name = "lakery.aws.s3"
@@ -54,7 +51,6 @@ class S3Storage(Storage[D]):
     def __init__(
         self,
         *,
-        types: tuple[type[D], ...] = (DataDescriptor,),
         s3_client: S3Client,
         bucket_name: str,
         object_key_prefix: str = "",
@@ -70,7 +66,6 @@ class S3Storage(Storage[D]):
                 "https://docs.aws.amazon.com/AmazonS3/latest/userguide/qfacts.html"
             )
             raise ValueError(msg)
-        self.types = types
         self._client = s3_client
         self._bucket_name = bucket_name
         self._object_key_prefix = object_key_prefix
@@ -79,43 +74,34 @@ class S3Storage(Storage[D]):
         self._stream_writer_buffer_type = stream_writer_buffer_type
         self._stream_reader_part_size = stream_reader_part_size
 
-    async def put_value(
-        self,
-        relation: D,
-        value: bytes,
-        digest: ValueDigest,
-    ) -> D:
+    async def put_value(self, value: bytes, digest: ValueDigest) -> str:
         """Save the given value dump."""
+        location = make_path_from_digest("/", digest, prefix=self._object_key_prefix)
         put_request: PutObjectRequestRequestTypeDef = {
             "Bucket": self._bucket_name,
-            "Key": make_path_from_digest("/", digest, prefix=self._object_key_prefix),
+            "Key": location,
             "Body": value,
             "ContentType": digest["content_type"],
         }
         if digest["content_encoding"]:
             put_request["ContentEncoding"] = digest["content_encoding"]
         await self._to_thread(self._client.put_object, **put_request)
-        return relation
+        return location
 
-    async def get_value(self, relation: D) -> bytes:
+    async def get_value(self, location: str) -> bytes:
         """Load the value dump for the given relation."""
         try:
             result = await self._to_thread(
                 self._client.get_object,
                 Bucket=self._bucket_name,
-                Key=make_path_from_descriptor("/", relation, prefix=self._object_key_prefix),
+                Key=location,
             )
             return result["Body"].read()
         except self._client.exceptions.NoSuchKey as error:
-            msg = f"No data found for {relation}."
+            msg = f"No data found for {location!r}."
             raise NoStorageData(msg) from error
 
-    async def put_stream(
-        self,
-        relation: D,
-        stream: AsyncIterable[bytes],
-        get_digest: GetStreamDigest,
-    ) -> D:
+    async def put_stream(self, stream: AsyncIterable[bytes], get_digest: GetStreamDigest) -> str:
         """Save the given stream dump.
 
         This works by first saving the stream to a temporary key becuase the content
@@ -124,11 +110,11 @@ class S3Storage(Storage[D]):
         hash.
         """
         initial_digest = get_digest(allow_incomplete=True)
-        temp_key = make_temp_path("/", initial_digest, prefix=self._object_key_prefix)
+        temp_location = make_temp_path("/", initial_digest, prefix=self._object_key_prefix)
 
         create_multipart_upload: CreateMultipartUploadRequestRequestTypeDef = {
             "Bucket": self._bucket_name,
-            "Key": temp_key,
+            "Key": temp_location,
             "ContentType": initial_digest["content_type"],
         }
         if initial_digest["content_encoding"]:
@@ -150,7 +136,7 @@ class S3Storage(Storage[D]):
                             await self._to_thread(
                                 self._client.upload_part,
                                 Bucket=self._bucket_name,
-                                Key=temp_key,
+                                Key=temp_location,
                                 Body=buffer,
                                 PartNumber=part_num,
                                 UploadId=upload_id,
@@ -163,7 +149,7 @@ class S3Storage(Storage[D]):
                 await self._to_thread(
                     self._client.complete_multipart_upload,
                     Bucket=self._bucket_name,
-                    Key=temp_key,
+                    Key=temp_location,
                     UploadId=upload_id,
                     MultipartUpload={
                         "Parts": [{"ETag": e, "PartNumber": i} for i, e in enumerate(etags, 1)]
@@ -173,36 +159,40 @@ class S3Storage(Storage[D]):
                 await self._to_thread(
                     self._client.abort_multipart_upload,
                     Bucket=self._bucket_name,
-                    Key=temp_key,
+                    Key=temp_location,
                     UploadId=upload_id,
                 )
                 raise
 
             try:
-                final_digest = get_digest()
+                final_location = make_path_from_digest(
+                    "/",
+                    get_digest(),
+                    prefix=self._object_key_prefix,
+                )
                 await self._to_thread(
                     self._client.copy_object,
                     Bucket=self._bucket_name,
-                    CopySource={"Bucket": self._bucket_name, "Key": temp_key},
-                    Key=make_path_from_digest("/", (final_digest), prefix=self._object_key_prefix),
+                    CopySource={"Bucket": self._bucket_name, "Key": temp_location},
+                    Key=final_location,
                 )
             finally:
                 await self._to_thread(
-                    self._client.delete_object, Bucket=self._bucket_name, Key=temp_key
+                    self._client.delete_object, Bucket=self._bucket_name, Key=temp_location
                 )
 
-        return relation
+        return final_location
 
-    async def get_stream(self, relation: D) -> AsyncGenerator[bytes]:
+    async def get_stream(self, location: str) -> AsyncGenerator[bytes]:
         """Load the stream dump for the given relation."""
         try:
             result = await self._to_thread(
                 self._client.get_object,
                 Bucket=self._bucket_name,
-                Key=make_path_from_descriptor("/", relation, prefix=self._object_key_prefix),
+                Key=location,
             )
         except self._client.exceptions.NoSuchKey as error:
-            msg = f"No data found for {relation}."
+            msg = f"No data found for {location!r}."
             raise NoStorageData(msg) from error
 
         async with create_task_group() as tg:

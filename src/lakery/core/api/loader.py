@@ -28,7 +28,7 @@ P = ParamSpec("P")
 def data_loader(
     *,
     session: DatabaseSession = required,
-    compositors: CompositorRegistry = required,
+    compositors: ComposerRegistry = required,
     serializers: SerializerRegistry = required,
     storages: StorageRegistry = required,
 ) -> DataLoader:

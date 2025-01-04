@@ -17,7 +17,6 @@ class RegistryItem(Protocol):
     """A named item in a registry."""
 
     name: LiteralString
-    types: tuple[type, ...]
     version: int
 
 

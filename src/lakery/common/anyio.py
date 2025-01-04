@@ -48,16 +48,17 @@ def start_async_iterator(
     return recv
 
 
-def start_given_future(
+def start_future(
     task_group: TaskGroup,
-    future: TaskGroupFuture[R],
     func: Callable[P, Coroutine[Any, Any, R]],
     /,
     *args: P.args,
     **kwargs: P.kwargs,
-) -> None:
+) -> TaskGroupFuture[R]:
     """Start the given future in a task group."""
+    future: TaskGroupFuture[R] = TaskGroupFuture()
     task_group.start_soon(_set_future_result, func, args, kwargs, future)
+    return future
 
 
 async def _set_future_result(

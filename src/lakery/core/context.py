@@ -8,7 +8,7 @@ from typing import NewType
 from pybooster import injector
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from lakery.core.compositor import CompositorRegistry
+from lakery.core.composer import ComposerRegistry
 from lakery.core.serializer import SerializerRegistry
 from lakery.core.storage import StorageRegistry
 
@@ -22,7 +22,7 @@ DatabaseSession = NewType("DatabaseSession", AsyncSession)
 @contextmanager
 def registries(
     *,
-    compositors: CompositorRegistry | None = None,
+    compositors: ComposerRegistry | None = None,
     serializers: SerializerRegistry | None = None,
     storages: StorageRegistry | None = None,
 ) -> Iterator[None]:
@@ -32,7 +32,7 @@ def registries(
     if serializers is not None:
         regs.append((SerializerRegistry, serializers))
     if compositors is not None:
-        regs.append((CompositorRegistry, compositors))
+        regs.append((ComposerRegistry, compositors))
     if storages is not None:
         regs.append((StorageRegistry, storages))
 

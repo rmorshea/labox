@@ -9,55 +9,40 @@ from typing import TypedDict
 from typing import TypeVar
 
 from lakery.core._registry import Registry
-from lakery.core.schema import DataDescriptor
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
     from collections.abc import AsyncIterable
-    from collections.abc import Sequence
 
 
-D = TypeVar("D", bound=DataDescriptor)
+T = TypeVar("T")
 
 
-class Storage(Generic[D], abc.ABC):
+class Storage(Generic[T], abc.ABC):
     """A protocol for storing and retrieving data."""
 
     name: LiteralString
-    """The name of the storage backend."""
-    types: tuple[type[D], ...] = ()
-    """The types that the serializer can handle."""
+    """The name of the storage."""
     version: int
+    """The version of the storage."""
 
     @abc.abstractmethod
-    async def put_value(
-        self,
-        relation: D,
-        value: bytes,
-        digest: ValueDigest,
-        /,
-    ) -> D:
-        """Save the given value dump."""
+    async def put_value(self, value: bytes, digest: ValueDigest, /) -> T:
+        """Save the given value dump and return its location."""
         raise NotImplementedError
 
     @abc.abstractmethod
-    async def get_value(self, relation: D, /) -> bytes:
+    async def get_value(self, info: T, /) -> bytes:
         """Load the value dump for the given relation."""
         raise NotImplementedError
 
     @abc.abstractmethod
-    async def put_stream(
-        self,
-        relation: D,
-        stream: AsyncIterable[bytes],
-        get_digest: GetStreamDigest,
-        /,
-    ) -> D:
-        """Save the given stream dump."""
+    async def put_stream(self, stream: AsyncIterable[bytes], get_digest: GetStreamDigest, /) -> T:
+        """Save the given stream dump and return its location."""
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_stream(self, relation: D, /) -> AsyncGenerator[bytes]:
+    def get_stream(self, info: T, /) -> AsyncGenerator[bytes]:
         """Load the stream dump for the given relation."""
         raise NotImplementedError
 
@@ -105,14 +90,11 @@ class StorageRegistry(Registry[Storage]):
 
     item_description = "Storage"
 
-    def __init__(self, items: Sequence[Storage]) -> None:
-        super().__init__(items)
-        self.by_type = {type_: s for s in self.items for type_ in s.types}
-
-    def infer_from_data_relation_type(self, cls: type[D]) -> Storage[D]:
-        """Get the first item that can handle the given type or its parent classes."""
-        for base in cls.mro():
-            if item := self.by_type.get(base):
-                return item
-        msg = f"No {self.item_description.lower()} found for {cls}."
-        raise ValueError(msg)
+    @property
+    def default(self) -> Storage:
+        """Get the default storage."""
+        try:
+            return self.items[0]
+        except IndexError:
+            msg = "No storages are registered."
+            raise ValueError(msg) from None
