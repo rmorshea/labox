@@ -1,13 +1,18 @@
 from __future__ import annotations
 
+import operator
 from collections.abc import Callable
 from collections.abc import Mapping
+from collections.abc import Sequence
 from datetime import UTC
 from datetime import datetime
 from typing import Annotated
 from typing import Any
+from typing import ClassVar
 from typing import NewType
+from typing import TypedDict
 from typing import TypeVar
+from typing import cast
 from uuid import UUID
 from uuid import uuid4
 
@@ -17,12 +22,14 @@ from sqlalchemy import DateTime
 from sqlalchemy import UniqueConstraint
 from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import ColumnProperty
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import MappedColumn
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm.decl_api import MappedAsDataclass
 from sqlalchemy.sql import expression as sql
+from sqlalchemy.sql.elements import NamedColumn
 
 C = TypeVar("C", bound=MappedColumn)
 
@@ -64,6 +71,23 @@ DataDescriptorName = NewType("DataDescriptorName", str)
 """A unique name for a data descriptor."""
 
 
+def conflicts_on(comparator: ColumnComparator = operator.eq) -> dict[str, Any]:
+    """Info indicating that a column defines a unique constraint on the latest value.
+
+    When saving a new record, if an existing one conflicts, the existing record will be
+    "archived". A record has been "archived" if it's `rel_archived_at` is not `NEVER`.
+    The process of archiving a record involves setting the `rel_archived_at` column to
+    the current time before saving the new one.
+
+    Args:
+        comparator:
+            The function that determins whether two records conflict. Accepts two
+            arguments, the column and the value to compare against and should
+            return a boolean expression.
+    """
+    return {"lakery.conflict_comparator": comparator, "lakery.unique": True}
+
+
 class DataDescriptor(Base):
     """A record with additional information about a one or more data pointers."""
 
@@ -73,31 +97,95 @@ class DataDescriptor(Base):
         "polymorphic_identity": "default",
     }
 
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        cls._descriptor_init_mapper_column_infos()
+
     descriptor_id: Mapped[UUID] = mapped_column(default=uuid4, primary_key=True)
     """The ID of the data descriptor."""
-    descriptor_type: Mapped[str] = mapped_column()
+    descriptor_type: Mapped[str] = mapped_column(
+        # records conflict on equal types
+        info=conflicts_on(),
+    )
     """The type of the descriptor."""
-    descriptor_name: Mapped[str] = mapped_column()
+    descriptor_name: Mapped[str] = mapped_column(
+        # records conflict on equal or overlapping names
+        info=conflicts_on(lambda c, v: (c == v) | c.startswith(v + DATA_DESCRIPTOR_NAME_SEP))
+    )
     """The name of the descriptor."""
     descriptor_created_at: Mapped[DateTimeTZ] = mapped_column(default=func.now())
     """The timestamp when the descriptor was created."""
-    descriptor_archived_at: Mapped[DateTimeTZ] = mapped_column(default=NEVER)
+    descriptor_archived_at: Mapped[DateTimeTZ] = mapped_column(
+        default=NEVER,
+        # records conflict on never being archived
+        info=conflicts_on(lambda c, _: c == NEVER),
+    )
     """The timestamp when the descriptor was archived."""
     descriptor_storage_model_id: Mapped[UUID] = mapped_column()
     """The name of the model that the data came from."""
     descriptor_storage_model_version: Mapped[int] = mapped_column()
     """The version of the model that the data came from."""
 
-    def where_latest(self) -> ColumnElement[bool]:
+    def descriptor_where_latest(self) -> ColumnElement[bool]:
         """Get an expression to select the latest that conflicts with this one."""
-        return sql.and_(
-            DataDescriptor.descriptor_type == self.descriptor_type,
-            sql.or_(
-                ((name := DataDescriptor.descriptor_name) == self.descriptor_name),
-                DataDescriptor.descriptor_name.startswith(name + DATA_DESCRIPTOR_NAME_SEP),
-            ),
-            DataDescriptor.descriptor_archived_at == NEVER,
+        exprs: list[ColumnElement[bool]] = []
+        for name, col, info in self._descriptor_mapper_column_infos:
+            match info:
+                case {"lakery.unique_on_comparator": comparator}:
+                    exprs.append(comparator(col, getattr(self, name)))
+        return sql.and_(*exprs)
+
+    _descriptor_mapper_column_infos: ClassVar[Sequence[_DescriptorMapperColumnInfo]] = ()
+
+    @classmethod
+    def _descriptor_init_mapper_column_infos(cls) -> None:
+        new_infos = [
+            (k, col, descriptor_info)
+            for k in cls.__dict__.keys() | cls.__mapper__.attrs.keys()
+            if (
+                isinstance(prop := cls.__mapper__.attrs[k], ColumnProperty)
+                and len(prop.columns) != 1
+                and (descriptor_info := _get_descriptor_column_info((col := prop.columns[0]).info))
+            )
+        ]
+        cls._descriptor_mapper_column_infos = (*new_infos, *cls._descriptor_mapper_column_infos)
+
+    @classmethod
+    def _descriptor_init_unique_constraint(cls) -> None:
+        UniqueConstraint(
+            *(
+                col
+                for _, col, info in cls._descriptor_mapper_column_infos
+                if info.get("lakery.unique")
+            )
         )
+
+
+def _get_descriptor_column_info(info: Any) -> _DescriptorColumnInfo:
+    """Get the data info from a column."""
+    if not isinstance(info, Mapping):
+        return {}
+    descriptor_column_info: dict[str, Any] = {}
+    for k in info:
+        if not k.startswith("lakery."):
+            continue
+        if k not in _DescriptorColumnInfo.__annotations__:
+            msg = f"Unknown descriptor column info: {k}"
+            raise ValueError(msg)
+        descriptor_column_info[k] = info[k]
+    return cast("_DescriptorColumnInfo", descriptor_column_info)
+
+
+# init column infos but not unique constraint
+DataDescriptor._descriptor_init_mapper_column_infos()  # noqa: SLF001
+
+
+_DescriptorColumnInfo = TypedDict(
+    "_DescriptorColumnInfo",
+    {"lakery.conflict_comparator": ColumnComparator, "lakery.unique": bool},
+    total=False,
+)
+_DescriptorMapperColumnInfo = tuple[str, NamedColumn, _DescriptorColumnInfo]
 
 
 # Ensure that the name and type are unique for the latest record.
