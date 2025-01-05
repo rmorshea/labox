@@ -79,32 +79,36 @@ class StreamDump(_BaseDump):
     """The serialized data stream."""
 
 
-class SerializerRegistry(Registry[ValueSerializer | StreamSerializer]):
+class SerializerRegistry(Registry[str, ValueSerializer | StreamSerializer]):
     """A registry of stream serializers."""
 
-    item_description = "Stream serializer"
+    value_description = "Serializer"
 
-    def __init__(self, items: Sequence[ValueSerializer | StreamSerializer]) -> None:
-        super().__init__(items)
+    def __init__(self, serializers: Sequence[ValueSerializer | StreamSerializer]) -> None:
+        super().__init__(serializers)
         self.by_value_type = {
             type_: serializer
-            for serializer in self.items
+            for serializer in self.values()
             if isinstance(serializer, ValueSerializer | StreamSerializer)
             for type_ in serializer.types
         }
         self.by_stream_type = {
             type_: serializer
-            for serializer in self.items
+            for serializer in self.values()
             if isinstance(serializer, StreamSerializer)
             for type_ in serializer.types
         }
+
+    def get_key(self, serializer: ValueSerializer | StreamSerializer) -> str:
+        """Get the key for the given serializer."""
+        return serializer.name
 
     def infer_from_value_type(self, cls: type[T]) -> ValueSerializer[T] | StreamSerializer[T]:
         """Get the first serializer that can handle the given type or its parent classes."""
         for base in cls.mro():
             if item := self.by_value_type.get(base):
                 return item
-        msg = f"No serializer found for {cls}."
+        msg = f"No value {self.value_description.lower()} found for {cls}."
         raise ValueError(msg)
 
     def infer_from_stream_type(self, cls: type[T]) -> StreamSerializer[T]:
@@ -112,5 +116,5 @@ class SerializerRegistry(Registry[ValueSerializer | StreamSerializer]):
         for base in cls.mro():
             if item := self.by_stream_type.get(base):
                 return item
-        msg = f"No {self.item_description.lower()} found for {cls}."
+        msg = f"No stream {self.value_description.lower()} found for {cls}."
         raise ValueError(msg)

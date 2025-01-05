@@ -120,8 +120,8 @@ class InfoRecord(Base):
     record_storage_model_version: Mapped[int] = mapped_column()
     """The version of the model that the data came from."""
 
-    def record_where_latest(self) -> ColumnElement[bool]:
-        """Get an expression to select the latest that conflicts with this one."""
+    def record_conflicts(self) -> ColumnElement[bool]:
+        """Get an expression to select the latest records that conflicts with this one."""
         exprs: list[ColumnElement[bool]] = []
         for name, col, meta in self._record_column_metadata:
             match meta:

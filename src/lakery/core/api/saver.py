@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from contextlib import aclosing
 from hashlib import sha256
 from typing import TYPE_CHECKING
@@ -9,7 +10,6 @@ from typing import ParamSpec
 from typing import TypeAlias
 from typing import TypedDict
 from typing import TypeVar
-from uuid import UUID
 
 from anyio import create_task_group
 from anysync import contextmanager
@@ -26,7 +26,9 @@ from tenacity import stop_after_attempt
 from lakery.common.anyio import TaskGroupFuture
 from lakery.common.anyio import start_future
 from lakery.core.context import DatabaseSession
+from lakery.core.model import ModelDump
 from lakery.core.model import ModelRegistry
+from lakery.core.schema import Base
 from lakery.core.schema import DataRecord
 from lakery.core.schema import InfoRecord
 from lakery.core.serializer import SerializerRegistry
@@ -42,7 +44,6 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterable
     from collections.abc import AsyncIterator
     from collections.abc import Callable
-    from collections.abc import Sequence
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -57,7 +58,8 @@ T = TypeVar("T")
 P = ParamSpec("P")
 D = TypeVar("D", bound=InfoRecord)
 
-_ItemToSave: TypeAlias = tuple[InfoRecord, "_ValueToSave | _StreamToSave | _ModelToSave"]
+_InfoDump = tuple[InfoRecord, ModelDump]
+_RecordGroup = tuple[InfoRecord, Sequence[DataRecord]]
 
 _COMMIT_RETRIES = 3
 
@@ -72,31 +74,32 @@ async def saver(
     models: ModelRegistry = required,
     serializers: SerializerRegistry = required,
     storages: StorageRegistry = required,
-) -> AsyncIterator[_Saver]:
+) -> AsyncIterator[Saver]:
     """Create a context manager for saving data."""
-    to_save: list[_ItemToSave] = []
-    yield DataSaver(to_save, models, serializers, storages)
-    await _save_items(to_save, session, serializers, _COMMIT_RETRIES)
+    to_save: list[_InfoDump] = []
+    yield _Saver(to_save, models)
+    record_group_futures: list[TaskGroupFuture[_RecordGroup]] = []
+    try:
+        async with create_task_group() as tg:
+            for info, dump in to_save:
+                f = start_future(tg, _save_info_dump, info, dump, serializers, storages)
+                record_group_futures.append(f)
+    finally:
+        record_groups = [g for f in record_group_futures if (g := f.result(default=None))]
+        await _save_record_groups(record_groups, session, _COMMIT_RETRIES)
 
 
 class _Saver:
-    def __init__(
-        self,
-        to_save: list[_ItemToSave],
-        models: ModelRegistry,
-        serializers: SerializerRegistry,
-        storages: StorageRegistry,
-    ):
+    def __init__(self, to_save: list[_InfoDump], models: ModelRegistry):
         self._to_save = to_save
         self._models = models
-        self._serializers = serializers
-        self._storages = storages
 
     def __call__(
         self,
         name: str,
         model: StorageModel,
-        info: Callable[P, D] = InfoRecord,
+        record: Callable[P, D] = InfoRecord,
+        /,
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> D:
@@ -104,114 +107,62 @@ class _Saver:
         if args:
             msg = "Positional arguments are not allowed."
             raise TypeError(msg)
-        info_ = info(*args, **kwargs)
-        info_.descriptor_name = name
-        info_.descriptor_storage_model_id = UUID(model.storage_model_id)
-        info_.descriptor_storage_model_version = model.storage_model_version
-        self._to_save.append(
-            (
-                info_,
-                {
-                    "value": value,
-                    "serializer": serializer
-                    or self._serializers.infer_from_value_type(type(value)),
-                    "storage": storage or self._storages.infer_from_data_relation_type(type(des)),
-                },
-            )
-        )
-        return des
 
-    def stream(
-        self,
-        descriptor: Callable[P, D],
-        stream: AsyncIterable[T],
-        serializer: StreamSerializer[T] | type[T],
-        storage: Storage[D] | None = None,
-        *args: P.args,
-        **kwargs: P.kwargs,
-    ) -> D:
-        """Save the given stream data."""
-        des = descriptor(*args, **kwargs)
-        self._to_save.append(
-            (
-                des,
-                {
-                    "stream": stream,
-                    "serializer": self._serializers.infer_from_stream_type(serializer)
-                    if isinstance(serializer, type)
-                    else serializer,
-                    "storage": storage or self._storages.infer_from_data_relation_type(type(des)),
-                },
-            )
-        )
-        return des
+        model_type = type(model)
+        self._models.check_registered(model_type)
+        model_id = self._models.get_key(model_type)
 
-    def model(
-        self,
-        descriptor: Callable[P, D],
-        model: T,
-        modeler: Modeler[T] | None = None,
-        storage: Storage[D] | None = None,
-        *args: P.args,
-        **kwargs: P.kwargs,
-    ) -> D:
-        """Save the given model data."""
-        des = descriptor(*args, **kwargs)
-        self._to_save.append(
-            (
-                des,
-                {
-                    "model": model,
-                    "modeler": modeler or self._modelers.infer_from_type(type(model)),
-                    "storage": storage or self._storages.infer_from_data_relation_type(type(des)),
-                },
-            )
-        )
-        return des
+        info = record(*args, **kwargs)
+        info.record_name = name
+        info.record_storage_model_id = model_id
+        info.record_storage_model_version = model_type.storage_model_version
+        self._to_save.append((info, model.storage_model_dump()))
+
+        return info
 
 
-DataSaver: TypeAlias = _DataSaver
+Saver: TypeAlias = _Saver
 """Defines a protocol for saving data."""
 
 
-async def _save_items(
-    items_to_save: Sequence[_ItemToSave],
-    session: AsyncSession,
+async def _save_info_dump(
+    info: InfoRecord,
+    dump: ModelDump,
     serializers: SerializerRegistry,
-    retries,
-) -> None:
+    storages: StorageRegistry,
+) -> _RecordGroup:
     """Save the given data to the database."""
-    descriptors = _prepare_descriptors(items_to_save)
-    await _save_descriptors(session, descriptors, retries=retries)
-    pointers: list[TaskGroupFuture[Sequence[DataRecord]]] = []
-    try:
-        async with create_task_group() as tg:
-            for descriptor, item in items_to_save:
-                if "value" in item:
-                    pointers.append(start_future(tg, _save_value, descriptor, item))
-                if "stream" in item:
-                    pointers.append(start_future(tg, _save_stream, descriptor, item))
-                if "model" in item:
-                    pointers.append(start_future(tg, _save_model, descriptor, item, serializers))
-                else:  # noco
-                    msg = f"Unknown item {item} to save for relation {descriptor}."
-                    raise AssertionError(msg)
-    finally:
-        await _save_pointers(session, descriptors, [p.result(default=None) for p in pointers])
+    ...
 
 
-def _prepare_descriptors(items_to_save: Sequence[_ItemToSave]) -> Sequence[InfoRecord]:
-    descriptors: list[InfoRecord] = []
-    for descriptor, item in items_to_save:
-        if "model" in item:
-            modeler = item["modeler"]
-            descriptor.data_modeler_name = modeler.name
-            descriptor.data_modeler_version = modeler.version
-        else:
-            descriptor.data_modeler_name = None
-            descriptor.data_modeler_version = None
-        descriptors.append(descriptor)
-    return descriptors
+async def _save_record_groups(
+    record_groups: Sequence[_RecordGroup],
+    session: DatabaseSession,
+    retries: int,
+) -> None:
+    if not record_groups:
+        return
+
+    archive_conflicts = (
+        update(InfoRecord)
+        .where(or_(*(i.record_conflicts() for i, _ in record_groups)))
+        .values({InfoRecord.record_archived_at: func.now()})
+    )
+
+    records: list[Base] = []
+    for info, data in record_groups:
+        records.append(info)
+        records.extend(data)
+
+    async for attempt in AsyncRetrying(stop=stop_after_attempt(retries)):
+        with attempt:
+            try:
+                async with session.begin_nested():
+                    await session.execute(archive_conflicts)
+                    session.add_all(records)
+                    await session.commit()
+            except IntegrityError:
+                pass
 
 
 async def _save_value(

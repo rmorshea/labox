@@ -16,6 +16,8 @@ from typing import TypedDict
 from typing import TypeVar
 from uuid import UUID
 
+from lakery.core._registry import Registry
+
 if TYPE_CHECKING:
     from lakery.core.serializer import StreamSerializer
     from lakery.core.serializer import ValueSerializer
@@ -26,14 +28,14 @@ ModelDump: TypeAlias = "Mapping[str, StorageValueSpec | StorageStreamSpec]"
 """A mapping of string identifiers to serialized components and their storages."""
 
 T = TypeVar("T")
-D = TypeVar("D", bound=ModelDump)
+D = TypeVar("D", bound=ModelDump, default=ModelDump)
 
 
 class StorageModel(Protocol[D]):
     """A model that can be stored and loaded."""
 
-    storage_model_id: ClassVar[LiteralString]
-    """A globally unique key to identify this model class."""
+    storage_model_uuid: ClassVar[LiteralString]
+    """A unique ID to identify this model class."""
     storage_model_version: ClassVar[int]
     """The version of the storage model."""
 
@@ -143,34 +145,16 @@ class StreamModel(Generic[T], StorageModel[Mapping[str, StorageStreamSpec]]):
 M = TypeVar("M", bound=StorageModel)
 
 
-class ModelRegistry:
-    """A registry of storage models."""
+class ModelRegistry(Registry[UUID, type[StorageModel]]):
+    """A registry of storage model types."""
 
-    def __init__(
-        self,
-        types: Sequence[type[StorageModel]],
-        *,
-        include_core_models: bool = True,
-    ) -> None:
-        if include_core_models:
-            types = (ValueModel, StreamModel, *types)
-        self._by_id: dict[UUID, type[StorageModel]] = {UUID(t.storage_model_id): t for t in types}
+    value_description = "Storage model type"
 
-    def get_by_id(self, model_id: UUID) -> type[StorageModel]:
-        """Get the model with the given ID."""
-        try:
-            return self._by_id[model_id]
-        except KeyError:
-            msg = f"Model {model_id!r} is not registered."
-            raise ValueError(msg) from None
+    def get_key(self, model: type[StorageModel]) -> UUID:
+        """Get the key for the given model."""
+        return UUID(model.storage_model_uuid)
 
-    def add(self, model: type[M]) -> type[M]:
-        """Register the given model."""
-        if (
-            model.storage_model_id in self._by_id
-            and self._by_id[model.storage_model_id] is not model
-        ):
-            msg = f"Model {model.storage_model_id!r} is already registered."
-            raise ValueError(msg)
-        self._by_id[UUID(model.storage_model_id)] = model
-        return model
+    @classmethod
+    def with_core_models(cls, types: Sequence[type[StorageModel]]) -> ModelRegistry:
+        """Create a registry with the given core models."""
+        return cls((ValueModel, StreamModel, *types))

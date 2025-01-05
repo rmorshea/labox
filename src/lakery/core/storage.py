@@ -85,7 +85,7 @@ class GetStreamDigest(Protocol):
         ...
 
 
-class StorageRegistry(Registry[Storage]):
+class StorageRegistry(Registry[str, Storage]):
     """A registry of storages."""
 
     item_description = "Storage"
@@ -93,8 +93,8 @@ class StorageRegistry(Registry[Storage]):
     @property
     def default(self) -> Storage:
         """Get the default storage."""
-        try:
-            return self.items[0]
-        except IndexError:
-            msg = "No storages are registered."
-            raise ValueError(msg) from None
+        return self[next(iter(self))]
+
+    def get_key(self, storage: Storage) -> str:
+        """Get the key for the given storage."""
+        return storage.name

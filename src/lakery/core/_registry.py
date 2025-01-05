@@ -1,60 +1,83 @@
 from __future__ import annotations
 
+import abc
 from collections import Counter
+from collections.abc import Iterator
+from collections.abc import Mapping
 from typing import TYPE_CHECKING
 from typing import ClassVar
-from typing import Generic
-from typing import LiteralString
-from typing import Protocol
+from typing import Self
 from typing import TypeVar
 
+from lakery.common.exceptions import NotRegistered
+
 if TYPE_CHECKING:
-    from collections.abc import Mapping
     from collections.abc import Sequence
 
 
-class RegistryItem(Protocol):
-    """A named item in a registry."""
-
-    name: LiteralString
-    version: int
+K = TypeVar("K")
+V = TypeVar("V")
 
 
-T = TypeVar("T", bound=RegistryItem)
-
-
-class Registry(Generic[T]):
+class Registry(Mapping[K, V], abc.ABC):
     """A registry of named items."""
 
-    item_description: ClassVar[str]
-    """A description for the type of item"""
+    value_description: ClassVar[str]
+    """A description for the type of value"""
 
-    def __init__(self, items: Sequence[T]) -> None:
-        if not items:
+    def __init__(self, values: Sequence[V]) -> None:
+        if not values:
             msg = "At least one item must be registered."
             raise ValueError(msg)
 
-        names = Counter(s.name for s in items)
-        if conflicts := {n for n, c in names.items() if c > 1}:
-            msg = f"Conflicting {self.item_description.lower()} names: {conflicts}"
+        items = [(self.get_key(i), i) for i in values]
+
+        if conflicts := {n for n, c in Counter(k for k, _ in items).items() if c > 1}:
+            msg = f"Conflicting {self.value_description.lower()} keys: {conflicts}"
             raise ValueError(msg)
 
-        self.items = items
-        self.by_name: Mapping[str, T] = {i.name: i for i in self.items}
+        self._entries = dict(items)
 
-    def get_by_name(self, name: str) -> T:
-        """Get the item with the given name."""
+    @abc.abstractmethod
+    def get_key(self, value: V, /) -> K:
+        """Get the key for the given value."""
+        raise NotImplementedError
+
+    def merge(self, *other: Registry[K, V]) -> Self:
+        """Return a new registry that merges this one with the given ones."""
+        new_values = [v for r in (self, *other) for v in r.values()]
+        return self.__class__(new_values)
+
+    def add(self, value: V) -> V:
+        """Register the given value."""
+        if (key := self.get_key(value)) not in self._entries:
+            self._entries[key] = value
+        elif (existing := self._entries[key]) is not value:
+            msg = f"{self.value_description} {key!r} is registered as {existing}, not {value!r}."
+            raise ValueError(msg)
+        return value
+
+    def check_registered(self, value: V) -> None:
+        """Ensure that the given value is registered - raises a ValueError if not."""
+        if not self.is_registered(value):
+            msg = f"{self.value_description} {value!r} is not registered."
+            raise NotRegistered(msg)
+
+    def is_registered(self, value: V) -> bool:
+        """Return whether the given value is registered."""
+        if (key := self.get_key(value)) not in self._entries:
+            return False
+        return self._entries[key] is value
+
+    def __getitem__(self, key: K) -> V:
         try:
-            return self.by_name[name]
+            return self._entries[key]
         except KeyError:
-            msg = f"{self.item_description} {name!r} is not registered."
-            raise ValueError(msg) from None
+            msg = f"{self.value_description} {key!r} is not registered."
+            raise NotRegistered(msg) from None
 
-    def check_registered(self, item: T) -> None:
-        """Ensure that the given serializer is registered - raises a ValueError if not."""
-        if (existing := self.by_name.get(item.name)) is not item:
-            if existing:
-                msg = f"{self.item_description} {item.name} is registered as {existing} not {item}."
-                raise ValueError(msg)
-            msg = f"{self.item_description} {item.name} is not registered."
-            raise ValueError(msg)
+    def __iter__(self) -> Iterator[K]:
+        return iter(self._entries)
+
+    def __len__(self) -> int:
+        return len(self._entries)
