@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from contextlib import aclosing
 from hashlib import sha256
+from logging import getLogger
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Generic
@@ -28,6 +29,8 @@ from lakery.common.anyio import start_future
 from lakery.core.context import DatabaseSession
 from lakery.core.model import ModelDump
 from lakery.core.model import ModelRegistry
+from lakery.core.model import StorageStreamSpec
+from lakery.core.model import StorageValueSpec
 from lakery.core.schema import Base
 from lakery.core.schema import DataRecord
 from lakery.core.schema import InfoRecord
@@ -62,6 +65,7 @@ _InfoDump = tuple[InfoRecord, ModelDump]
 _RecordGroup = tuple[InfoRecord, Sequence[DataRecord]]
 
 _COMMIT_RETRIES = 3
+_LOG = getLogger(__name__)
 
 
 @contextmanager
@@ -126,13 +130,68 @@ Saver: TypeAlias = _Saver
 
 
 async def _save_info_dump(
-    info: InfoRecord,
-    dump: ModelDump,
+    info_record: InfoRecord,
+    model_dump: ModelDump,
     serializers: SerializerRegistry,
     storages: StorageRegistry,
 ) -> _RecordGroup:
     """Save the given data to the database."""
-    ...
+    data_record_futures: list[TaskGroupFuture[DataRecord]] = []
+    async with create_task_group() as tg:
+        for storage_model_key, storage_spec in model_dump.items():
+            if "value" in storage_spec:
+                data_record_futures.append(
+                    start_future(
+                        tg,
+                        _save_storage_value_spec,
+                        info_record,
+                        storage_model_key,
+                        storage_spec,
+                        serializers,
+                        storages,
+                    )
+                )
+            elif "stream" in storage_spec:
+                data_record_futures.append(
+                    start_future(
+                        tg,
+                        _save_storage_stream_spec,
+                        info_record,
+                        storage_model_key,
+                        storage_spec,
+                        serializers,
+                        storages,
+                    )
+                )
+            else:  # nocov
+                msg = f"Unknown storage spec {storage_spec}."
+                raise AssertionError(msg)
+
+    data_records: list[DataRecord] = []
+    for f in data_record_futures:
+        if exc := f.exception():
+            _LOG.error(exc, exc_info=(exc.__class__, exc, exc.__traceback__))
+        data_records.append(f.result())
+
+    return info_record, data_records
+
+
+async def _save_storage_value_spec(
+    info_record: InfoRecord,
+    storage_model_key: str,
+    value_spec: StorageValueSpec,
+    serializers: SerializerRegistry,
+    storages: StorageRegistry,
+) -> DataRecord: ...
+
+
+async def _save_storage_stream_spec(
+    info_record: InfoRecord,
+    storage_model_key: str,
+    stream_spec: StorageStreamSpec,
+    serializers: SerializerRegistry,
+    storages: StorageRegistry,
+) -> DataRecord: ...
 
 
 async def _save_record_groups(
@@ -253,12 +312,6 @@ class _ValueToSave(Generic[T, D], TypedDict):
 class _StreamToSave(Generic[T, D], TypedDict):
     stream: AsyncIterable[T]
     serializer: StreamSerializer[T]
-    storage: Storage
-
-
-class _ModelToSave(Generic[T, D], TypedDict):
-    model: T
-    modeler: Modeler[T]
     storage: Storage
 
 

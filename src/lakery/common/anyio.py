@@ -80,6 +80,13 @@ class TaskGroupFuture(Generic[R]):
     _result: R
     _exception: BaseException
 
+    def exception(self) -> BaseException | None:
+        """Get the exception that caused the future to fail (if any)."""
+        try:
+            return self._exception
+        except AttributeError:
+            return None
+
     @overload
     def result(self) -> R: ...
 
@@ -91,10 +98,9 @@ class TaskGroupFuture(Generic[R]):
         try:
             return self._result
         except AttributeError:
-            try:
-                raise self._exception from None
-            except AttributeError:
-                if default is not UNDEFINED:
-                    return default
-                msg = "Future not completed"
-                raise RuntimeError(msg) from None
+            if error := self.exception():
+                raise error from None
+            if default is not UNDEFINED:
+                return default
+            msg = "Future not completed"
+            raise RuntimeError(msg) from None
