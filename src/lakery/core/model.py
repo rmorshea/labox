@@ -55,21 +55,12 @@ class StorageValueSpec(Generic[T], TypedDict, total=False):
     storage: Storage
 
 
-class _BaseStorageStreamSpec(Generic[T], TypedDict, total=False):
+class StorageStreamSpec(Generic[T], TypedDict, total=False):
+    """A stream storage specification."""
+
     stream: Required[AsyncIterable[T]]
-    storage: Storage
-
-
-class _KnownStorageStreamSpec(_BaseStorageStreamSpec[T]):
     serializer: StreamSerializer[T]
-
-
-class _InferStorageStreamSpec(_BaseStorageStreamSpec[T]):
-    type: type[T]
-
-
-StorageStreamSpec = _KnownStorageStreamSpec | _InferStorageStreamSpec
-"""A stream storage specification."""
+    storage: Storage
 
 
 @dataclass(frozen=True)
@@ -118,18 +109,16 @@ class StreamModel(Generic[T], StorageModel[Mapping[str, StorageStreamSpec]]):
 
     stream: AsyncIterable[T]
     """The stream."""
-    serializer: StreamSerializer[T] | type[T]
-    """The serializer for the stream or the type of the stream."""
+    serializer: StreamSerializer[T] | None = None
+    """The serializer for the stream."""
     storage: Storage | None = None
     """The storage for the stream."""
 
     def storage_model_dump(self) -> Mapping[str, StorageStreamSpec]:
         """Turn the given model into its serialized components."""
-        spec: StorageStreamSpec
-        if isinstance(self.serializer, type):
-            spec = {"stream": self.stream, "type": self.serializer}
-        else:
-            spec = {"stream": self.stream, "serializer": self.serializer}
+        spec: StorageStreamSpec = {"stream": self.stream}
+        if self.serializer:
+            spec["serializer"] = self.serializer
         if self.storage:
             spec["storage"] = self.storage
         return {"": spec}
@@ -143,7 +132,7 @@ class StreamModel(Generic[T], StorageModel[Mapping[str, StorageStreamSpec]]):
         spec = dump[""]
         if (serializer := spec.get("serializer")) is None:
             msg = "Stream serializer must be specified."
-            raise ValueError(msg)
+            raise AssertionError(msg)
         return cls(
             stream=spec["stream"],
             serializer=serializer,

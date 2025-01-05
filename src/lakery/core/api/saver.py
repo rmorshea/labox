@@ -3,6 +3,7 @@ from __future__ import annotations
 from contextlib import aclosing
 from hashlib import sha256
 from typing import TYPE_CHECKING
+from typing import Any
 from typing import Generic
 from typing import ParamSpec
 from typing import TypeAlias
@@ -26,8 +27,8 @@ from lakery.common.anyio import TaskGroupFuture
 from lakery.common.anyio import start_future
 from lakery.core.context import DatabaseSession
 from lakery.core.model import ModelRegistry
-from lakery.core.schema import DataDescriptor
 from lakery.core.schema import DataRecord
+from lakery.core.schema import InfoRecord
 from lakery.core.serializer import SerializerRegistry
 from lakery.core.serializer import StreamSerializer
 from lakery.core.serializer import ValueSerializer
@@ -54,9 +55,9 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 P = ParamSpec("P")
-D = TypeVar("D", bound=DataDescriptor)
+D = TypeVar("D", bound=InfoRecord)
 
-_ItemToSave: TypeAlias = tuple[DataDescriptor, "_ValueToSave | _StreamToSave | _ModelToSave"]
+_ItemToSave: TypeAlias = tuple[InfoRecord, "_ValueToSave | _StreamToSave | _ModelToSave"]
 
 _COMMIT_RETRIES = 3
 
@@ -95,7 +96,7 @@ class _Saver:
         self,
         name: str,
         model: StorageModel,
-        descriptor: Callable[P, D] = DataDescriptor,
+        info: Callable[P, D] = InfoRecord,
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> D:
@@ -103,13 +104,13 @@ class _Saver:
         if args:
             msg = "Positional arguments are not allowed."
             raise TypeError(msg)
-        des = descriptor(*args, **kwargs)
-        des.descriptor_name = name
-        des.descriptor_storage_model_id = UUID(model.storage_model_id)
-        des.descriptor_storage_model_version = model.storage_model_version
+        info_ = info(*args, **kwargs)
+        info_.descriptor_name = name
+        info_.descriptor_storage_model_id = UUID(model.storage_model_id)
+        info_.descriptor_storage_model_version = model.storage_model_version
         self._to_save.append(
             (
-                des,
+                info_,
                 {
                     "value": value,
                     "serializer": serializer
@@ -199,8 +200,8 @@ async def _save_items(
         await _save_pointers(session, descriptors, [p.result(default=None) for p in pointers])
 
 
-def _prepare_descriptors(items_to_save: Sequence[_ItemToSave]) -> Sequence[DataDescriptor]:
-    descriptors: list[DataDescriptor] = []
+def _prepare_descriptors(items_to_save: Sequence[_ItemToSave]) -> Sequence[InfoRecord]:
+    descriptors: list[InfoRecord] = []
     for descriptor, item in items_to_save:
         if "model" in item:
             modeler = item["modeler"]
@@ -214,7 +215,7 @@ def _prepare_descriptors(items_to_save: Sequence[_ItemToSave]) -> Sequence[DataD
 
 
 async def _save_value(
-    descriptor: DataDescriptor,
+    descriptor: InfoRecord,
     to_save: _ValueToSave,
     model_key: str | None = None,
 ) -> Sequence[DataRecord]:
@@ -231,7 +232,7 @@ async def _save_value(
 
 
 async def _save_stream(
-    descriptor: DataDescriptor,
+    descriptor: InfoRecord,
     to_save: _StreamToSave,
     model_key: str | None = None,
 ) -> Sequence[DataRecord]:
@@ -255,7 +256,7 @@ async def _save_stream(
 
 
 async def _save_model(
-    descriptor: DataDescriptor,
+    descriptor: InfoRecord,
     to_save: _ModelToSave,
     serializers: SerializerRegistry,
 ) -> Sequence[DataRecord]:
@@ -272,13 +273,11 @@ async def _save_model(
 
 async def _save_descriptors(
     session: AsyncSession,
-    descriptors: Sequence[DataDescriptor],
+    descriptors: Sequence[InfoRecord],
     retries: int,
 ) -> None:
     stop = stop_after_attempt(retries)
-    update_existing_stmt = update(DataDescriptor).values(
-        {DataDescriptor.data_archived_at: func.now()}
-    )
+    update_existing_stmt = update(InfoRecord).values({InfoRecord.data_archived_at: func.now()})
     if descriptors:
         update_existing_stmt = update_existing_stmt.where(
             or_(*(d.where_latest() for d in descriptors))
@@ -313,7 +312,7 @@ class _ModelToSave(Generic[T, D], TypedDict):
 
 
 def _wrap_stream_dump(
-    descriptor: DataDescriptor,
+    descriptor: InfoRecord,
     dump: StreamDump,
 ) -> tuple[AsyncGenerator[bytes], GetStreamDigest]:
     stream = dump["content_stream"]
@@ -362,3 +361,30 @@ def _make_value_dump_digest(dump: ValueDump) -> ValueDigest:
         "content_size": len(value),
         "content_type": dump["content_type"],
     }
+
+
+class _AutoSerializer:
+    def __init__(self, serializers: SerializerRegistry) -> None:
+        self._serializers = serializers
+
+    def dump_value(self, value: Any, serializer: ValueSerializer | None) -> ValueDump:
+        if serializer is None:
+            serializer = self._serializers.infer_from_value_type(type(value))
+        return serializer.dump_value(value)
+
+    async def dump_stream(
+        self, stream: AsyncIterable, serializer: StreamSerializer | None
+    ) -> StreamDump:
+        if serializer is not None:
+            return serializer.dump_stream(stream)
+
+        stream_iter = aiter(stream)
+        first_value = await anext(stream_iter)
+        serializer = self._serializers.infer_from_stream_type(type(first_value))
+        return serializer.dump_stream(_continue_stream(first_value, stream_iter))
+
+
+async def _continue_stream(first_value: Any, stream: AsyncIterable[Any]) -> AsyncGenerator[Any]:
+    yield first_value
+    async for cont_value in stream:
+        yield cont_value

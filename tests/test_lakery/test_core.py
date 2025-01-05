@@ -1,14 +1,14 @@
 from lakery.core.api.loader import data_loader
 from lakery.core.api.saver import data_saver
 from lakery.core.composer import BasicComposer
-from lakery.core.schema import DataDescriptor
+from lakery.core.schema import InfoRecord
 
 
 async def test_simple_value_data_saver_and_loader_usage():
     input_data = [{"message": "Hello, Alice!"}, {"message": "Goodbye, Alice!"}]
 
     async with data_saver() as save:
-        des_fut = save.value(DataDescriptor, entity={"value": input_data}, composer=BasicComposer())
+        des_fut = save.value(InfoRecord, entity={"value": input_data}, composer=BasicComposer())
     des = des_fut.result()
 
     load = data_loader()
@@ -24,7 +24,7 @@ async def test_simple_stream_data_saver_and_loader_usage():
             yield item
 
     async with data_saver() as save:
-        des_fut = save.stream(DataDescriptor, dict, stream())
+        des_fut = save.stream(InfoRecord, dict, stream())
     des = des_fut.result()
 
     load = data_loader()
