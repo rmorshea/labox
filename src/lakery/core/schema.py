@@ -216,7 +216,7 @@ class DataRecord(MappedAsDataclass, Base, kw_only=True):
     """The key of the data within the storage model."""
 
 
-class DataInfoAssociation(Base):
+class DataInfoAssociation(MappedAsDataclass, Base, kw_only=True):
     """An association between a info and a pointer."""
 
     __tablename__ = "lakery_data_info_assocation"

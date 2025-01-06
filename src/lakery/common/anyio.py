@@ -54,9 +54,9 @@ def start_future(
     /,
     *args: P.args,
     **kwargs: P.kwargs,
-) -> TaskGroupFuture[R]:
+) -> TaskFuture[R]:
     """Start the given future in a task group."""
-    future: TaskGroupFuture[R] = TaskGroupFuture()
+    future: TaskFuture[R] = TaskFuture()
     task_group.start_soon(_set_future_result, func, args, kwargs, future)
     return future
 
@@ -65,7 +65,7 @@ async def _set_future_result(
     func: Callable[..., Awaitable[R]],
     args: tuple[Any, ...],
     kwargs: dict[str, Any],
-    future: TaskGroupFuture[R],
+    future: TaskFuture[R],
 ) -> None:
     try:
         future._result = await func(*args, **kwargs)  # noqa: SLF001
@@ -74,7 +74,7 @@ async def _set_future_result(
         raise
 
 
-class TaskGroupFuture(Generic[R]):
+class TaskFuture(Generic[R]):
     """A future that is completed by a task group."""
 
     _result: R

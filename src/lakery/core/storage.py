@@ -13,6 +13,7 @@ from lakery.core._registry import Registry
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
     from collections.abc import AsyncIterable
+    from collections.abc import Sequence
 
 
 T = TypeVar("T")
@@ -88,11 +89,18 @@ class GetStreamDigest(Protocol):
 class StorageRegistry(Registry[str, Storage]):
     """A registry of storages."""
 
-    item_description = "Storage"
+    value_description = "Storage"
+
+    def __init__(self, storages: Sequence[Storage], *, first_is_default: bool = True) -> None:
+        super().__init__(storages)
+        self._first_is_default = first_is_default
 
     @property
     def default(self) -> Storage:
         """Get the default storage."""
+        if not self._first_is_default:
+            msg = "Usage of default {self.value_description.lower()} disabled."
+            raise ValueError(msg)
         return self[next(iter(self))]
 
     def get_key(self, storage: Storage) -> str:

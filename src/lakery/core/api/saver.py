@@ -6,10 +6,8 @@ from hashlib import sha256
 from logging import getLogger
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Generic
 from typing import ParamSpec
 from typing import TypeAlias
-from typing import TypedDict
 from typing import TypeVar
 
 from anyio import create_task_group
@@ -20,11 +18,10 @@ from sqlalchemy import func
 from sqlalchemy import or_
 from sqlalchemy import update
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.ext.asyncio import AsyncSession
 from tenacity import AsyncRetrying
 from tenacity import stop_after_attempt
 
-from lakery.common.anyio import TaskGroupFuture
+from lakery.common.anyio import TaskFuture
 from lakery.common.anyio import start_future
 from lakery.core.context import DatabaseSession
 from lakery.core.model import ModelDump
@@ -32,13 +29,13 @@ from lakery.core.model import ModelRegistry
 from lakery.core.model import StorageStreamSpec
 from lakery.core.model import StorageValueSpec
 from lakery.core.schema import Base
+from lakery.core.schema import DataInfoAssociation
 from lakery.core.schema import DataRecord
 from lakery.core.schema import InfoRecord
 from lakery.core.serializer import SerializerRegistry
 from lakery.core.serializer import StreamSerializer
 from lakery.core.serializer import ValueSerializer
 from lakery.core.storage import GetStreamDigest
-from lakery.core.storage import Storage
 from lakery.core.storage import StorageRegistry
 from lakery.core.storage import StreamDigest
 
@@ -48,12 +45,9 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator
     from collections.abc import Callable
 
-    from sqlalchemy.ext.asyncio import AsyncSession
-
     from lakery.core.model import StorageModel
     from lakery.core.serializer import StreamDump
     from lakery.core.serializer import ValueDump
-    from lakery.core.storage import Storage
     from lakery.core.storage import ValueDigest
 
 
@@ -82,11 +76,12 @@ async def saver(
     """Create a context manager for saving data."""
     to_save: list[_InfoDump] = []
     yield _Saver(to_save, models)
-    record_group_futures: list[TaskGroupFuture[_RecordGroup]] = []
+    record_group_futures: list[TaskFuture[_RecordGroup]] = []
+    serialization_helper = _SerializationHelper(serializers)
     try:
         async with create_task_group() as tg:
             for info, dump in to_save:
-                f = start_future(tg, _save_info_dump, info, dump, serializers, storages)
+                f = start_future(tg, _save_info_dump, info, dump, serialization_helper, storages)
                 record_group_futures.append(f)
     finally:
         record_groups = [g for f in record_group_futures if (g := f.result(default=None))]
@@ -132,11 +127,11 @@ Saver: TypeAlias = _Saver
 async def _save_info_dump(
     info_record: InfoRecord,
     model_dump: ModelDump,
-    serializers: SerializerRegistry,
+    serialization_helper: _SerializationHelper,
     storages: StorageRegistry,
 ) -> _RecordGroup:
     """Save the given data to the database."""
-    data_record_futures: list[TaskGroupFuture[DataRecord]] = []
+    data_record_futures: list[TaskFuture[DataRecord]] = []
     async with create_task_group() as tg:
         for storage_model_key, storage_spec in model_dump.items():
             if "value" in storage_spec:
@@ -144,10 +139,9 @@ async def _save_info_dump(
                     start_future(
                         tg,
                         _save_storage_value_spec,
-                        info_record,
                         storage_model_key,
                         storage_spec,
-                        serializers,
+                        serialization_helper,
                         storages,
                     )
                 )
@@ -156,10 +150,9 @@ async def _save_info_dump(
                     start_future(
                         tg,
                         _save_storage_stream_spec,
-                        info_record,
                         storage_model_key,
                         storage_spec,
-                        serializers,
+                        serialization_helper,
                         storages,
                     )
                 )
@@ -168,157 +161,77 @@ async def _save_info_dump(
                 raise AssertionError(msg)
 
     data_records: list[DataRecord] = []
-    for f in data_record_futures:
+    for model_key, f in zip(model_dump, data_record_futures, strict=False):
         if exc := f.exception():
-            _LOG.error(exc, exc_info=(exc.__class__, exc, exc.__traceback__))
+            msg = f"Failed to save {model_key!r} data for {info_record.record_name!r}"
+            _LOG.error(msg, exc_info=(exc.__class__, exc, exc.__traceback__))
         data_records.append(f.result())
 
     return info_record, data_records
 
 
 async def _save_storage_value_spec(
-    info_record: InfoRecord,
     storage_model_key: str,
-    value_spec: StorageValueSpec,
-    serializers: SerializerRegistry,
+    spec: StorageValueSpec,
+    serialization_helper: _SerializationHelper,
     storages: StorageRegistry,
-) -> DataRecord: ...
+) -> DataRecord:
+    dump = serialization_helper.dump_value(spec["value"], spec.get("serializer"))
+    storage = spec.get("storage", storages.default)
+    digest = _make_value_dump_digest(dump)
+
+    storage_data = await storage.put_value(dump["content_value"], digest)
+
+    return DataRecord(
+        content_type=dump["content_type"],
+        content_encoding=dump["content_encoding"],
+        content_hash=digest["content_hash"],
+        content_hash_algorithm=digest["content_hash_algorithm"],
+        content_size=digest["content_size"],
+        serializer_name=dump["serializer_name"],
+        serializer_version=dump["serializer_version"],
+        storage_name=storage.name,
+        storage_version=storage.version,
+        storage_data=storage_data,
+        storage_model_key=storage_model_key,
+    )
 
 
 async def _save_storage_stream_spec(
-    info_record: InfoRecord,
     storage_model_key: str,
-    stream_spec: StorageStreamSpec,
-    serializers: SerializerRegistry,
+    spec: StorageStreamSpec,
+    serialization_helper: _SerializationHelper,
     storages: StorageRegistry,
-) -> DataRecord: ...
-
-
-async def _save_record_groups(
-    record_groups: Sequence[_RecordGroup],
-    session: DatabaseSession,
-    retries: int,
-) -> None:
-    if not record_groups:
-        return
-
-    archive_conflicts = (
-        update(InfoRecord)
-        .where(or_(*(i.record_conflicts() for i, _ in record_groups)))
-        .values({InfoRecord.record_archived_at: func.now()})
-    )
-
-    records: list[Base] = []
-    for info, data in record_groups:
-        records.append(info)
-        records.extend(data)
-
-    async for attempt in AsyncRetrying(stop=stop_after_attempt(retries)):
-        with attempt:
-            try:
-                async with session.begin_nested():
-                    await session.execute(archive_conflicts)
-                    session.add_all(records)
-                    await session.commit()
-            except IntegrityError:
-                pass
-
-
-async def _save_value(
-    descriptor: InfoRecord,
-    to_save: _ValueToSave,
-    model_key: str | None = None,
-) -> Sequence[DataRecord]:
-    value = to_save["value"]
-    serializer = to_save["serializer"]
-    storage = to_save["storage"]
-
-    dump = serializer.dump_value(value)
-    digest = _make_value_dump_digest(dump)
-
-    await storage.put_value(descriptor, dump["content_value"], digest)
-
-    return []
-
-
-async def _save_stream(
-    descriptor: InfoRecord,
-    to_save: _StreamToSave,
-    model_key: str | None = None,
-) -> Sequence[DataRecord]:
-    stream = to_save["stream"]
-    serializer = to_save["serializer"]
-    storage = to_save["storage"]
-
-    dump = serializer.dump_stream(stream)
-    stream, get_digest = _wrap_stream_dump(descriptor, dump)
+) -> DataRecord:
+    dump = await serialization_helper.dump_stream(spec["stream"], spec.get("serializer"))
+    storage = spec.get("storage", storages.default)
+    stream, get_digest = _wrap_stream_dump(dump)
 
     async with aclosing(stream):
-        await storage.put_stream(descriptor, stream, get_digest)
+        storage_data = await storage.put_stream(stream, get_digest)
 
     try:
-        get_digest()
-    except RuntimeError:
-        msg = f"Storage {storage.name} did not fully consume the stream for relation {descriptor}."
+        digest = get_digest()
+    except ValueError:
+        msg = f"Storage {storage.name!r} did not fully consume the data stream."
         raise RuntimeError(msg) from None
 
-    return []
+    return DataRecord(
+        content_type=dump["content_type"],
+        content_encoding=dump["content_encoding"],
+        content_hash=digest["content_hash"],
+        content_hash_algorithm=digest["content_hash_algorithm"],
+        content_size=digest["content_size"],
+        serializer_name=dump["serializer_name"],
+        serializer_version=dump["serializer_version"],
+        storage_name=storage.name,
+        storage_version=storage.version,
+        storage_data=storage_data,
+        storage_model_key=storage_model_key,
+    )
 
 
-async def _save_model(
-    descriptor: InfoRecord,
-    to_save: _ModelToSave,
-    serializers: SerializerRegistry,
-) -> Sequence[DataRecord]:
-    model = to_save["model"]
-    modeler = to_save["modeler"]
-    storage = to_save["storage"]
-
-    dump = modeler.dump_model(model, serializers)
-
-    ...
-
-    return []
-
-
-async def _save_descriptors(
-    session: AsyncSession,
-    descriptors: Sequence[InfoRecord],
-    retries: int,
-) -> None:
-    stop = stop_after_attempt(retries)
-    update_existing_stmt = update(InfoRecord).values({InfoRecord.data_archived_at: func.now()})
-    if descriptors:
-        update_existing_stmt = update_existing_stmt.where(
-            or_(*(d.where_latest() for d in descriptors))
-        )
-    async for attempt in AsyncRetrying(stop=stop):
-        with attempt:
-            try:
-                async with session.begin_nested():
-                    await session.execute(update_existing_stmt)
-                    session.add_all(descriptors)
-                    await session.commit()
-            except IntegrityError:
-                pass
-
-
-class _ValueToSave(Generic[T, D], TypedDict):
-    value: T
-    serializer: ValueSerializer[T]
-    storage: Storage
-
-
-class _StreamToSave(Generic[T, D], TypedDict):
-    stream: AsyncIterable[T]
-    serializer: StreamSerializer[T]
-    storage: Storage
-
-
-def _wrap_stream_dump(
-    descriptor: InfoRecord,
-    dump: StreamDump,
-) -> tuple[AsyncGenerator[bytes], GetStreamDigest]:
+def _wrap_stream_dump(dump: StreamDump) -> tuple[AsyncGenerator[bytes], GetStreamDigest]:
     stream = dump["content_stream"]
 
     content_hash = sha256()
@@ -327,16 +240,11 @@ def _wrap_stream_dump(
 
     async def wrapper() -> AsyncGenerator[bytes]:
         nonlocal is_complete, content_size
-        try:
-            async with aclosing(stream):
-                async for chunk in stream:
-                    content_hash.update(chunk)
-                    content_size += len(chunk)
-                    yield chunk
-        finally:
-            descriptor.rel_content_hash = content_hash.hexdigest()
-            descriptor.rel_content_hash_algorithm = content_hash.name
-            descriptor.rel_content_size = content_size
+        async with aclosing(stream):
+            async for chunk in stream:
+                content_hash.update(chunk)
+                content_size += len(chunk)
+                yield chunk
         is_complete = True
 
     def get_digest(*, allow_incomplete: bool = False) -> StreamDigest:
@@ -367,17 +275,23 @@ def _make_value_dump_digest(dump: ValueDump) -> ValueDigest:
     }
 
 
-class _AutoSerializer:
+class _SerializationHelper:
     def __init__(self, serializers: SerializerRegistry) -> None:
         self._serializers = serializers
 
-    def dump_value(self, value: Any, serializer: ValueSerializer | None) -> ValueDump:
+    def dump_value(
+        self,
+        value: Any,
+        serializer: ValueSerializer | None,
+    ) -> ValueDump:
         if serializer is None:
             serializer = self._serializers.infer_from_value_type(type(value))
         return serializer.dump_value(value)
 
     async def dump_stream(
-        self, stream: AsyncIterable, serializer: StreamSerializer | None
+        self,
+        stream: AsyncIterable,
+        serializer: StreamSerializer | None,
     ) -> StreamDump:
         if serializer is not None:
             return serializer.dump_stream(stream)
@@ -392,3 +306,34 @@ async def _continue_stream(first_value: Any, stream: AsyncIterable[Any]) -> Asyn
     yield first_value
     async for cont_value in stream:
         yield cont_value
+
+
+async def _save_record_groups(
+    record_groups: Sequence[_RecordGroup],
+    session: DatabaseSession,
+    retries: int,
+) -> None:
+    if not record_groups:
+        return
+
+    archive_conflicts = (
+        update(InfoRecord)
+        .where(or_(*(i.record_conflicts() for i, _ in record_groups)))
+        .values({InfoRecord.record_archived_at: func.now()})
+    )
+
+    records: list[Base] = []
+    for info, data in record_groups:
+        records.append(info)
+        records.extend(DataInfoAssociation(data_id=d.id, info_id=info.record_id) for d in data)
+        records.extend(data)
+
+    async for attempt in AsyncRetrying(stop=stop_after_attempt(retries)):
+        with attempt:
+            try:
+                async with session.begin_nested():
+                    await session.execute(archive_conflicts)
+                    session.add_all(records)
+                    await session.commit()
+            except IntegrityError:
+                pass

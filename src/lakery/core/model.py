@@ -13,8 +13,9 @@ from typing import Required
 from typing import Self
 from typing import TypeAlias
 from typing import TypedDict
-from typing import TypeVar
 from uuid import UUID
+
+from typing_extensions import TypeVar
 
 from lakery.core._registry import Registry
 
