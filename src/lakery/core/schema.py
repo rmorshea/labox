@@ -6,9 +6,9 @@ from collections.abc import Mapping
 from collections.abc import Sequence
 from datetime import UTC
 from datetime import datetime
+from typing import TYPE_CHECKING
 from typing import Annotated
 from typing import Any
-from typing import NewType
 from typing import TypedDict
 from typing import TypeVar
 from typing import cast
@@ -29,7 +29,10 @@ from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm.decl_api import MappedAsDataclass
 from sqlalchemy.sql import expression as sql
 from sqlalchemy.sql.elements import NamedColumn
-from typing_extensions import TypeIs
+
+if TYPE_CHECKING:
+    from lakery.common.utils import DottedName
+    from lakery.common.utils import TagMap
 
 C = TypeVar("C", bound=MappedColumn)
 
@@ -54,21 +57,8 @@ JSON_OR_JSONB = JSON().with_variant(JSONB(), "postgresql")
 """A JSON type that uses JSONB in PostgreSQL."""
 
 
-class Base(DeclarativeBase):
+class Base(MappedAsDataclass, DeclarativeBase):
     """The base for lakery's core schema classes."""
-
-
-INFO_NAME_SEP = "."
-"""The separator for data info names."""
-
-
-def is_info_name(name: str) -> TypeIs[InfoName]:
-    """Check if a string is a valid data info name."""
-    return all(map(str.isidentifier, name.split(INFO_NAME_SEP)))
-
-
-InfoName = NewType("InfoName", str)
-"""A unique name for a data info."""
 
 
 def conflicts_on(comparator: ColumnComparator = operator.eq) -> dict[str, Any]:
@@ -88,37 +78,33 @@ def conflicts_on(comparator: ColumnComparator = operator.eq) -> dict[str, Any]:
     return {"lakery.conflict_comparator": comparator, "lakery.unique": True}
 
 
-class InfoRecord(Base):
+class ModelGroupRecord(Base, kw_only=True):
     """A record with additional information about a one or more data pointers."""
 
     __abstract__ = False
-    __tablename__ = "lakery_info_record"
-    __mapper_args__: Mapping[str, Any] = {"polymorphic_on": "info_type"}
+    __tablename__ = "lakery_model_group"
 
-    record_id: Mapped[UUID] = mapped_column(default=uuid4, primary_key=True)
+    id: Mapped[UUID] = mapped_column(default=uuid4, primary_key=True, init=False)
     """The ID of the data info."""
-    record_type: Mapped[str] = mapped_column(
-        # records conflict on equal types
-        info=conflicts_on(),
-    )
-    """The type of the info."""
-    record_name: Mapped[str] = mapped_column(
+    name: Mapped[DottedName] = mapped_column(
         # records conflict on equal or overlapping names
-        info=conflicts_on(lambda c, v: (c == v) | c.startswith(v + INFO_NAME_SEP))
+        info=conflicts_on(lambda c, v: (c == v) | c.startswith(v + ".")),
     )
     """The name of the info."""
-    record_created_at: Mapped[DateTimeTZ] = mapped_column(default=func.now())
+    created_at: Mapped[DateTimeTZ] = mapped_column(default=func.now())
     """The timestamp when the info was created."""
-    record_archived_at: Mapped[DateTimeTZ] = mapped_column(
+    archived_at: Mapped[DateTimeTZ] = mapped_column(
         default=NEVER,
         # records conflict on never being archived
         info=conflicts_on(lambda c, _: c == NEVER),
     )
     """The timestamp when the info was archived."""
-    record_storage_model_id: Mapped[UUID] = mapped_column()
+    storage_model_id: Mapped[UUID] = mapped_column()
     """The name of the model that the data came from."""
-    record_storage_model_version: Mapped[int] = mapped_column()
+    storage_model_version: Mapped[int] = mapped_column()
     """The version of the model that the data came from."""
+    tags: Mapped[TagMap | None] = mapped_column(JSON_OR_JSONB)
+    """User defined tags associated with the stored value."""
 
     def record_conflicts(self) -> ColumnElement[bool]:
         """Get an expression to select the latest records that conflicts with this one."""
@@ -185,10 +171,10 @@ _ColumnMetadataDict = TypedDict(
 _ColumnMetadataItem = tuple[str, NamedColumn, _ColumnMetadataDict]
 
 
-class DataRecord(MappedAsDataclass, Base, kw_only=True):
+class ModelDataRecord(Base, kw_only=True):
     """A record describing where and how data was saved."""
 
-    __tablename__ = "lakery_data_record"
+    __tablename__ = "lakery_model_data"
 
     id: Mapped[UUID] = mapped_column(default_factory=uuid4, primary_key=True)
     """The ID of the pointer."""
@@ -214,14 +200,23 @@ class DataRecord(MappedAsDataclass, Base, kw_only=True):
     """Info returned by a storage backend to retrieve the data it saved."""
     storage_model_key: Mapped[str | None] = mapped_column()
     """The key of the data within the storage model."""
+    tags: Mapped[TagMap | None] = mapped_column(JSON_OR_JSONB)
+    """User defined tags associated with the stored value."""
 
 
-class DataInfoAssociation(MappedAsDataclass, Base, kw_only=True):
+class ModelGroupDataRecord(Base, kw_only=True):
     """An association between a info and a pointer."""
 
-    __tablename__ = "lakery_data_info_assocation"
+    __tablename__ = "lakery_model_group_data_assocation"
 
-    data_id: Mapped[UUID] = mapped_column(primary_key=True, foreign_key=DataRecord.id)
+    data_id: Mapped[UUID] = mapped_column(
+        primary_key=True,
+        foreign_key=ModelDataRecord.id,
+    )
     """The ID of the data."""
-    info_id: Mapped[UUID] = mapped_column(primary_key=True, foreign_key=InfoRecord.record_id)
+
+    group_id: Mapped[UUID] = mapped_column(
+        primary_key=True,
+        foreign_key=ModelGroupRecord.id,
+    )
     """The ID of the info."""

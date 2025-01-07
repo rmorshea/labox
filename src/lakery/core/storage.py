@@ -15,6 +15,8 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterable
     from collections.abc import Sequence
 
+    from lakery.common.utils import TagMap
+
 
 T = TypeVar("T")
 
@@ -28,7 +30,13 @@ class Storage(Generic[T], abc.ABC):
     """The version of the storage."""
 
     @abc.abstractmethod
-    async def put_value(self, value: bytes, digest: ValueDigest, /) -> T:
+    async def put_value(
+        self,
+        value: bytes,
+        digest: ValueDigest,
+        tags: TagMap,
+        /,
+    ) -> T:
         """Save the given value dump and return its location."""
         raise NotImplementedError
 
@@ -38,7 +46,13 @@ class Storage(Generic[T], abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    async def put_stream(self, stream: AsyncIterable[bytes], get_digest: GetStreamDigest, /) -> T:
+    async def put_stream(
+        self,
+        stream: AsyncIterable[bytes],
+        get_digest: GetStreamDigest,
+        tags: TagMap,
+        /,
+    ) -> T:
         """Save the given stream dump and return its location."""
         raise NotImplementedError
 

@@ -1,16 +1,26 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass
 from dataclasses import field
 from typing import TYPE_CHECKING
 from typing import Any
+from typing import NewType
 from typing import TypeVar
 from typing import cast
 from typing import dataclass_transform
 from typing import overload
 
+from typing_extensions import TypeIs
+
 T = TypeVar("T")
+
+TagMap = Mapping[str, str]
+"""A simple mapping from tag names to values."""
+
+DottedName = NewType("DottedName", str)
+"""A dot separated Python identifier."""
 
 UNDEFINED = cast("Any", type("UNDEFINED", (), {"__repr__": lambda _: "UNDEFINED"})())
 """A sentinel value representing an undefined value."""
@@ -22,6 +32,19 @@ NON_ALPHANUMERIC = re.compile(r"[^a-z0-9]+")
 def slugify(string: str) -> str:
     """Convert a string to a slug."""
     return NON_ALPHANUMERIC.sub("-", string.lower()).strip("-")
+
+
+def check_is_dotted_name(name: str) -> DottedName:
+    """Check if a string is valid info record name - raise `ValueError` otherwise."""
+    if not is_dotted_name(name):
+        msg = f"A valid info record name is a dot separate Python identifier, not {name!r}." ""
+        raise ValueError(msg)
+    return name
+
+
+def is_dotted_name(name: str) -> TypeIs[DottedName]:
+    """Check if a string is a valid info record name."""
+    return all(map(str.isidentifier, name.split(".")))
 
 
 if TYPE_CHECKING:

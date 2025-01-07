@@ -20,16 +20,21 @@ from typing_extensions import TypeVar
 from lakery.core._registry import Registry
 
 if TYPE_CHECKING:
+    from lakery.common.utils import TagMap
     from lakery.core.serializer import StreamSerializer
     from lakery.core.serializer import ValueSerializer
     from lakery.core.storage import Storage
 
 
-ModelDump: TypeAlias = "Mapping[str, StorageValueSpec | StorageStreamSpec]"
+ModelDump: TypeAlias = (
+    Mapping[str, "StorageValueSpec | StorageStreamSpec"]
+    | Mapping[str, "StorageValueSpec"]
+    | Mapping[str, "StorageStreamSpec"]
+)
 """A mapping of string identifiers to serialized components and their storages."""
 
 T = TypeVar("T")
-D = TypeVar("D", bound=ModelDump, default=ModelDump)
+D = TypeVar("D", bound=ModelDump)
 
 
 class StorageModel(Protocol[D]):
@@ -56,6 +61,7 @@ class StorageValueSpec(Generic[T], TypedDict, total=False):
     value: Required[T]
     serializer: ValueSerializer[T]
     storage: Storage
+    tags: TagMap
 
 
 class StorageStreamSpec(Generic[T], TypedDict, total=False):
@@ -64,13 +70,14 @@ class StorageStreamSpec(Generic[T], TypedDict, total=False):
     stream: Required[AsyncIterable[T]]
     serializer: StreamSerializer[T]
     storage: Storage
+    tags: TagMap
 
 
 @dataclass(frozen=True)
 class ValueModel(Generic[T], StorageModel[Mapping[str, StorageValueSpec]]):
     """Models a single value."""
 
-    storage_model_id = "63b297f66dbc44bb8552f6f490cf21cb"
+    storage_model_uuid = "63b297f66dbc44bb8552f6f490cf21cb"
     storage_model_version = 1
 
     value: T
@@ -79,6 +86,8 @@ class ValueModel(Generic[T], StorageModel[Mapping[str, StorageValueSpec]]):
     """The serializer for the value."""
     storage: Storage | None = None
     """The storage for the value."""
+    tags: TagMap | None = None
+    """Tags to store the value with."""
 
     def storage_model_dump(self) -> Mapping[str, StorageValueSpec]:
         """Turn the given model into its serialized components."""
@@ -87,6 +96,8 @@ class ValueModel(Generic[T], StorageModel[Mapping[str, StorageValueSpec]]):
             spec["serializer"] = self.serializer
         if self.storage:
             spec["storage"] = self.storage
+        if self.tags:
+            spec["tags"] = self.tags
         return {"": spec}
 
     @classmethod
@@ -107,7 +118,7 @@ class ValueModel(Generic[T], StorageModel[Mapping[str, StorageValueSpec]]):
 class StreamModel(Generic[T], StorageModel[Mapping[str, StorageStreamSpec]]):
     """Models a single stream."""
 
-    storage_model_id = "e80e8707ffdd4785b95b30247fa4398c"
+    storage_model_uuid = "e80e8707ffdd4785b95b30247fa4398c"
     storage_model_version = 1
 
     stream: AsyncIterable[T]
