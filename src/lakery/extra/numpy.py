@@ -48,11 +48,11 @@ class NpySerializer(ValueSerializer[np.ndarray]):
         return {
             "content_encoding": None,
             "content_type": "application/x-npy.v3",
-            "content_value": buffer.getvalue(),
+            "content_bytes": buffer.getvalue(),
             "serializer_name": self.name,
             "serializer_version": self.version,
         }
 
     def load_value(self, dump: ValueDump, /) -> np.ndarray:
         """Deserialize the given DataFrame."""
-        return np.load(BytesIO(dump["content_value"]), **self._load_args)
+        return np.load(BytesIO(dump["content_bytes"]), **self._load_args)

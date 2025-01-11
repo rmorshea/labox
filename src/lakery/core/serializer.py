@@ -68,14 +68,14 @@ class _BaseDump(TypedDict):
 class ValueDump(_BaseDump):
     """The serialized representation of a value value."""
 
-    content_value: bytes
+    content_bytes: bytes
     """The serialized data."""
 
 
 class StreamDump(_BaseDump):
     """The serialized representation of a stream of values."""
 
-    content_stream: AsyncGenerator[bytes]
+    content_byte_stream: AsyncGenerator[bytes]
     """The serialized data stream."""
 
 

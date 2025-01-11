@@ -1036,6 +1036,7 @@ all = [
     { name = "plotly" },
     { name = "polars" },
     { name = "pyarrow" },
+    { name = "pydantic" },
 ]
 aws = [
     { name = "boto3" },
@@ -1064,6 +1065,9 @@ polars = [
 ]
 pyarrow = [
     { name = "pyarrow" },
+]
+pydantic = [
+    { name = "pydantic" },
 ]
 
 [package.dev-dependencies]
@@ -1179,6 +1183,7 @@ requires-dist = [
     { name = "lakery", extras = ["polars"], marker = "extra == 'all'" },
     { name = "lakery", extras = ["pyarrow"], marker = "extra == 'all'" },
     { name = "lakery", extras = ["pyarrow"], marker = "extra == 'pandas'" },
+    { name = "lakery", extras = ["pydantic"], marker = "extra == 'all'" },
     { name = "msgpack", marker = "extra == 'msgpack'", specifier = ">=1,<2" },
     { name = "numpy", marker = "extra == 'numpy'", specifier = ">=2,<3" },
     { name = "pandas", marker = "extra == 'pandas'", specifier = ">=2,<3" },
@@ -1186,6 +1191,7 @@ requires-dist = [
     { name = "polars", marker = "extra == 'polars'", specifier = ">=1.18.0" },
     { name = "pyarrow", marker = "extra == 'pyarrow'", specifier = ">=18,<19" },
     { name = "pybooster", specifier = ">=0.0.5,<1" },
+    { name = "pydantic", marker = "extra == 'pydantic'", specifier = ">=2.10.1" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.36,<3" },
     { name = "tenacity", specifier = ">=9.0.0,<10" },
     { name = "typing-extensions", specifier = ">=4,<5" },

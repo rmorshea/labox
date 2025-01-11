@@ -209,7 +209,7 @@ async def _save_storage_value_spec(
     dump = serialization_helper.dump_value(value, serializer)
     digest = _make_value_dump_digest(dump)
 
-    storage_data = await storage.put_value(dump["content_value"], digest, tags)
+    storage_data = await storage.put_value(dump["content_bytes"], digest, tags)
 
     return StorageContentRecord(
         content_encoding=dump["content_encoding"],
@@ -276,7 +276,7 @@ async def _save_storage_stream_spec(
 
 
 def _wrap_stream_dump(dump: StreamDump) -> tuple[AsyncGenerator[bytes], GetStreamDigest]:
-    stream = dump["content_stream"]
+    stream = dump["content_byte_stream"]
 
     content_hash = sha256()
     content_size = 0
@@ -308,7 +308,7 @@ def _wrap_stream_dump(dump: StreamDump) -> tuple[AsyncGenerator[bytes], GetStrea
 
 
 def _make_value_dump_digest(dump: ValueDump) -> ValueDigest:
-    value = dump["content_value"]
+    value = dump["content_bytes"]
     content_hash = sha256(value)
     return {
         "content_encoding": dump.get("content_encoding"),

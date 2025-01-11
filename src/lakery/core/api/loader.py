@@ -173,7 +173,7 @@ async def load_content_from_record(
                 {
                     "content_encoding": record.content_encoding,
                     "content_type": record.content_type,
-                    "content_value": byte_value,
+                    "content_bytes": byte_value,
                     "serializer_name": record.serializer_name,
                     "serializer_version": record.serializer_version,
                 }
@@ -192,7 +192,7 @@ async def load_content_from_record(
                 {
                     "content_encoding": record.content_encoding,
                     "content_type": record.content_type,
-                    "content_stream": byte_stream,
+                    "content_byte_stream": byte_stream,
                     "serializer_name": record.serializer_name,
                     "serializer_version": record.serializer_version,
                 }

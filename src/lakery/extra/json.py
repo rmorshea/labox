@@ -40,14 +40,14 @@ class JsonSerializer(ValueSerializer[JsonType]):
         return {
             "content_encoding": "utf-8",
             "content_type": self.content_type,
-            "content_value": json.dumps(value, separators=(",", ":")).encode("utf-8"),
+            "content_bytes": json.dumps(value, separators=(",", ":")).encode("utf-8"),
             "serializer_name": self.name,
             "serializer_version": self.version,
         }
 
     def load_value(self, dump: ValueDump) -> JsonType:
         """Deserialize the given JSON data."""
-        return json.loads(dump["content_value"].decode("utf-8"))
+        return json.loads(dump["content_bytes"].decode("utf-8"))
 
 
 class JsonStreamSerializer(StreamSerializer[JsonStreamType]):
@@ -65,18 +65,18 @@ class JsonStreamSerializer(StreamSerializer[JsonStreamType]):
             "content_type": self.content_type,
             "serializer_name": self.name,
             "serializer_version": self.version,
-            "content_value": json.dumps(list(value), separators=(",", ":")).encode("utf-8"),
+            "content_bytes": json.dumps(list(value), separators=(",", ":")).encode("utf-8"),
         }
 
     def load_value(self, dump: ValueDump) -> list[JsonStreamType]:
         """Deserialize the given JSON data."""
-        return json.loads(dump["content_value"].decode("utf-8"))
+        return json.loads(dump["content_bytes"].decode("utf-8"))
 
     def dump_stream(self, stream: AsyncIterable[JsonStreamType]) -> StreamDump:
         """Serialize the given stream of JSON data."""
         return {
             "content_encoding": "utf-8",
-            "content_stream": _dump_json_stream(stream),
+            "content_byte_stream": _dump_json_stream(stream),
             "content_type": self.content_type,
             "serializer_name": self.name,
             "serializer_version": self.version,
@@ -84,7 +84,7 @@ class JsonStreamSerializer(StreamSerializer[JsonStreamType]):
 
     def load_stream(self, dump: StreamDump) -> AsyncGenerator[JsonStreamType]:
         """Deserialize the given stream of JSON data."""
-        return _load_json_stream(dump["content_stream"])
+        return _load_json_stream(dump["content_byte_stream"])
 
 
 async def _dump_json_stream(stream: AsyncIterable[JsonStreamType]) -> AsyncGenerator[bytes]:
