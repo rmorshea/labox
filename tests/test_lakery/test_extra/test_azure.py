@@ -24,6 +24,8 @@ if TYPE_CHECKING:
 
     from azure.storage.blob.aio import ContainerClient
 
+    from lakery.common.utils import TagMap
+
 
 @parametrize_storage_assertions
 async def test_blob_storage(assertion):
@@ -60,12 +62,14 @@ class MockBlobClient:
         metadata: dict[str, str] | None = None,
         *,
         content_settings: ContentSettings | None = None,
+        tags: TagMap | None = None,
         **kwargs: Any,
     ) -> dict[str, Any]:
         assert blob_type == BlobType.BLOCKBLOB, "Only block blobs are supported in the mock"
         assert length is None, "Length is not supported in the mock"
         assert metadata is None, "Metadata is not supported in the mock"
         assert not kwargs, "Extra arguments are not supported in the mock"
+        assert tags is not None, "Expected tags to be provided"
 
         # check that we're providing this metadata
         assert isinstance(content_settings, ContentSettings), "Content settings are required"

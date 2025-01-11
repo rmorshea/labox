@@ -12,15 +12,12 @@ from typing import TypeVar
 
 import pytest
 
-from lakery.common.exceptions import NoStorageData
 from lakery.core.api.saver import _wrap_stream_dump
-from lakery.core.schema import DataRelation
 
 if TYPE_CHECKING:
     from lakery.core.storage import GetStreamDigest
-    from lakery.core.storage import StreamStorage
+    from lakery.core.storage import Storage
     from lakery.core.storage import ValueDigest
-    from lakery.core.storage import ValueStorage
 
 
 F = TypeVar("F", bound=Callable)
@@ -39,97 +36,49 @@ def parametrize_storage_assertions(test_function: F) -> F:
             assert_storage_can_put_and_get_stream,
             assert_storage_can_put_stream_and_get_value,
             assert_storage_can_put_value_and_get_stream,
-            assert_storage_cleans_up_after_stream_error,
         ],
     )(test_function)
 
 
-async def assert_storage_can_put_and_get_value(storage: ValueStorage) -> None:
-    relation, digest, value = make_fake_value_data(1024)
-    relation = await storage.put_value(relation, value, digest)
-    assert (await storage.get_value(relation)) == value
+async def assert_storage_can_put_and_get_value(storage: Storage) -> None:
+    value, digest = make_fake_value_data(1024)
+    storage_data = await storage.put_value(value, digest, {})
+    assert (await storage.get_value(storage_data)) == value
 
 
-async def assert_storage_can_put_and_get_stream(storage: StreamStorage):
+async def assert_storage_can_put_and_get_stream(storage: Storage):
     async with make_fake_stream_data(1024 * 10, chunk_size=1024) as (
-        relation,
-        digest,
         stream,
         expected_value,
+        digest,
     ):
-        relation = await storage.put_stream(relation, stream, digest)
+        relation = await storage.put_stream(stream, digest, {})
         actual_value = b"".join([chunk async for chunk in storage.get_stream(relation)])
         assert actual_value == expected_value
 
 
-async def assert_storage_can_put_stream_and_get_value(storage: StreamStorage):
+async def assert_storage_can_put_stream_and_get_value(storage: Storage):
     async with make_fake_stream_data(1024 * 10, chunk_size=1024) as (
-        relation,
-        digest,
         stream,
         expected_value,
+        digest,
     ):
-        relation = await storage.put_stream(relation, stream, digest)
+        relation = await storage.put_stream(stream, digest, {})
         actual_value = await storage.get_value(relation)
         assert actual_value == expected_value
 
 
-async def assert_storage_can_put_value_and_get_stream(storage: StreamStorage):
-    relation, digest, value = make_fake_value_data(1024)
-    relation = await storage.put_value(relation, value, digest)
+async def assert_storage_can_put_value_and_get_stream(storage: Storage):
+    value, digest = make_fake_value_data(1024)
+    relation = await storage.put_value(value, digest, {})
     actual_value = b"".join([chunk async for chunk in storage.get_stream(relation)])
     assert actual_value == value
 
 
-async def assert_storage_cleans_up_after_stream_error(storage: StreamStorage):
-    async with make_fake_stream_data(1024 * 10, chunk_size=1024) as (
-        relation,
-        digest,
-        stream,
-        _,
-    ):
-
-        async def make_bad_stream():
-            async for chunk in stream:
-                yield chunk
-                msg = "Bad stream"
-                raise ValueError(msg)
-            raise AssertionError
-
-        with pytest.raises(ValueError, match="Bad stream"):
-            await storage.put_stream(relation, make_bad_stream(), digest)
-
-    try:
-        with pytest.raises(NoStorageData):
-            await storage.get_value(relation)
-    except Exception as error:  # nocov
-        msg = "Expected a NoStorageDataError error - storage may not have cleaned up properly"
-        raise AssertionError(msg) from error
-
-    load_stream = storage.get_stream(relation)
-
-    try:
-        iter_load_stream = aiter(load_stream)
-        with pytest.raises(NoStorageData):
-            await anext(iter_load_stream)
-    except Exception as error:  # nocov
-        msg = "Expected a NoStorageDataError error - storage may not have cleaned up properly"
-        raise AssertionError(msg) from error
-
-
-def make_fake_value_data(size: int) -> tuple[DataRelation, ValueDigest, bytes]:
+def make_fake_value_data(size: int) -> tuple[bytes, ValueDigest]:
     value = os.urandom(size)
     value_hash = sha256(value)
     hash_str = value_hash.hexdigest()
-
-    data_relation = DataRelation()
-    data_relation.rel_type = "fake"
-    data_relation.rel_content_type = "application/octet-stream"
-    data_relation.rel_content_size = size
-    data_relation.rel_content_hash = hash_str
-    data_relation.rel_content_hash_algorithm = "sha256"
-    data_relation.rel_serializer_name = "fake"
-    data_relation.rel_serializer_version = 1
 
     digest: ValueDigest = {
         "content_encoding": None,
@@ -138,7 +87,8 @@ def make_fake_value_data(size: int) -> tuple[DataRelation, ValueDigest, bytes]:
         "content_size": size,
         "content_type": "application/octet-stream",
     }
-    return data_relation, digest, value
+
+    return value, digest
 
 
 @asynccontextmanager
@@ -146,7 +96,7 @@ async def make_fake_stream_data(
     total_size: int,
     *,
     chunk_size: int,
-) -> AsyncIterator[tuple[DataRelation, GetStreamDigest, AsyncGenerator[bytes], bytes]]:
+) -> AsyncIterator[tuple[AsyncGenerator[bytes], bytes, GetStreamDigest]]:
     current_size = 0
     current_hash = sha256()
 
@@ -162,19 +112,11 @@ async def make_fake_stream_data(
         current_size += len(chunk)
         value_chunks.append(chunk)
 
-    data_relation = DataRelation()
-    data_relation.rel_type = "fake"
-    data_relation.rel_content_type = "application/octet-stream"
-    data_relation.rel_content_hash_algorithm = current_hash.name
-    data_relation.rel_serializer_name = "fake"
-    data_relation.rel_serializer_version = 1
-
     async def make_stream():
         for chunk in value_chunks:
             yield chunk
 
     stream, get_digest = _wrap_stream_dump(
-        data_relation,
         {
             "content_encoding": None,
             "content_stream": make_stream(),
@@ -185,4 +127,4 @@ async def make_fake_stream_data(
     )
 
     async with aclosing(stream):
-        yield data_relation, get_digest, stream, b"".join(value_chunks)
+        yield stream, b"".join(value_chunks), get_digest

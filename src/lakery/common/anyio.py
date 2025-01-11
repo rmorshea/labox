@@ -55,23 +55,47 @@ def start_future(
     *args: P.args,
     **kwargs: P.kwargs,
 ) -> FutureResult[R]:
-    """Start the given future in a task group."""
+    """Start a future in a task group."""
     future: FutureResult[R] = FutureResult()
-    task_group.start_soon(_set_future_result, func, args, kwargs, future)
+    start_given_future(task_group, future, func, *args, **kwargs)
     return future
 
 
-async def _set_future_result(
+def start_given_future(
+    task_group: TaskGroup,
+    future: FutureResult[R],
+    func: Callable[P, Coroutine[Any, Any, R]],
+    /,
+    *args: P.args,
+    **kwargs: P.kwargs,
+) -> None:
+    """Start the given future in a task group."""
+    task_group.start_soon(_evaluate_future, func, args, kwargs, future)
+
+
+async def _evaluate_future(
     func: Callable[..., Awaitable[R]],
     args: tuple[Any, ...],
     kwargs: dict[str, Any],
     future: FutureResult[R],
 ) -> None:
     try:
-        future._result = await func(*args, **kwargs)  # noqa: SLF001
+        returned = await func(*args, **kwargs)
     except BaseException as exc:
-        future._exception = exc  # noqa: SLF001
+        set_future_exception_forcefully(future, exc)
         raise
+    else:
+        set_future_success_forcefully(future, returned)
+
+
+def set_future_success_forcefully(future: FutureResult[R], result: R) -> None:
+    """Set the result of a future forcefully."""
+    future._result = result  # noqa: SLF001
+
+
+def set_future_exception_forcefully(future: FutureResult[R], exception: BaseException) -> None:
+    """Set the exception of a future forcefully."""
+    future._exception = exception  # noqa: SLF001
 
 
 class FutureResult(Generic[R]):

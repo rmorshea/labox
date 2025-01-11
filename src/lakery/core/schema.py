@@ -1,38 +1,31 @@
 from __future__ import annotations
 
-import operator
 from collections.abc import Callable
-from collections.abc import Mapping
 from collections.abc import Sequence
 from datetime import UTC
 from datetime import datetime
-from typing import TYPE_CHECKING
+from enum import StrEnum
 from typing import Annotated
 from typing import Any
-from typing import TypedDict
 from typing import TypeVar
-from typing import cast
 from uuid import UUID
 from uuid import uuid4
 
 from sqlalchemy import JSON
 from sqlalchemy import ColumnElement
 from sqlalchemy import DateTime
+from sqlalchemy import ForeignKey
 from sqlalchemy import UniqueConstraint
 from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import ColumnProperty
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import MappedColumn
 from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import relationship
 from sqlalchemy.orm.decl_api import MappedAsDataclass
-from sqlalchemy.sql import expression as sql
-from sqlalchemy.sql.elements import NamedColumn
 
-if TYPE_CHECKING:
-    from lakery.common.utils import DottedName
-    from lakery.common.utils import TagMap
+from lakery.common.utils import TagMap  # noqa: TC001
 
 C = TypeVar("C", bound=MappedColumn)
 
@@ -61,123 +54,58 @@ class Base(MappedAsDataclass, DeclarativeBase):
     """The base for lakery's core schema classes."""
 
 
-def conflicts_on(comparator: ColumnComparator = operator.eq) -> dict[str, Any]:
-    """Info indicating that a column defines a unique constraint on the latest value.
-
-    When saving a new record, if an existing one conflicts, the existing record will be
-    "archived". A record has been "archived" if it's `rel_archived_at` is not `NEVER`.
-    The process of archiving a record involves setting the `rel_archived_at` column to
-    the current time before saving the new one.
-
-    Args:
-        comparator:
-            The function that determines whether two records conflict. Accepts two
-            arguments, the column and the value to compare against and should
-            return a boolean expression.
-    """
-    return {"lakery.conflict_comparator": comparator, "lakery.unique": True}
-
-
-class ModelGroupRecord(Base, kw_only=True):
-    """A record with additional information about a one or more data pointers."""
+class StorageModelRecord(Base, kw_only=True):
+    """A record describing a stored model."""
 
     __abstract__ = False
-    __tablename__ = "lakery_model_group"
-
-    id: Mapped[UUID] = mapped_column(default=uuid4, primary_key=True, init=False)
-    """The ID of the data info."""
-    name: Mapped[DottedName] = mapped_column(
-        # records conflict on equal or overlapping names
-        info=conflicts_on(lambda c, v: (c == v) | c.startswith(v + ".")),
-    )
-    """The name of the info."""
-    created_at: Mapped[DateTimeTZ] = mapped_column(default=func.now())
-    """The timestamp when the info was created."""
-    archived_at: Mapped[DateTimeTZ] = mapped_column(
-        default=NEVER,
-        # records conflict on never being archived
-        info=conflicts_on(lambda c, _: c == NEVER),
-    )
-    """The timestamp when the info was archived."""
-    storage_model_id: Mapped[UUID] = mapped_column()
-    """The name of the model that the data came from."""
-    storage_model_version: Mapped[int] = mapped_column()
-    """The version of the model that the data came from."""
-    tags: Mapped[TagMap | None] = mapped_column(JSON_OR_JSONB)
-    """User defined tags associated with the stored value."""
-
-    def record_conflicts(self) -> ColumnElement[bool]:
-        """Get an expression to select the latest records that conflicts with this one."""
-        exprs: list[ColumnElement[bool]] = []
-        for name, col, meta in self._record_column_metadata:
-            match meta:
-                case {"lakery.unique_on_comparator": comparator}:
-                    exprs.append(comparator(col, getattr(self, name)))
-        return sql.and_(*exprs)
-
-    def __init_subclass__(cls, **kwargs: Any) -> None:
-        super().__init_subclass__(**kwargs)
-        cls._record_init_column_metadata()
-        if not cls.__abstract__:
-            cls._record_init_unique_constraint()
-
-    @classmethod
-    def _record_init_column_metadata(cls) -> None:
-        cls._record_column_metadata = (
-            *cls._record_get_own_column_metadata(),
-            *cls._record_column_metadata,
-        )
-
-    @classmethod
-    def _record_init_unique_constraint(cls) -> None:
-        UniqueConstraint(
-            *(col for _, col, meta in cls._record_column_metadata if meta.get("lakery.unique"))
-        )
-
-    @classmethod
-    def _record_get_own_column_metadata(cls) -> Sequence[_ColumnMetadataItem]:
-        return [
-            (k, col, meta)
-            for k in cls.__dict__
-            if (
-                k in cls.__mapper__.attrs
-                and isinstance(prop := cls.__mapper__.attrs[k], ColumnProperty)
-                and len(prop.columns) != 1
-                and (meta := _get_column_metadata_dict((col := prop.columns[0]).info))
-            )
-        ]
-
-
-def _get_column_metadata_dict(info: Any) -> _ColumnMetadataDict:
-    """Get the data info from a column."""
-    if not isinstance(info, Mapping):
-        return {}
-    info_column_info: dict[str, Any] = {}
-    for k in info:
-        if not k.startswith("lakery."):
-            continue
-        if k not in _ColumnMetadataDict.__annotations__:
-            msg = f"Unknown info column info: {k}"
-            raise ValueError(msg)
-        info_column_info[k] = info[k]
-    return cast("_ColumnMetadataDict", info_column_info)
-
-
-_ColumnMetadataDict = TypedDict(
-    "_ColumnMetadataDict",
-    {"lakery.conflict_comparator": ColumnComparator, "lakery.unique": bool},
-    total=False,
-)
-_ColumnMetadataItem = tuple[str, NamedColumn, _ColumnMetadataDict]
-
-
-class ModelDataRecord(Base, kw_only=True):
-    """A record describing where and how data was saved."""
-
-    __tablename__ = "lakery_model_data"
+    __tablename__ = "lakery_storage_model"
 
     id: Mapped[UUID] = mapped_column(default_factory=uuid4, primary_key=True)
-    """The ID of the pointer."""
+    """The ID of the stored model."""
+    name: Mapped[str] = mapped_column()
+    """The name of the stored model."""
+    tags: Mapped[TagMap | None] = mapped_column(JSON_OR_JSONB)
+    """User defined tags associated with the stored model."""
+    model_uuid: Mapped[UUID] = mapped_column()
+    """An ID that uniquely identifies the type of the stored model."""
+    created_at: Mapped[DateTimeTZ] = mapped_column(default=func.now())
+    """The timestamp when the model was created."""
+    archived_at: Mapped[DateTimeTZ] = mapped_column(default=NEVER)
+    """The timestamp when the model was archived."""
+
+    contents: Mapped[Sequence[StorageContentRecord]] = relationship(
+        default=(),
+        collection_class=list,
+    )
+    """The contents of the stored model."""
+
+
+UniqueConstraint(
+    StorageModelRecord.name,
+    StorageModelRecord.archived_at,
+)
+
+
+class SerializerTypeEnum(StrEnum):
+    """An enumeration of the types of serializers."""
+
+    VALUE = "VALUE"
+    """A value serializer."""
+    STREAM = "STREAM"
+    """A stream serializer."""
+
+
+class StorageContentRecord(Base, kw_only=True):
+    """A record describing where and how a piece of content was saved."""
+
+    __tablename__ = "lakery_storage_content"
+
+    id: Mapped[UUID] = mapped_column(default_factory=uuid4, primary_key=True)
+    """The ID of the content."""
+    model_id: Mapped[UUID] = mapped_column(ForeignKey(StorageModelRecord.id))
+    """The ID of the model that the content belongs to."""
+    model_key: Mapped[str] = mapped_column()
+    """The key of the data within the storage model."""
     content_type: Mapped[str] = mapped_column()
     """The MIME type of the data."""
     content_encoding: Mapped[str | None] = mapped_column()
@@ -192,31 +120,13 @@ class ModelDataRecord(Base, kw_only=True):
     """The name of the serializer used to serialize the data."""
     serializer_version: Mapped[int] = mapped_column()
     """The version of the serializer used to serialize the data."""
+    serializer_type: Mapped[SerializerTypeEnum] = mapped_column()
+    """The type of the serializer used to serialize the data."""
     storage_name: Mapped[str] = mapped_column()
     """The name of the storage backend used to store the data."""
     storage_version: Mapped[int] = mapped_column()
     """The version of the storage backend used to store the data."""
     storage_data: Mapped[Any] = mapped_column(JSON_OR_JSONB)
-    """Info returned by a storage backend to retrieve the data it saved."""
-    storage_model_key: Mapped[str | None] = mapped_column()
-    """The key of the data within the storage model."""
-    tags: Mapped[TagMap | None] = mapped_column(JSON_OR_JSONB)
-    """User defined tags associated with the stored value."""
-
-
-class ModelGroupDataRecord(Base, kw_only=True):
-    """An association between a info and a pointer."""
-
-    __tablename__ = "lakery_model_group_data_assocation"
-
-    data_id: Mapped[UUID] = mapped_column(
-        primary_key=True,
-        foreign_key=ModelDataRecord.id,
-    )
-    """The ID of the data."""
-
-    group_id: Mapped[UUID] = mapped_column(
-        primary_key=True,
-        foreign_key=ModelGroupRecord.id,
-    )
-    """The ID of the info."""
+    """The information needed to load data from the storage."""
+    created_at: Mapped[DateTimeTZ] = mapped_column(default=func.now())
+    """The timestamp when the content was created."""

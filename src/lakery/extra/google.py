@@ -29,6 +29,8 @@ if TYPE_CHECKING:
     from google.cloud.storage import Blob
     from google.cloud.storage import Bucket
 
+    from lakery.common.utils import TagMap
+
 P = ParamSpec("P")
 R = TypeVar("R")
 
@@ -73,13 +75,17 @@ class BlobStorage(Storage[str]):
         self._reader_type = reader_type
         self.__current_bucket = None
 
-    async def put_value(self, value: bytes, digest: ValueDigest) -> str:
+    async def put_value(
+        self,
+        value: bytes,
+        digest: ValueDigest,
+        tags: TagMap,
+    ) -> str:
         """Save the given value dump."""
         location = make_path_from_digest("/", digest, prefix=self._object_name_prefix)
-        writer = self._writer_type(
-            self._bucket.blob(location, chunk_size=self._object_chunk_size),
-            content_type=digest["content_type"],
-        )
+        blob = self._bucket.blob(location, chunk_size=self._object_chunk_size)
+        blob.metadata = tags
+        writer = self._writer_type(blob, content_type=digest["content_type"])
         await self._to_thread(writer.write, value)
         return location
 
@@ -93,7 +99,12 @@ class BlobStorage(Storage[str]):
                 msg = f"Failed to load value from {location!r}"
                 raise NoStorageData(msg) from error
 
-    async def put_stream(self, stream: AsyncIterable[bytes], get_digest: GetStreamDigest) -> str:
+    async def put_stream(
+        self,
+        stream: AsyncIterable[bytes],
+        get_digest: GetStreamDigest,
+        tags: TagMap,
+    ) -> str:
         """Save the given stream dump."""
         initial_digest = get_digest(allow_incomplete=True)
 
@@ -101,6 +112,7 @@ class BlobStorage(Storage[str]):
             make_temp_path("/", initial_digest, prefix=self._object_name_prefix),
             chunk_size=self._object_chunk_size,
         )
+        temp_blob.metadata = tags
         writer = self._writer_type(temp_blob, content_type=initial_digest["content_type"])
         try:
             async for chunk in stream:

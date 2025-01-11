@@ -1,31 +1,45 @@
 from lakery.core.api.loader import data_loader
 from lakery.core.api.saver import model_saver
+from lakery.core.model import StreamModel
 from lakery.core.model import ValueModel
-from lakery.core.schema import ModelGroupRecord
+
+SAMPLE_DATA = [{"message": "Hello, Alice!"}, {"message": "Goodbye, Alice!"}]
+
+
+def make_value_model():
+    return ValueModel(SAMPLE_DATA)
+
+
+def make_stream_model():
+    async def stream():
+        for item in SAMPLE_DATA:
+            yield item
+
+    return StreamModel(stream())
 
 
 async def test_simple_value_data_saver_and_loader_usage():
-    input_data = [{"message": "Hello, Alice!"}, {"message": "Goodbye, Alice!"}]
+    original_model = make_value_model()
 
     async with model_saver() as ms:
-        record = ms.save_soon("name", ValueModel(input_data))
+        ms.save_soon("sample", original_model)
 
-    load = data_loader()
-    assert (await load.value(record)) == input_data
-    assert [item async for item in load.stream(record)] == input_data
+    async with data_loader() as ml:
+        model_future = ml.load_soon(ValueModel, name="sample")
+    loaded_model = model_future.result()
+
+    assert loaded_model == original_model
 
 
 async def test_simple_stream_data_saver_and_loader_usage():
-    input_data = [{"message": "Hello, Alice!"}, {"message": "Goodbye, Alice!"}]
+    original_model = make_stream_model()
 
-    async def stream():
-        for item in input_data:
-            yield item
+    async with model_saver() as ms:
+        ms.save_soon("sample", original_model)
 
-    async with data_saver() as save:
-        des_fut = save.stream(ModelGroupRecord, dict, stream())
-    des = des_fut.result()
+    async with data_loader() as ml:
+        model_future = ml.load_soon(StreamModel, name="sample")
+    loaded_model = model_future.result()
 
-    load = data_loader()
-    assert (await load.value(des)) == input_data
-    assert [item async for item in load.stream(des)] == input_data
+    assert loaded_model == original_model
+    assert [v async for v in loaded_model.stream] == SAMPLE_DATA

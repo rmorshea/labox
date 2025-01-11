@@ -19,6 +19,8 @@ if TYPE_CHECKING:
 
     from azure.storage.blob.aio import ContainerClient
 
+    from lakery.common.utils import TagMap
+
 
 class BlobStorage(Storage[str]):
     """Storage for Azure Blob data."""
@@ -37,7 +39,12 @@ class BlobStorage(Storage[str]):
         self._path_prefix = path_prefix
         self._limiter = CapacityLimiter(max_concurrency) if max_concurrency else None
 
-    async def put_value(self, value: bytes, digest: ValueDigest) -> str:
+    async def put_value(
+        self,
+        value: bytes,
+        digest: ValueDigest,
+        tags: TagMap,
+    ) -> str:
         """Save the given value dump."""
         location = make_path_from_digest("/", digest, prefix=self._path_prefix)
         blob_client = self._container_client.get_blob_client(blob=location)
@@ -47,6 +54,7 @@ class BlobStorage(Storage[str]):
                 content_type=digest["content_type"],
                 content_encoding=digest.get("content_encoding"),
             ),
+            tags=tags,
         )
         return location
 
@@ -60,7 +68,12 @@ class BlobStorage(Storage[str]):
             raise NoStorageData(msg) from exc
         return await blob_reader.readall()
 
-    async def put_stream(self, stream: AsyncIterable[bytes], get_digest: GetStreamDigest) -> str:
+    async def put_stream(
+        self,
+        stream: AsyncIterable[bytes],
+        get_digest: GetStreamDigest,
+        tags: TagMap,
+    ) -> str:
         """Save the given stream dump."""
         initial_digest = get_digest(allow_incomplete=True)
         temp_location = make_temp_path("/", initial_digest, prefix=self._path_prefix)
@@ -72,6 +85,7 @@ class BlobStorage(Storage[str]):
                 content_type=initial_digest["content_type"],
                 content_encoding=initial_digest.get("content_encoding"),
             ),
+            tags=tags,
         )
         try:
             final_location = make_path_from_digest("/", get_digest(), prefix=self._path_prefix)

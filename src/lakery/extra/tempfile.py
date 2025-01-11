@@ -5,15 +5,12 @@ from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Self
-from typing import TypeVar
 from uuid import uuid4
 
 from anyio import create_task_group
 
 from lakery.common.anyio import start_async_iterator
-from lakery.core.schema import DataRelation
-from lakery.core.storage import GetStreamDigest
-from lakery.core.storage import StreamStorage
+from lakery.core.storage import Storage
 from lakery.extra._utils import make_path_parts_from_digest
 
 if TYPE_CHECKING:
@@ -21,13 +18,12 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterable
     from collections.abc import Iterator
 
+    from lakery.common.utils import TagMap
+    from lakery.core.storage import GetStreamDigest
     from lakery.core.storage import ValueDigest
 
 
-D = TypeVar("D", bound=DataRelation)
-
-
-class TemporaryDirectoryStorage(StreamStorage[D]):
+class TemporaryDirectoryStorage(Storage[str]):
     """A storage backend for testing that saves data to a temporary directory."""
 
     name = "lakery.tempfile"
@@ -35,11 +31,9 @@ class TemporaryDirectoryStorage(StreamStorage[D]):
 
     def __init__(
         self,
-        types: tuple[type[D], ...] = (DataRelation,),
         tempdir: TemporaryDirectory | str | None = None,
         chunk_size: int = 1024**2,  # 1MB chunk size by default
     ) -> None:
-        self.types = types
         match tempdir:
             case None:
                 self.tempdir = TemporaryDirectory()
@@ -63,38 +57,27 @@ class TemporaryDirectoryStorage(StreamStorage[D]):
 
     async def put_value(
         self,
-        relation: D,
         value: bytes,
         digest: ValueDigest,
-    ) -> D:
+        _tags: TagMap,
+    ) -> str:
         """Save the given value dump."""
         content_path = self.path.joinpath(*make_path_parts_from_digest(digest))
         if not content_path.exists():
             content_path.parent.mkdir(parents=True, exist_ok=True)
             content_path.write_bytes(value)
-        return relation
+        return content_path.as_uri()
 
-    async def get_value(self, relation: D) -> bytes:
+    async def get_value(self, location: str) -> bytes:
         """Load the value dump for the given relation."""
-        content_path = self.path.joinpath(
-            *make_path_parts_from_digest(
-                {
-                    "content_type": relation.rel_content_type,
-                    "content_hash_algorithm": relation.rel_content_hash_algorithm,
-                    "content_hash": relation.rel_content_hash,
-                    "content_size": relation.rel_content_size,
-                    "content_encoding": relation.rel_content_encoding,
-                }
-            )
-        )
-        return content_path.read_bytes()
+        return Path.from_uri(location).read_bytes()
 
     async def put_stream(
         self,
-        relation: D,
         stream: AsyncIterable[bytes],
         get_digest: GetStreamDigest,
-    ) -> D:
+        _tags: TagMap,
+    ) -> str:
         """Save the given stream dump."""
         scratch_path = self._get_scratch_path()
         with scratch_path.open("wb") as file:
@@ -108,22 +91,11 @@ class TemporaryDirectoryStorage(StreamStorage[D]):
                 scratch_path.rename(content_path)
         finally:
             scratch_path.unlink(missing_ok=True)
-        return relation
+        return content_path.as_uri()
 
-    async def get_stream(self, relation: D) -> AsyncGenerator[bytes]:
+    async def get_stream(self, location: str) -> AsyncGenerator[bytes]:
         """Load the stream dump for the given relation."""
-        path = self.path.joinpath(
-            *make_path_parts_from_digest(
-                {
-                    "content_type": relation.rel_content_type,
-                    "content_hash_algorithm": relation.rel_content_hash_algorithm,
-                    "content_hash": relation.rel_content_hash,
-                    "content_size": relation.rel_content_size,
-                    "content_encoding": relation.rel_content_encoding,
-                },
-            ),
-        )
-
+        path = Path.from_uri(location)
         async with create_task_group() as tg:
             with start_async_iterator(tg, _iter_file_chunks(path, self.chunk_size)) as chunks:
                 async for c in chunks:

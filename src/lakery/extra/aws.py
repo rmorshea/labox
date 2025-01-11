@@ -9,6 +9,7 @@ from typing import IO
 from typing import TYPE_CHECKING
 from typing import ParamSpec
 from typing import TypeVar
+from urllib.parse import urlencode
 
 from anyio import create_task_group
 from anyio.abc import CapacityLimiter
@@ -29,6 +30,8 @@ if TYPE_CHECKING:
     from types_boto3_s3 import S3Client
     from types_boto3_s3.type_defs import CreateMultipartUploadRequestRequestTypeDef
     from types_boto3_s3.type_defs import PutObjectRequestRequestTypeDef
+
+    from lakery.common.utils import TagMap
 
 P = ParamSpec("P")
 R = TypeVar("R")
@@ -74,14 +77,20 @@ class S3Storage(Storage[str]):
         self._stream_writer_buffer_type = stream_writer_buffer_type
         self._stream_reader_part_size = stream_reader_part_size
 
-    async def put_value(self, value: bytes, digest: ValueDigest) -> str:
-        """Save the given value dump."""
+    async def put_value(
+        self,
+        value: bytes,
+        digest: ValueDigest,
+        tags: TagMap,
+    ) -> str:
+        """Save the given value."""
         location = make_path_from_digest("/", digest, prefix=self._object_key_prefix)
         put_request: PutObjectRequestRequestTypeDef = {
             "Bucket": self._bucket_name,
             "Key": location,
             "Body": value,
             "ContentType": digest["content_type"],
+            "Tagging": urlencode(tags),
         }
         if digest["content_encoding"]:
             put_request["ContentEncoding"] = digest["content_encoding"]
@@ -89,7 +98,7 @@ class S3Storage(Storage[str]):
         return location
 
     async def get_value(self, location: str) -> bytes:
-        """Load the value dump for the given relation."""
+        """Load the value from the given location."""
         try:
             result = await self._to_thread(
                 self._client.get_object,
@@ -101,7 +110,12 @@ class S3Storage(Storage[str]):
             msg = f"No data found for {location!r}."
             raise NoStorageData(msg) from error
 
-    async def put_stream(self, stream: AsyncIterable[bytes], get_digest: GetStreamDigest) -> str:
+    async def put_stream(
+        self,
+        stream: AsyncIterable[bytes],
+        get_digest: GetStreamDigest,
+        tags: TagMap,
+    ) -> str:
         """Save the given stream dump.
 
         This works by first saving the stream to a temporary key becuase the content
@@ -111,11 +125,13 @@ class S3Storage(Storage[str]):
         """
         initial_digest = get_digest(allow_incomplete=True)
         temp_location = make_temp_path("/", initial_digest, prefix=self._object_key_prefix)
+        tagging = urlencode(tags)
 
         create_multipart_upload: CreateMultipartUploadRequestRequestTypeDef = {
             "Bucket": self._bucket_name,
             "Key": temp_location,
             "ContentType": initial_digest["content_type"],
+            "Tagging": tagging,
         }
         if initial_digest["content_encoding"]:
             create_multipart_upload["ContentEncoding"] = initial_digest["content_encoding"]
@@ -175,16 +191,19 @@ class S3Storage(Storage[str]):
                     Bucket=self._bucket_name,
                     CopySource={"Bucket": self._bucket_name, "Key": temp_location},
                     Key=final_location,
+                    Tagging=tagging,
                 )
             finally:
                 await self._to_thread(
-                    self._client.delete_object, Bucket=self._bucket_name, Key=temp_location
+                    self._client.delete_object,
+                    Bucket=self._bucket_name,
+                    Key=temp_location,
                 )
 
         return final_location
 
     async def get_stream(self, location: str) -> AsyncGenerator[bytes]:
-        """Load the stream dump for the given relation."""
+        """Load the stream from the given location."""
         try:
             result = await self._to_thread(
                 self._client.get_object,

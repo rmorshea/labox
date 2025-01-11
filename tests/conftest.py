@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 from lakery.core.context import DatabaseSession
 from lakery.core.context import registries
+from lakery.core.model import ModelRegistry
 from lakery.core.schema import Base
 from lakery.core.serializer import SerializerRegistry
 from lakery.core.storage import StorageRegistry
@@ -20,6 +21,7 @@ from lakery.extra.tempfile import TemporaryDirectoryStorage
 @pytest.fixture(autouse=True, scope="session")
 def registry_context():
     with registries(
+        models=ModelRegistry.with_core_models(),
         storages=StorageRegistry([TemporaryDirectoryStorage()]),
         serializers=SerializerRegistry([JsonSerializer(), JsonStreamSerializer()]),
     ):

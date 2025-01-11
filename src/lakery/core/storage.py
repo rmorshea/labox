@@ -37,12 +37,12 @@ class Storage(Generic[T], abc.ABC):
         tags: TagMap,
         /,
     ) -> T:
-        """Save the given value dump and return its location."""
+        """Save the given value and return data that can be used to retrieve it."""
         raise NotImplementedError
 
     @abc.abstractmethod
-    async def get_value(self, info: T, /) -> bytes:
-        """Load the value dump for the given relation."""
+    async def get_value(self, data: T, /) -> bytes:
+        """Load a value using the given data."""
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -53,12 +53,12 @@ class Storage(Generic[T], abc.ABC):
         tags: TagMap,
         /,
     ) -> T:
-        """Save the given stream dump and return its location."""
+        """Save the given stream and return data that can be used to retrieve it."""
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_stream(self, info: T, /) -> AsyncGenerator[bytes]:
-        """Load the stream dump for the given relation."""
+    def get_stream(self, data: T, /) -> AsyncGenerator[bytes]:
+        """Load a stream using the given data."""
         raise NotImplementedError
 
 
@@ -113,7 +113,7 @@ class StorageRegistry(Registry[str, Storage]):
     def default(self) -> Storage:
         """Get the default storage."""
         if not self._first_is_default:
-            msg = "Usage of default {self.value_description.lower()} disabled."
+            msg = f"Usage of default {self.value_description.lower()} disabled."
             raise ValueError(msg)
         return self[next(iter(self))]
 

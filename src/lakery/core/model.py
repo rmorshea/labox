@@ -1,14 +1,15 @@
 from __future__ import annotations
 
+import abc
 from collections.abc import AsyncIterable
 from collections.abc import Mapping
 from collections.abc import Sequence
 from dataclasses import dataclass
+from dataclasses import field
 from typing import TYPE_CHECKING
 from typing import ClassVar
 from typing import Generic
 from typing import LiteralString
-from typing import Protocol
 from typing import Required
 from typing import Self
 from typing import TypeAlias
@@ -20,16 +21,15 @@ from typing_extensions import TypeVar
 from lakery.core._registry import Registry
 
 if TYPE_CHECKING:
-    from lakery.common.utils import TagMap
     from lakery.core.serializer import StreamSerializer
     from lakery.core.serializer import ValueSerializer
     from lakery.core.storage import Storage
 
 
+StorageSpec: TypeAlias = "StorageValueSpec | StorageStreamSpec"
+
 ModelDump: TypeAlias = (
-    Mapping[str, "StorageValueSpec | StorageStreamSpec"]
-    | Mapping[str, "StorageValueSpec"]
-    | Mapping[str, "StorageStreamSpec"]
+    Mapping[str, StorageSpec] | Mapping[str, "StorageValueSpec"] | Mapping[str, "StorageStreamSpec"]
 )
 """A mapping of string identifiers to serialized components and their storages."""
 
@@ -37,20 +37,20 @@ T = TypeVar("T")
 D = TypeVar("D", bound=ModelDump)
 
 
-class StorageModel(Protocol[D]):
+class StorageModel(Generic[D], abc.ABC):
     """A model that can be stored and loaded."""
 
     storage_model_uuid: ClassVar[LiteralString]
     """A unique ID to identify this model class."""
-    storage_model_version: ClassVar[int]
-    """The version of the storage model."""
 
+    @abc.abstractmethod
     def storage_model_dump(self) -> D:
         """Turn the given model into its serialized components."""
         raise NotImplementedError
 
     @classmethod
-    def storage_model_load(cls, dump: D, version: int) -> Self:
+    @abc.abstractmethod
+    def storage_model_load(cls, dump: D) -> Self:
         """Turn the given serialized components back into a model."""
         raise NotImplementedError
 
@@ -61,7 +61,6 @@ class StorageValueSpec(Generic[T], TypedDict, total=False):
     value: Required[T]
     serializer: ValueSerializer[T]
     storage: Storage
-    tags: TagMap
 
 
 class StorageStreamSpec(Generic[T], TypedDict, total=False):
@@ -70,7 +69,6 @@ class StorageStreamSpec(Generic[T], TypedDict, total=False):
     stream: Required[AsyncIterable[T]]
     serializer: StreamSerializer[T]
     storage: Storage
-    tags: TagMap
 
 
 @dataclass(frozen=True)
@@ -78,16 +76,13 @@ class ValueModel(Generic[T], StorageModel[Mapping[str, StorageValueSpec]]):
     """Models a single value."""
 
     storage_model_uuid = "63b297f66dbc44bb8552f6f490cf21cb"
-    storage_model_version = 1
 
     value: T
     """The value."""
-    serializer: ValueSerializer[T] | None = None
+    serializer: ValueSerializer[T] | None = field(default=None, compare=False)
     """The serializer for the value."""
-    storage: Storage | None = None
+    storage: Storage | None = field(default=None, compare=False)
     """The storage for the value."""
-    tags: TagMap | None = None
-    """Tags to store the value with."""
 
     def storage_model_dump(self) -> Mapping[str, StorageValueSpec]:
         """Turn the given model into its serialized components."""
@@ -96,16 +91,11 @@ class ValueModel(Generic[T], StorageModel[Mapping[str, StorageValueSpec]]):
             spec["serializer"] = self.serializer
         if self.storage:
             spec["storage"] = self.storage
-        if self.tags:
-            spec["tags"] = self.tags
         return {"": spec}
 
     @classmethod
-    def storage_model_load(cls, dump: Mapping[str, StorageValueSpec], version: int) -> Self:
+    def storage_model_load(cls, dump: Mapping[str, StorageValueSpec]) -> Self:
         """Turn the given serialized components back into a model."""
-        if version > 1:
-            msg = f"Stream model version {version} is not supported."
-            raise ValueError(msg)
         spec = dump[""]
         return cls(
             value=spec["value"],
@@ -119,13 +109,12 @@ class StreamModel(Generic[T], StorageModel[Mapping[str, StorageStreamSpec]]):
     """Models a single stream."""
 
     storage_model_uuid = "e80e8707ffdd4785b95b30247fa4398c"
-    storage_model_version = 1
 
-    stream: AsyncIterable[T]
+    stream: AsyncIterable[T] = field(compare=False)
     """The stream."""
-    serializer: StreamSerializer[T] | None = None
+    serializer: StreamSerializer[T] | None = field(default=None, compare=False)
     """The serializer for the stream."""
-    storage: Storage | None = None
+    storage: Storage | None = field(default=None, compare=False)
     """The storage for the stream."""
 
     def storage_model_dump(self) -> Mapping[str, StorageStreamSpec]:
@@ -138,11 +127,8 @@ class StreamModel(Generic[T], StorageModel[Mapping[str, StorageStreamSpec]]):
         return {"": spec}
 
     @classmethod
-    def storage_model_load(cls, dump: Mapping[str, StorageStreamSpec], version: int) -> Self:
+    def storage_model_load(cls, dump: Mapping[str, StorageStreamSpec]) -> Self:
         """Turn the given serialized components back into a model."""
-        if version > 1:
-            msg = f"Stream model version {version} is not supported."
-            raise ValueError(msg)
         spec = dump[""]
         if (serializer := spec.get("serializer")) is None:
             msg = "Stream serializer must be specified."
@@ -167,6 +153,6 @@ class ModelRegistry(Registry[UUID, type[StorageModel]]):
         return UUID(model.storage_model_uuid)
 
     @classmethod
-    def with_core_models(cls, types: Sequence[type[StorageModel]]) -> ModelRegistry:
+    def with_core_models(cls, types: Sequence[type[StorageModel]] = ()) -> ModelRegistry:
         """Create a registry with the given core models."""
         return cls((ValueModel, StreamModel, *types))
