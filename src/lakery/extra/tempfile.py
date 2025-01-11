@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
@@ -66,11 +67,11 @@ class TemporaryDirectoryStorage(Storage[str]):
         if not content_path.exists():
             content_path.parent.mkdir(parents=True, exist_ok=True)
             content_path.write_bytes(value)
-        return content_path.as_uri()
+        return _path_to_str(content_path)
 
     async def get_value(self, location: str) -> bytes:
         """Load the value dump for the given relation."""
-        return Path.from_uri(location).read_bytes()
+        return _str_to_path(location).read_bytes()
 
     async def put_stream(
         self,
@@ -91,11 +92,11 @@ class TemporaryDirectoryStorage(Storage[str]):
                 scratch_path.rename(content_path)
         finally:
             scratch_path.unlink(missing_ok=True)
-        return content_path.as_uri()
+        return _path_to_str(content_path)
 
     async def get_stream(self, location: str) -> AsyncGenerator[bytes]:
         """Load the stream dump for the given relation."""
-        path = Path.from_uri(location)
+        path = _str_to_path(location)
         async with create_task_group() as tg:
             with start_async_iterator(tg, _iter_file_chunks(path, self.chunk_size)) as chunks:
                 async for c in chunks:
@@ -109,3 +110,11 @@ def _iter_file_chunks(file: Path, chunk_size: int) -> Iterator[bytes]:
     with file.open("rb") as f:
         while chunk := f.read(chunk_size):
             yield chunk
+
+
+if sys.version_info < (3, 13):
+    _path_to_str = str
+    _str_to_path = Path
+else:
+    _path_to_str = Path.as_uri
+    _str_to_path = Path.from_uri
