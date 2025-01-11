@@ -10,31 +10,28 @@ from typing import TYPE_CHECKING
 from typing import ClassVar
 from typing import Generic
 from typing import LiteralString
-from typing import Required
 from typing import Self
 from typing import TypeAlias
-from typing import TypedDict
+from typing import cast
 from uuid import UUID
 
+from sqlalchemy.util.typing import TypedDict
 from typing_extensions import TypeVar
 
+from lakery.common.utils import UNDEFINED
 from lakery.core._registry import Registry
 
 if TYPE_CHECKING:
+    from lakery.core.serializer import SerializerRegistry
+    from lakery.core.serializer import StreamDump
     from lakery.core.serializer import StreamSerializer
+    from lakery.core.serializer import ValueDump
     from lakery.core.serializer import ValueSerializer
     from lakery.core.storage import Storage
 
 
-StorageSpec: TypeAlias = "StorageValueSpec | StorageStreamSpec"
-
-ModelDump: TypeAlias = (
-    Mapping[str, StorageSpec] | Mapping[str, "StorageValueSpec"] | Mapping[str, "StorageStreamSpec"]
-)
-"""A mapping of string identifiers to serialized components and their storages."""
-
 T = TypeVar("T")
-D = TypeVar("D", bound=ModelDump)
+D = TypeVar("D", bound="StorageModelDump", default="StorageModelDump")
 
 
 class StorageModel(Generic[D], abc.ABC):
@@ -44,35 +41,41 @@ class StorageModel(Generic[D], abc.ABC):
     """A unique ID to identify this model class."""
 
     @abc.abstractmethod
-    def storage_model_dump(self) -> D:
+    async def storage_model_dump(self, serializers: SerializerRegistry, /) -> D:
         """Turn the given model into its serialized components."""
         raise NotImplementedError
 
     @classmethod
     @abc.abstractmethod
-    def storage_model_load(cls, dump: D) -> Self:
+    async def storage_model_load(cls, dump: D, serializers: SerializerRegistry, /) -> Self:
         """Turn the given serialized components back into a model."""
         raise NotImplementedError
 
 
-class StorageValueSpec(Generic[T], TypedDict, total=False):
-    """A value storage specification."""
-
-    value: Required[T]
-    serializer: ValueSerializer[T]
-    storage: Storage
+StorageModelDump: TypeAlias = Mapping[str, "StorageDump"]
+"""A mapping of string identifiers to serialized components and their storages."""
 
 
-class StorageStreamSpec(Generic[T], TypedDict, total=False):
-    """A stream storage specification."""
+class StorageValueDump(TypedDict):
+    """Spec for how to store a serialized value."""
 
-    stream: Required[AsyncIterable[T]]
-    serializer: StreamSerializer[T]
-    storage: Storage
+    value_dump: ValueDump
+    storage: Storage | None
+
+
+class StorageStreamDump(TypedDict):
+    """Spec for how to store a serialized stream."""
+
+    stream_dump: StreamDump
+    storage: Storage | None
+
+
+StorageDump = StorageValueDump | StorageStreamDump
+"""Spec for how to store a serialized value or stream."""
 
 
 @dataclass(frozen=True)
-class ValueModel(Generic[T], StorageModel[Mapping[str, StorageValueSpec]]):
+class ValueModel(Generic[T], StorageModel[Mapping[str, StorageValueDump]]):
     """Models a single value."""
 
     storage_model_uuid = "63b297f66dbc44bb8552f6f490cf21cb"
@@ -84,28 +87,28 @@ class ValueModel(Generic[T], StorageModel[Mapping[str, StorageValueSpec]]):
     storage: Storage | None = field(default=None, compare=False)
     """The storage for the value."""
 
-    def storage_model_dump(self) -> Mapping[str, StorageValueSpec]:
+    async def storage_model_dump(
+        self, serializers: SerializerRegistry
+    ) -> Mapping[str, StorageValueDump]:
         """Turn the given model into its serialized components."""
-        spec: StorageValueSpec = {"value": self.value}
-        if self.serializer:
-            spec["serializer"] = self.serializer
-        if self.storage:
-            spec["storage"] = self.storage
-        return {"": spec}
+        serializer = self.serializer or serializers.infer_from_value_type(type(self.value))
+        value_dump = serializer.dump_value(self.value)
+        return {"": {"value_dump": value_dump, "storage": self.storage}}
 
     @classmethod
-    def storage_model_load(cls, dump: Mapping[str, StorageValueSpec]) -> Self:
+    async def storage_model_load(
+        cls, dump: Mapping[str, StorageValueDump], serializers: SerializerRegistry
+    ) -> Self:
         """Turn the given serialized components back into a model."""
-        spec = dump[""]
-        return cls(
-            value=spec["value"],
-            serializer=spec.get("serializer"),
-            storage=spec.get("storage"),
-        )
+        storage_dump = dump[""]
+        value_dump = storage_dump["value_dump"]
+        serializer = cast("ValueSerializer", serializers[value_dump["serializer_name"]])
+        value = serializer.load_value(value_dump)
+        return cls(value=value, serializer=serializer, storage=storage_dump["storage"])
 
 
 @dataclass(frozen=True)
-class StreamModel(Generic[T], StorageModel[Mapping[str, StorageStreamSpec]]):
+class StreamModel(Generic[T], StorageModel[Mapping[str, StorageStreamDump]]):
     """Models a single stream."""
 
     storage_model_uuid = "e80e8707ffdd4785b95b30247fa4398c"
@@ -117,27 +120,40 @@ class StreamModel(Generic[T], StorageModel[Mapping[str, StorageStreamSpec]]):
     storage: Storage | None = field(default=None, compare=False)
     """The storage for the stream."""
 
-    def storage_model_dump(self) -> Mapping[str, StorageStreamSpec]:
+    async def storage_model_dump(
+        self, serializers: SerializerRegistry
+    ) -> Mapping[str, StorageStreamDump]:
         """Turn the given model into its serialized components."""
-        spec: StorageStreamSpec = {"stream": self.stream}
-        if self.serializer:
-            spec["serializer"] = self.serializer
-        if self.storage:
-            spec["storage"] = self.storage
-        return {"": spec}
+        if self.serializer is None:
+            stream_iter = aiter(self.stream)
+            first_value = await anext(stream_iter, UNDEFINED)
+            if first_value is UNDEFINED:
+                msg = "Cannot infer stream serializer from empty stream."
+                raise ValueError(msg)
+
+            serializer = serializers.infer_from_stream_type(type(first_value))
+
+            async def wrap_stream():
+                yield first_value
+                async for remaining_value in stream_iter:
+                    yield remaining_value
+
+            stream_dump = serializer.dump_stream(wrap_stream())
+        else:
+            stream_dump = self.serializer.dump_stream(self.stream)
+
+        return {"": {"stream_dump": stream_dump, "storage": self.storage}}
 
     @classmethod
-    def storage_model_load(cls, dump: Mapping[str, StorageStreamSpec]) -> Self:
+    async def storage_model_load(
+        cls, dump: Mapping[str, StorageStreamDump], serializers: SerializerRegistry
+    ) -> Self:
         """Turn the given serialized components back into a model."""
-        spec = dump[""]
-        if (serializer := spec.get("serializer")) is None:
-            msg = "Stream serializer must be specified."
-            raise AssertionError(msg)
-        return cls(
-            stream=spec["stream"],
-            serializer=serializer,
-            storage=spec.get("storage"),
-        )
+        storage_dump = dump[""]
+        stream_dump = storage_dump["stream_dump"]
+        serializer = cast("StreamSerializer", serializers[stream_dump["serializer_name"]])
+        stream = serializer.load_stream(stream_dump)
+        return cls(stream=stream, serializer=serializer, storage=storage_dump["storage"])
 
 
 M = TypeVar("M", bound=StorageModel)
