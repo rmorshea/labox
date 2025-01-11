@@ -5,7 +5,6 @@ from collections.abc import Sequence
 from datetime import UTC
 from datetime import datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING
 from typing import Annotated
 from typing import Any
 from typing import TypeVar
@@ -26,8 +25,7 @@ from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm.decl_api import MappedAsDataclass
 
-if TYPE_CHECKING:
-    from lakery.common.utils import TagMap
+from lakery.common.utils import TagMap  # noqa: TC001
 
 C = TypeVar("C", bound=MappedColumn)
 
