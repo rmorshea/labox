@@ -73,7 +73,7 @@ lint = [
     "mdformat-tables==1.0.0",
     "mdformat==0.7.19",
     "pyright==1.1.391",
-    "ruff==0.7.3",
+    "ruff==0.9.1",
     "types-boto3-s3==1.35.76",
     "types-boto3==1.35.76",
     "yamlfix==1.17.0",
@@ -113,6 +113,7 @@ ignore = [
     "ARG005", # Unused lambda argument
     "B027",   # Allow non-abstract empty methods in abstract base classes
     "B039",   # Mutable default for contextvars
+    "B903",   # Class could be dataclass
     "C901",   # Ignore complexity
     "COM812", # Trailing comma
     "CPY001", # Copyright at top of file
@@ -144,7 +145,7 @@ unfixable = [
     "COM819", # Trailing comma
 ]
 fixable = ["ALL"]
-extend-safe-fixes = ["TCH"]
+extend-safe-fixes = ["TC"]
 [tool.ruff.lint.isort]
 known-first-party = ["lakery"]
 force-single-line = true
