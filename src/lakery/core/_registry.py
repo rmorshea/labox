@@ -25,7 +25,7 @@ class Registry(Mapping[K, V], abc.ABC):
     value_description: ClassVar[str]
     """A description for the type of value"""
 
-    def __init__(self, values: Sequence[V], /) -> None:
+    def __init__(self, values: Sequence[V] = (), /) -> None:
         if not values:
             msg = "At least one item must be registered."
             raise ValueError(msg)

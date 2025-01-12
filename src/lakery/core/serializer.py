@@ -84,7 +84,7 @@ class SerializerRegistry(Registry[str, ValueSerializer | StreamSerializer]):
 
     value_description = "Serializer"
 
-    def __init__(self, serializers: Sequence[ValueSerializer | StreamSerializer]) -> None:
+    def __init__(self, serializers: Sequence[ValueSerializer | StreamSerializer] = ()) -> None:
         super().__init__(serializers)
         self._by_value_type = {
             type_: serializer

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from contextlib import AsyncExitStack
 from contextlib import aclosing
 from hashlib import sha256
+from inspect import isasyncgen
 from logging import getLogger
 from typing import TYPE_CHECKING
 from typing import Any
@@ -26,18 +28,11 @@ from tenacity import stop_after_attempt
 from lakery.common.anyio import FutureResult
 from lakery.common.anyio import start_future
 from lakery.core.context import DatabaseSession
-from lakery.core.model import ModelRegistry
+from lakery.core.context import Registries
 from lakery.core.schema import NEVER
 from lakery.core.schema import SerializerTypeEnum
 from lakery.core.schema import StorageContentRecord
 from lakery.core.schema import StorageModelRecord
-from lakery.core.serializer import SerializerRegistry
-from lakery.core.serializer import StreamSerializer
-from lakery.core.serializer import ValueSerializer
-from lakery.core.storage import GetStreamDigest
-from lakery.core.storage import Storage
-from lakery.core.storage import StorageRegistry
-from lakery.core.storage import StreamDigest
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
@@ -50,8 +45,14 @@ if TYPE_CHECKING:
 
     from lakery.common.utils import TagMap
     from lakery.core.model import StorageModel
+    from lakery.core.serializer import SerializerRegistry
     from lakery.core.serializer import StreamDump
+    from lakery.core.serializer import StreamSerializer
     from lakery.core.serializer import ValueDump
+    from lakery.core.serializer import ValueSerializer
+    from lakery.core.storage import GetStreamDigest
+    from lakery.core.storage import Storage
+    from lakery.core.storage import StreamDigest
     from lakery.core.storage import ValueDigest
 
 
@@ -65,21 +66,15 @@ _LOG = getLogger(__name__)
 
 
 @contextmanager
-@injector.asynciterator(
-    requires=(DatabaseSession, ModelRegistry, SerializerRegistry, StorageRegistry)
-)
+@injector.asynciterator(requires=(DatabaseSession, Registries))
 async def model_saver(
-    *,
-    session: DatabaseSession = required,
-    models: ModelRegistry = required,
-    serializers: SerializerRegistry = required,
-    storages: StorageRegistry = required,
+    *, session: DatabaseSession = required, registries: Registries = required
 ) -> AsyncIterator[ModelSaver]:
     """Create a context manager for saving data."""
     futures: list[FutureResult[StorageModelRecord]] = []
     try:
         async with create_task_group() as tg:
-            yield _ModelSaver(tg, futures, models, serializers, storages)
+            yield _ModelSaver(tg, futures, registries)
     finally:
         records = [r for f in futures if (r := f.result(default=None))]
         await _save_record_groups(records, session, _COMMIT_RETRIES)
@@ -90,15 +85,11 @@ class _ModelSaver:
         self,
         task_group: TaskGroup,
         futures: list[FutureResult[StorageModelRecord]],
-        models: ModelRegistry,
-        serializers: SerializerRegistry,
-        storages: StorageRegistry,
+        registries: Registries,
     ):
         self._futures = futures
         self._task_group = task_group
-        self._models = models
-        self._serializers = serializers
-        self._storages = storages
+        self._registries = registries
 
     def save_soon(
         self,
@@ -108,7 +99,7 @@ class _ModelSaver:
         tags: Mapping[str, str] | None = None,
     ) -> FutureResult[StorageModelRecord]:
         """Schedule the given model to be saved."""
-        self._models.check_registered(type(model))
+        self._registries.models.check_registered(type(model))
 
         future = start_future(
             self._task_group,
@@ -116,8 +107,7 @@ class _ModelSaver:
             name,
             model,
             tags or {},
-            self._serializers,
-            self._storages,
+            self._registries,
         )
         self._futures.append(future)
 
@@ -132,50 +122,52 @@ async def _save_model(
     name: str,
     model: StorageModel,
     tags: TagMap,
-    serializers: SerializerRegistry,
-    storages: StorageRegistry,
+    registries: Registries,
 ) -> StorageModelRecord:
     """Save the given data to the database."""
     model_uuid = UUID(type(model).storage_model_uuid)
-    model_dump = await model.storage_model_dump(serializers)
+    model_spec = model.storage_model_to_spec(registries)
 
     record_id = uuid4()
     data_record_futures: list[FutureResult[StorageContentRecord]] = []
     async with create_task_group() as tg:
-        for model_key, model_spec in model_dump.items():
-            match model_spec:
-                case {"value_dump": dump, "storage": storage}:
-                    data_record_futures.append(
-                        start_future(
-                            tg,
-                            _save_storage_value_spec,
-                            record_id,
-                            model_key,
-                            dump,
-                            storage or storages.default,
-                            tags,
-                        )
+        for content_key, item_spec in model_spec.items():
+            if "value" in item_spec:
+                data_record_futures.append(
+                    start_future(
+                        tg,
+                        _save_storage_value_spec,
+                        tags,
+                        record_id,
+                        content_key,
+                        item_spec["value"],
+                        item_spec.get("serializer"),
+                        item_spec.get("storage"),
+                        registries,
                     )
-                case {"stream_dump": dump, "storage": storage}:
-                    data_record_futures.append(
-                        start_future(
-                            tg,
-                            _save_storage_stream_spec,
-                            record_id,
-                            model_key,
-                            dump,
-                            storage or storages.default,
-                            tags,
-                        )
+                )
+            elif "stream" in item_spec:
+                data_record_futures.append(
+                    start_future(
+                        tg,
+                        _save_storage_stream_spec,
+                        tags,
+                        record_id,
+                        content_key,
+                        item_spec["stream"],
+                        item_spec.get("serializer"),
+                        item_spec.get("storage"),
+                        registries,
                     )
-                case _:
-                    msg = f"Unknown storage spec {model_spec}."
-                    raise AssertionError(msg)
+                )
+            else:
+                msg = f"Unknown storage spec {model_spec}."
+                raise AssertionError(msg)
 
     contents: list[StorageContentRecord] = []
-    for model_key, f in zip(model_dump, data_record_futures, strict=False):
+    for key, f in zip(model_spec, data_record_futures, strict=False):
         if exc := f.exception():
-            msg = f"Failed to save {model_key!r} data for {name!r}"
+            msg = f"Failed to save {key!r} data for {name!r}"
             _LOG.error(msg, exc_info=(exc.__class__, exc, exc.__traceback__))
         contents.append(f.result())
 
@@ -183,18 +175,22 @@ async def _save_model(
         id=record_id,
         name=name,
         tags=tags,
-        model_uuid=model_uuid,
+        model_type_id=model_uuid,
         contents=contents,
     )
 
 
 async def _save_storage_value_spec(
-    model_record_id: UUID,
-    model_key: str,
-    dump: ValueDump,
-    storage: Storage,
     tags: TagMap,
+    model_record_id: UUID,
+    content_key: str,
+    value: Any,
+    serializer: ValueSerializer | None,
+    storage: Storage | None,
+    registries: Registries,
 ) -> StorageContentRecord:
+    storage = storage or registries.storages.default
+    dump = _make_value_dump(value, serializer, registries.serializers)
     digest = _make_value_dump_digest(dump)
     storage_data = await storage.put_value(dump["content_bytes"], digest, tags)
     return StorageContentRecord(
@@ -204,7 +200,7 @@ async def _save_storage_value_spec(
         content_size=digest["content_size"],
         content_type=dump["content_type"],
         model_id=model_record_id,
-        model_key=model_key,
+        content_key=content_key,
         serializer_name=dump["serializer_name"],
         serializer_type=SerializerTypeEnum.VALUE,
         serializer_version=dump["serializer_version"],
@@ -215,14 +211,19 @@ async def _save_storage_value_spec(
 
 
 async def _save_storage_stream_spec(
-    model_record_id: UUID,
-    model_key: str,
-    dump: StreamDump,
-    storage: Storage,
     tags: TagMap,
+    model_record_id: UUID,
+    content_key: str,
+    stream: AsyncIterable[Any],
+    serializer: StreamSerializer | None,
+    storage: Storage | None,
+    registries: Registries,
 ) -> StorageContentRecord:
-    raw_stream = dump["content_byte_stream"]
-    async with aclosing(raw_stream):
+    storage = storage or registries.storages.default
+    async with AsyncExitStack() as stack:
+        if isasyncgen(stream):
+            await stack.enter_async_context(aclosing(stream))
+        dump = await _make_stream_dump(stream, serializer, registries.serializers)
         byte_stream, get_digest = _wrap_stream_dump(dump)
         storage_data = await storage.put_stream(byte_stream, get_digest, tags)
         try:
@@ -237,7 +238,7 @@ async def _save_storage_stream_spec(
             content_size=digest["content_size"],
             content_type=dump["content_type"],
             model_id=model_record_id,
-            model_key=model_key,
+            content_key=content_key,
             serializer_name=dump["serializer_name"],
             serializer_type=SerializerTypeEnum.STREAM,
             serializer_version=dump["serializer_version"],
@@ -245,6 +246,7 @@ async def _save_storage_stream_spec(
             storage_name=storage.name,
             storage_version=storage.version,
         )
+    raise AssertionError  # nocov
 
 
 def _wrap_stream_dump(dump: StreamDump) -> tuple[AsyncGenerator[bytes], GetStreamDigest]:
@@ -352,3 +354,30 @@ async def _save_record_groups(
 def _model_record_conflicts(record: StorageModelRecord):
     """Return a clause that matches records that conflict with the given one."""
     return and_(StorageModelRecord.name == record.name, StorageModelRecord.archived_at == NEVER)
+
+
+def _make_value_dump(
+    value: Any,
+    serializer: ValueSerializer | None,
+    serializers: SerializerRegistry,
+) -> ValueDump:
+    if serializer is None:
+        serializer = serializers.infer_from_value_type(type(value))
+    return serializer.dump_value(value)
+
+
+async def _make_stream_dump(
+    stream: AsyncIterable,
+    serializer: StreamSerializer | None,
+    serializers: SerializerRegistry,
+) -> StreamDump:
+    stream_iter = aiter(stream)
+    first_value = await anext(stream_iter)
+
+    async def wrapper() -> AsyncGenerator:
+        yield first_value
+        async for cont_value in stream:
+            yield cont_value
+
+    serializer = serializer or serializers.infer_from_stream_type(type(first_value))
+    return serializer.dump_stream(wrapper())

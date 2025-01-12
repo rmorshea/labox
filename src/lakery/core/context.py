@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
+from dataclasses import asdict
+from dataclasses import dataclass
+from dataclasses import field
 from typing import TYPE_CHECKING
-from typing import Any
 from typing import NewType
 
 from pybooster import injector
@@ -15,6 +17,7 @@ from lakery.core.storage import StorageRegistry
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
+
 DatabaseSession = NewType("DatabaseSession", AsyncSession)
 """A type alias for an lakery database session."""
 
@@ -25,16 +28,27 @@ def registries(
     models: ModelRegistry | None = None,
     serializers: SerializerRegistry | None = None,
     storages: StorageRegistry | None = None,
-) -> Iterator[None]:
+) -> Iterator[Registries]:
     """Declare the set of storage and serializers to use for the duration of the context."""
-    regs: list[tuple[type, Any]] = []
+    current = injector.current_values()
 
+    kwargs = asdict(current[Registries]) if Registries in current else {}
     if models is not None:
-        regs.append((ModelRegistry, models))
+        kwargs["models"] = models
     if serializers is not None:
-        regs.append((SerializerRegistry, serializers))
+        kwargs["serializers"] = serializers
     if storages is not None:
-        regs.append((StorageRegistry, storages))
+        kwargs["storages"] = storages
 
-    with injector.shared(*regs):
-        yield None
+    reg = Registries(**kwargs)
+    with injector.shared((Registries, reg)):
+        yield reg
+
+
+@dataclass
+class Registries:
+    """A collection of registries."""
+
+    models: ModelRegistry = field(default_factory=ModelRegistry)
+    serializers: SerializerRegistry = field(default_factory=SerializerRegistry)
+    storages: StorageRegistry = field(default_factory=StorageRegistry)

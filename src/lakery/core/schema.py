@@ -66,7 +66,7 @@ class StorageModelRecord(Base, kw_only=True):
     """The name of the stored model."""
     tags: Mapped[TagMap | None] = mapped_column(JSON_OR_JSONB)
     """User defined tags associated with the stored model."""
-    model_uuid: Mapped[UUID] = mapped_column()
+    model_type_id: Mapped[UUID] = mapped_column()
     """An ID that uniquely identifies the type of the stored model."""
     created_at: Mapped[DateTimeTZ] = mapped_column(default=func.now())
     """The timestamp when the model was created."""
@@ -104,7 +104,7 @@ class StorageContentRecord(Base, kw_only=True):
     """The ID of the content."""
     model_id: Mapped[UUID] = mapped_column(ForeignKey(StorageModelRecord.id))
     """The ID of the model that the content belongs to."""
-    model_key: Mapped[str] = mapped_column()
+    content_key: Mapped[str] = mapped_column()
     """The key of the data within the storage model."""
     content_type: Mapped[str] = mapped_column()
     """The MIME type of the data."""

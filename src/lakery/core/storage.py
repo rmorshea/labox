@@ -105,7 +105,7 @@ class StorageRegistry(Registry[str, Storage]):
 
     value_description = "Storage"
 
-    def __init__(self, storages: Sequence[Storage], *, first_is_default: bool = True) -> None:
+    def __init__(self, storages: Sequence[Storage] = (), *, first_is_default: bool = True) -> None:
         super().__init__(storages)
         self._first_is_default = first_is_default
 

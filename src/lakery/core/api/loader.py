@@ -22,20 +22,21 @@ from lakery.common.anyio import start_future
 from lakery.common.anyio import start_given_future
 from lakery.common.exceptions import NotRegistered
 from lakery.core.context import DatabaseSession
-from lakery.core.model import ModelRegistry
-from lakery.core.model import StorageDump
+from lakery.core.context import Registries
 from lakery.core.model import StorageModel
+from lakery.core.model import StorageSpec
 from lakery.core.schema import NEVER
 from lakery.core.schema import SerializerTypeEnum
 from lakery.core.schema import StorageContentRecord
 from lakery.core.schema import StorageModelRecord
 from lakery.core.serializer import SerializerRegistry
 from lakery.core.serializer import StreamSerializer
-from lakery.core.storage import StorageRegistry
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
     from collections.abc import Sequence
+
+    from lakery.core.storage import StorageRegistry
 
 
 M = TypeVar("M", bound=StorageModel)
@@ -44,15 +45,9 @@ _Requests = tuple[type[StorageModel] | None, str, datetime | None, FutureResult[
 
 
 @contextmanager
-@injector.asynciterator(
-    requires=(DatabaseSession, ModelRegistry, SerializerRegistry, StorageRegistry)
-)
+@injector.asynciterator(requires=(DatabaseSession, Registries))
 async def data_loader(
-    *,
-    session: DatabaseSession = required,
-    models: ModelRegistry = required,
-    serializers: SerializerRegistry = required,
-    storages: StorageRegistry = required,
+    *, session: DatabaseSession = required, registries: Registries = required
 ) -> AsyncIterator[DataLoader]:
     """Create a context manager for saving data."""
     requests: list[_Requests] = []
@@ -67,7 +62,7 @@ async def data_loader(
                 set_future_exception_forcefully(future, ValueError("No record found."))
                 continue
             try:
-                actual_model_type = models[rec.model_uuid]
+                actual_model_type = registries.models[rec.model_type_id]
             except NotRegistered as error:
                 set_future_exception_forcefully(future, error)
                 continue
@@ -77,15 +72,7 @@ async def data_loader(
                 set_future_exception_forcefully(future, TypeError(msg))
                 continue
 
-            start_given_future(
-                tg,
-                future,
-                load_model_from_record,
-                rec,
-                models=models,
-                serializers=serializers,
-                storages=storages,
-            )
+            start_given_future(tg, future, load_model_from_record, rec, registries=registries)
 
 
 class _DataLoader:
@@ -132,29 +119,25 @@ DataLoader: TypeAlias = _DataLoader
 
 async def load_model_from_record(
     record: StorageModelRecord,
-    /,
     *,
-    models: ModelRegistry,
-    serializers: SerializerRegistry,
-    storages: StorageRegistry,
+    registries: Registries,
 ) -> StorageModel:
     """Load the given model from the given record."""
-    model_type = models[record.model_uuid]
+    model_type = registries.models[record.model_type_id]
 
-    content_futures: dict[str, FutureResult[StorageDump]] = {}
+    content_futures: dict[str, FutureResult[StorageSpec]] = {}
     async with create_task_group() as tg:
         for content in record.contents:
-            content_futures[content.model_key] = start_future(
+            content_futures[content.content_key] = start_future(
                 tg,
                 load_content_from_record,
                 content,
-                serializers=serializers,
-                storages=storages,
+                serializers=registries.serializers,
+                storages=registries.storages,
             )
 
     contents = {key: future.result() for key, future in content_futures.items()}
-
-    return await model_type.storage_model_load(contents, serializers)
+    return model_type.storage_model_from_spec(contents, registries)
 
 
 async def load_content_from_record(
@@ -162,38 +145,36 @@ async def load_content_from_record(
     *,
     serializers: SerializerRegistry,
     storages: StorageRegistry,
-) -> StorageDump:
+) -> StorageSpec:
     """Load the given content from the given record."""
     serializer = serializers[record.serializer_name]
     storage = storages[record.storage_name]
     match record.serializer_type:
         case SerializerTypeEnum.VALUE:
-            byte_value = await storage.get_value(record.storage_data)
-            return {
-                "value_dump": {
+            value = serializer.load_value(
+                {
                     "content_encoding": record.content_encoding,
                     "content_type": record.content_type,
-                    "content_bytes": byte_value,
+                    "content_bytes": await storage.get_value(record.storage_data),
                     "serializer_name": record.serializer_name,
                     "serializer_version": record.serializer_version,
-                },
-                "storage": storage,
-            }
+                }
+            )
+            return {"value": value, "serializer": serializer, "storage": storage}
         case SerializerTypeEnum.STREAM:
             if not isinstance(serializer, StreamSerializer):
                 msg = f"Content {record.id} expects a stream serializer, got {serializer}."
                 raise TypeError(msg)
-            byte_stream = storage.get_stream(record.storage_data)
-            return {
-                "stream_dump": {
+            stream = serializer.load_stream(
+                {
                     "content_encoding": record.content_encoding,
                     "content_type": record.content_type,
-                    "content_byte_stream": byte_stream,
+                    "content_byte_stream": storage.get_stream(record.storage_data),
                     "serializer_name": record.serializer_name,
                     "serializer_version": record.serializer_version,
-                },
-                "storage": storage,
-            }
+                }
+            )
+            return {"stream": stream, "serializer": serializer, "storage": storage}
         case _:  # nocov
             msg = f"Unknown serializer type: {record.serializer_type}"
             raise ValueError(msg)
