@@ -20,12 +20,14 @@ from lakery.core.model import StorageModel as _StorageModel
 from lakery.core.model import StorageSpec
 from lakery.core.model import StreamStorageSpec
 from lakery.core.model import ValueStorageSpec
+from lakery.core.serializer import SerializerRegistry
 from lakery.core.serializer import StreamSerializer
 
 if TYPE_CHECKING:
     from lakery.core.context import Registries
     from lakery.core.serializer import ValueSerializer
     from lakery.core.storage import Storage
+    from lakery.core.storage import StorageRegistry
 
 
 class StorageModel(
@@ -42,6 +44,23 @@ class StorageModel(
         handler: GetCoreSchemaHandler,
     ) -> cs.CoreSchema:
         return _adapt_third_party_types(handler(source), handler)
+
+    def storage_model_internal_storage(self, storages: StorageRegistry) -> Storage:
+        """Return the storage for "internal data" for this model.
+
+        "Internal data" refers to the data that Pydantic was able to
+        dump without needing to use a serializer supplied by Lakery.
+        """
+        return storages.default
+
+    def storage_model_internal_serializer(self, serializers: SerializerRegistry) -> ValueSerializer:
+        """Return the serializer for "internal data" friom this model.
+
+        "Internal data" refers to the data that Pydantic was able to
+        dump without needing to use a serializer supplied by Lakery.
+        In short this method should return a JSON serializer.
+        """
+        return serializers.infer_from_value_type(dict)
 
     def storage_model_to_spec(self, registries: Registries) -> Mapping[str, StorageSpec]:
         """Turn the given model into its serialized components."""
@@ -63,7 +82,14 @@ class StorageModel(
             ),
         )
 
-        return {"data": {"value": data, "serializer": None, "storage": None}, **external_content}
+        return {
+            "data": {
+                "value": data,
+                "serializer": self.storage_model_internal_serializer(registries.serializers),
+                "storage": self.storage_model_internal_storage(registries.storages),
+            },
+            **external_content,
+        }
 
     @classmethod
     def storage_model_from_spec(
