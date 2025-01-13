@@ -8,7 +8,7 @@ from typing import cast
 from google.cloud.exceptions import NotFound
 
 from lakery.extra.google import BlobStorage
-from tests.storage_utils import parametrize_storage_assertions
+from tests.core_storage_utils import parametrize_storage_assertions
 
 if TYPE_CHECKING:
     from google.cloud.storage import Blob

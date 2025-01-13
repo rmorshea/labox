@@ -4,8 +4,8 @@ from lakery.extra.pyarrow import ArrowRecordBatchStreamSerializer
 from lakery.extra.pyarrow import ArrowTableSerializer
 from lakery.extra.pyarrow import ParquetRecordBatchStreamSerializer
 from lakery.extra.pyarrow import ParquetTableSerializer
-from tests.serializer_utils import make_stream_serializer_test
-from tests.serializer_utils import make_value_serializer_test
+from tests.core_serializer_utils import make_stream_serializer_test
+from tests.core_serializer_utils import make_value_serializer_test
 
 TABLES = [
     pa.table({"a": [1, 2, 3], "b": [4, 5, 6]}),

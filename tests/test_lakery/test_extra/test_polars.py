@@ -1,7 +1,7 @@
 import polars as pl
 
 from lakery.extra.polars import ParquetDataFrameSerializer
-from tests.serializer_utils import make_value_serializer_test
+from tests.core_serializer_utils import make_value_serializer_test
 
 
 def _assert_equal(a: pl.DataFrame, b: pl.DataFrame):

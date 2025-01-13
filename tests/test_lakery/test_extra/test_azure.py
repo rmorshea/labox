@@ -14,7 +14,7 @@ from azure.storage.blob import BlobType
 from azure.storage.blob import ContentSettings
 
 from lakery.extra.azure import BlobStorage
-from tests.storage_utils import parametrize_storage_assertions
+from tests.core_storage_utils import parametrize_storage_assertions
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator

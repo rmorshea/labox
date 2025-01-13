@@ -105,12 +105,10 @@ async def _check_dump_value_load_stream(
     value: Any,
 ) -> None:
     value_dump = serializer.dump(value)
-    content_byte_stream = restream(value_dump["content_stream"])
+    content_byte_stream = restream(value_dump["content"])
     stream_dump: ContentStreamDump = {
         "content_encoding": value_dump["content_encoding"],
         "content_type": value_dump["content_type"],
-        "serializer_name": value_dump["serializer_name"],
-        "serializer_version": value_dump["serializer_version"],
         "content_stream": content_byte_stream,
     }
     loaded_stream = serializer.load_stream(stream_dump)
@@ -132,9 +130,7 @@ async def _check_dump_stream_load_value(
     value_dump: ContentDump = {
         "content_encoding": stream_dump["content_encoding"],
         "content_type": stream_dump["content_type"],
-        "serializer_name": stream_dump["serializer_name"],
-        "serializer_version": stream_dump["serializer_version"],
-        "content_stream": content_bytes,
+        "content": content_bytes,
     }
     assertion(list(serializer.load(value_dump)), list(values))  # type: ignore[reportArgumentType]
 

@@ -7,7 +7,7 @@ import moto
 import pytest
 
 from lakery.extra.aws import S3Storage
-from tests.storage_utils import parametrize_storage_assertions
+from tests.core_storage_utils import parametrize_storage_assertions
 
 if TYPE_CHECKING:
     from types_boto3_s3 import S3Client

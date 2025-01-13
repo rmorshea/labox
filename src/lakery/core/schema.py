@@ -54,7 +54,16 @@ class Base(MappedAsDataclass, DeclarativeBase):
     """The base for lakery's core schema classes."""
 
 
-class StorageModelRecord(Base, kw_only=True):
+class _StrMixin(Base):
+    __abstract__ = True
+
+    id: Any
+
+    def __str__(self) -> str:
+        return f"{self.__class__.__name__}({self.id})"
+
+
+class StorageModelRecord(_StrMixin, Base, kw_only=True):
     """A record describing a stored model."""
 
     __abstract__ = False
@@ -95,7 +104,7 @@ class SerializerTypeEnum(IntEnum):
     """A content stream serializer."""
 
 
-class StorageContentRecord(Base, kw_only=True):
+class StorageContentRecord(_StrMixin, Base, kw_only=True):
     """A record describing where and how a piece of content was saved."""
 
     __tablename__ = "lakery_storage_content"

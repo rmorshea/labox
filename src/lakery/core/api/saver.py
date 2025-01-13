@@ -127,6 +127,7 @@ async def _save_model(
     """Save the given data to the database."""
     model_uuid = UUID(type(model).storage_model_uuid)
     model_spec = model.storage_model_dump(registries)
+    print(model_spec)
 
     record_id = uuid4()
     data_record_futures: list[FutureResult[StorageContentRecord]] = []
@@ -146,7 +147,7 @@ async def _save_model(
                         registries,
                     )
                 )
-            elif "stream" in item_spec:
+            elif "value_stream" in item_spec:
                 data_record_futures.append(
                     start_future(
                         tg,
@@ -154,14 +155,14 @@ async def _save_model(
                         tags,
                         record_id,
                         content_key,
-                        item_spec["stream"],
+                        item_spec["value_stream"],
                         item_spec.get("serializer"),
                         item_spec.get("storage"),
                         registries,
                     )
                 )
             else:
-                msg = f"Unknown storage spec {model_spec}."
+                msg = f"Unknown model dump item {item_spec}."
                 raise AssertionError(msg)
 
     contents: list[StorageContentRecord] = []

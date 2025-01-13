@@ -1,7 +1,7 @@
 from lakery.extra.json import JsonSerializer
 from lakery.extra.json import JsonStreamSerializer
-from tests.serializer_utils import make_stream_serializer_test
-from tests.serializer_utils import make_value_serializer_test
+from tests.core_serializer_utils import make_stream_serializer_test
+from tests.core_serializer_utils import make_value_serializer_test
 
 test_json_stream_serializer = make_stream_serializer_test(
     JsonStreamSerializer(),

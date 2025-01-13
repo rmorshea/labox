@@ -56,7 +56,7 @@ class TemporaryDirectoryStorage(Storage[str]):
     def __exit__(self, *_: Any) -> None:
         self.tempdir.cleanup()
 
-    async def put_value(
+    async def put_content(
         self,
         value: bytes,
         digest: ValueDigest,
@@ -69,11 +69,11 @@ class TemporaryDirectoryStorage(Storage[str]):
             content_path.write_bytes(value)
         return _path_to_str(content_path)
 
-    async def get_value(self, location: str) -> bytes:
+    async def get_content(self, location: str) -> bytes:
         """Load the value dump for the given relation."""
         return _str_to_path(location).read_bytes()
 
-    async def put_stream(
+    async def put_content_stream(
         self,
         stream: AsyncIterable[bytes],
         get_digest: GetStreamDigest,
@@ -94,7 +94,7 @@ class TemporaryDirectoryStorage(Storage[str]):
             scratch_path.unlink(missing_ok=True)
         return _path_to_str(content_path)
 
-    async def get_stream(self, location: str) -> AsyncGenerator[bytes]:
+    async def get_content_stream(self, location: str) -> AsyncGenerator[bytes]:
         """Load the stream dump for the given relation."""
         path = _str_to_path(location)
         async with create_task_group() as tg:

@@ -1,7 +1,7 @@
 from lakery.extra.msgpack import MsgPackSerializer
 from lakery.extra.msgpack import MsgPackStreamSerializer
-from tests.serializer_utils import make_stream_serializer_test
-from tests.serializer_utils import make_value_serializer_test
+from tests.core_serializer_utils import make_stream_serializer_test
+from tests.core_serializer_utils import make_value_serializer_test
 
 test_msgpack_stream_serializer = make_stream_serializer_test(
     MsgPackStreamSerializer(),
