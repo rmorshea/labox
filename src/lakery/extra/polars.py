@@ -8,8 +8,8 @@ from typing import TypedDict
 
 import polars as pl
 
-from lakery.core.serializer import ValueDump
-from lakery.core.serializer import ValueSerializer
+from lakery.core.serializer import ContentDump
+from lakery.core.serializer import Serializer
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -57,7 +57,7 @@ class ParquetLoadArgs(TypedDict, total=False):
     allow_missing_columns: bool
 
 
-class ParquetDataFrameSerializer(ValueSerializer[pl.DataFrame]):
+class ParquetDataFrameSerializer(Serializer[pl.DataFrame]):
     """Serializer for Pandas DataFrames using Parquet."""
 
     name = "lakery.polars.parquet.file"
@@ -71,18 +71,16 @@ class ParquetDataFrameSerializer(ValueSerializer[pl.DataFrame]):
         self._dump_args = dump_args or {}
         self._load_args = load_args or {}
 
-    def dump_value(self, value: pl.DataFrame, /) -> ValueDump:
+    def dump(self, value: pl.DataFrame, /) -> ContentDump:
         """Serialize the given DataFrame."""
         buffer = BytesIO()
         value.write_parquet(buffer, **self._dump_args)
         return {
             "content_encoding": None,
             "content_type": self.content_type,
-            "content_bytes": buffer.getvalue(),
-            "serializer_name": self.name,
-            "serializer_version": self.version,
+            "content": buffer.getvalue(),
         }
 
-    def load_value(self, dump: ValueDump, /) -> pl.DataFrame:
+    def load(self, dump: ContentDump, /) -> pl.DataFrame:
         """Deserialize the given DataFrame."""
-        return pl.read_parquet(BytesIO(dump["content_bytes"]), **self._load_args)
+        return pl.read_parquet(BytesIO(dump["content"]), **self._load_args)

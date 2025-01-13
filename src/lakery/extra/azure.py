@@ -39,7 +39,7 @@ class BlobStorage(Storage[str]):
         self._path_prefix = path_prefix
         self._limiter = CapacityLimiter(max_concurrency) if max_concurrency else None
 
-    async def put_value(
+    async def put_content(
         self,
         value: bytes,
         digest: ValueDigest,
@@ -58,7 +58,7 @@ class BlobStorage(Storage[str]):
         )
         return location
 
-    async def get_value(self, location: str) -> bytes:
+    async def get_content(self, location: str) -> bytes:
         """Load the value dump for the given relation."""
         blob_client = self._container_client.get_blob_client(blob=location)
         try:
@@ -68,7 +68,7 @@ class BlobStorage(Storage[str]):
             raise NoStorageData(msg) from exc
         return await blob_reader.readall()
 
-    async def put_stream(
+    async def put_content_stream(
         self,
         stream: AsyncIterable[bytes],
         get_digest: GetStreamDigest,
@@ -96,7 +96,7 @@ class BlobStorage(Storage[str]):
 
         return final_location
 
-    async def get_stream(self, location: str) -> AsyncGenerator[bytes]:
+    async def get_content_stream(self, location: str) -> AsyncGenerator[bytes]:
         """Load the stream dump for the given relation."""
         blob_client = self._container_client.get_blob_client(blob=location)
         try:

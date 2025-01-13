@@ -3,8 +3,8 @@ from __future__ import annotations
 import pandas as pd
 import pyarrow as pa
 
-from lakery.core.serializer import ValueDump
-from lakery.core.serializer import ValueSerializer
+from lakery.core.serializer import ContentDump
+from lakery.core.serializer import Serializer
 from lakery.extra.pyarrow import ArrowTableSerializer
 from lakery.extra.pyarrow import ParquetReadOptions
 from lakery.extra.pyarrow import ParquetTableSerializer
@@ -18,7 +18,7 @@ __all__ = [
 ]
 
 
-class ArrowDataFrameSerializer(ValueSerializer[pd.DataFrame]):
+class ArrowDataFrameSerializer(Serializer[pd.DataFrame]):
     """Serializer for Pandas DataFrames using Arrow."""
 
     name = "lakery.pandas.arrow.file"
@@ -35,22 +35,18 @@ class ArrowDataFrameSerializer(ValueSerializer[pd.DataFrame]):
             read_options=read_options,
         )
 
-    def dump_value(self, value: pd.DataFrame, /) -> ValueDump:
+    def dump(self, value: pd.DataFrame, /) -> ContentDump:
         """Serialize the given DataFrame."""
         table = pa.Table.from_pandas(value)
-        return {
-            **self._arrow_serializer.dump_value(table),
-            "serializer_name": self.name,
-            "serializer_version": self.version,
-        }
+        return self._arrow_serializer.dump(table)
 
-    def load_value(self, dump: ValueDump, /) -> pd.DataFrame:
+    def load(self, dump: ContentDump, /) -> pd.DataFrame:
         """Deserialize the given DataFrame."""
-        table = self._arrow_serializer.load_value(dump)
+        table = self._arrow_serializer.load(dump)
         return table.to_pandas()
 
 
-class ParquetDataFrameSerializer(ValueSerializer[pd.DataFrame]):
+class ParquetDataFrameSerializer(Serializer[pd.DataFrame]):
     """Serializer for Pandas DataFrames using Parquet."""
 
     name = "lakery.pandas.parquet.file"
@@ -68,16 +64,12 @@ class ParquetDataFrameSerializer(ValueSerializer[pd.DataFrame]):
             read_options=read_options,
         )
 
-    def dump_value(self, value: pd.DataFrame, /) -> ValueDump:
+    def dump(self, value: pd.DataFrame, /) -> ContentDump:
         """Serialize the given DataFrame."""
         table = pa.Table.from_pandas(value)
-        return {
-            **self._parquet_serializer.dump_value(table),
-            "serializer_name": self.name,
-            "serializer_version": self.version,
-        }
+        return self._parquet_serializer.dump(table)
 
-    def load_value(self, dump: ValueDump, /) -> pd.DataFrame:
+    def load(self, dump: ContentDump, /) -> pd.DataFrame:
         """Deserialize the given DataFrame."""
-        table = self._parquet_serializer.load_value(dump)
+        table = self._parquet_serializer.load(dump)
         return table.to_pandas()

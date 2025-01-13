@@ -7,10 +7,10 @@ from msgpack import Packer
 from msgpack import Unpacker
 from msgpack.fallback import BytesIO
 
-from lakery.core.serializer import StreamDump
+from lakery.core.serializer import ContentDump
+from lakery.core.serializer import ContentStreamDump
+from lakery.core.serializer import Serializer
 from lakery.core.serializer import StreamSerializer
-from lakery.core.serializer import ValueDump
-from lakery.core.serializer import ValueSerializer
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
@@ -56,25 +56,23 @@ class _MsgPackBase:
         return unpacker.unpack()
 
 
-class MsgPackSerializer(_MsgPackBase, ValueSerializer[MsgPackType]):
+class MsgPackSerializer(_MsgPackBase, Serializer[MsgPackType]):
     """A serializer for MessagePack data."""
 
     name = "lakery.msgpack.value"
     version = 1
 
-    def dump_value(self, value: MsgPackType) -> ValueDump:
+    def dump(self, value: MsgPackType) -> ContentDump:
         """Serialize the given value to MessagePack."""
         return {
             "content_encoding": None,
             "content_type": self.content_type,
-            "content_bytes": self._pack(value),
-            "serializer_name": self.name,
-            "serializer_version": self.version,
+            "content": self._pack(value),
         }
 
-    def load_value(self, dump: ValueDump) -> MsgPackType:
+    def load(self, dump: ContentDump) -> MsgPackType:
         """Deserialize the given MessagePack data."""
-        return self._unpack(dump["content_bytes"])
+        return self._unpack(dump["content"])
 
 
 class MsgPackStreamSerializer(_MsgPackBase, StreamSerializer[MsgPackType]):
@@ -83,7 +81,7 @@ class MsgPackStreamSerializer(_MsgPackBase, StreamSerializer[MsgPackType]):
     name = "lakery.msgpack.stream"
     version = 1
 
-    def dump_value(self, value: Iterable[MsgPackType]) -> ValueDump:
+    def dump(self, value: Iterable[MsgPackType]) -> ContentDump:
         """Serialize the given value to MessagePack."""
         packer = self._packer()
         buffer = BytesIO()
@@ -92,30 +90,26 @@ class MsgPackStreamSerializer(_MsgPackBase, StreamSerializer[MsgPackType]):
         return {
             "content_encoding": None,
             "content_type": self.content_type,
-            "content_bytes": buffer.getvalue(),
-            "serializer_name": self.name,
-            "serializer_version": self.version,
+            "content": buffer.getvalue(),
         }
 
-    def load_value(self, dump: ValueDump) -> list[MsgPackType]:
+    def load(self, dump: ContentDump) -> list[MsgPackType]:
         """Deserialize the given MessagePack data."""
         unpacker = self._unpacker()
-        unpacker.feed(dump["content_bytes"])
+        unpacker.feed(dump["content"])
         return list(unpacker)
 
-    def dump_stream(self, stream: AsyncIterable[MsgPackType]) -> StreamDump:
+    def dump_stream(self, stream: AsyncIterable[MsgPackType]) -> ContentStreamDump:
         """Serialize the given stream of MessagePack data."""
         return {
             "content_encoding": None,
-            "content_byte_stream": _stream_dump(self._packer(), stream),
+            "content_stream": _stream_dump(self._packer(), stream),
             "content_type": self.content_type,
-            "serializer_name": self.name,
-            "serializer_version": self.version,
         }
 
-    def load_stream(self, dump: StreamDump, /) -> AsyncGenerator[MsgPackType]:
+    def load_stream(self, dump: ContentStreamDump, /) -> AsyncGenerator[MsgPackType]:
         """Deserialize the given stream of MessagePack data."""
-        return _stream_load(self._unpacker(), dump["content_byte_stream"])
+        return _stream_load(self._unpacker(), dump["content_stream"])
 
 
 async def _stream_dump(packer: Packer, value_stream: AsyncIterable[Any]) -> AsyncGenerator[bytes]:

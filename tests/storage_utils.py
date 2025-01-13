@@ -42,8 +42,8 @@ def parametrize_storage_assertions(test_function: F) -> F:
 
 async def assert_storage_can_put_and_get_value(storage: Storage) -> None:
     value, digest = make_fake_value_data(1024)
-    storage_data = await storage.put_value(value, digest, {})
-    assert (await storage.get_value(storage_data)) == value
+    storage_data = await storage.put_content(value, digest, {})
+    assert (await storage.get_content(storage_data)) == value
 
 
 async def assert_storage_can_put_and_get_stream(storage: Storage):
@@ -52,8 +52,8 @@ async def assert_storage_can_put_and_get_stream(storage: Storage):
         expected_value,
         digest,
     ):
-        relation = await storage.put_stream(stream, digest, {})
-        actual_value = b"".join([chunk async for chunk in storage.get_stream(relation)])
+        relation = await storage.put_content_stream(stream, digest, {})
+        actual_value = b"".join([chunk async for chunk in storage.get_content_stream(relation)])
         assert actual_value == expected_value
 
 
@@ -63,15 +63,15 @@ async def assert_storage_can_put_stream_and_get_value(storage: Storage):
         expected_value,
         digest,
     ):
-        relation = await storage.put_stream(stream, digest, {})
-        actual_value = await storage.get_value(relation)
+        relation = await storage.put_content_stream(stream, digest, {})
+        actual_value = await storage.get_content(relation)
         assert actual_value == expected_value
 
 
 async def assert_storage_can_put_value_and_get_stream(storage: Storage):
     value, digest = make_fake_value_data(1024)
-    relation = await storage.put_value(value, digest, {})
-    actual_value = b"".join([chunk async for chunk in storage.get_stream(relation)])
+    relation = await storage.put_content(value, digest, {})
+    actual_value = b"".join([chunk async for chunk in storage.get_content_stream(relation)])
     assert actual_value == value
 
 
@@ -119,7 +119,7 @@ async def make_fake_stream_data(
     stream, get_digest = _wrap_stream_dump(
         {
             "content_encoding": None,
-            "content_byte_stream": make_stream(),
+            "content_stream": make_stream(),
             "content_type": "application/octet-stream",
             "serializer_name": "fake",
             "serializer_version": 1,

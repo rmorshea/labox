@@ -6,8 +6,8 @@ from typing import TypedDict
 
 import numpy as np
 
-from lakery.core.serializer import ValueDump
-from lakery.core.serializer import ValueSerializer
+from lakery.core.serializer import ContentDump
+from lakery.core.serializer import Serializer
 
 
 class NpyDumpArgs(TypedDict, total=False):
@@ -25,7 +25,7 @@ class NpyLoadArgs(TypedDict, total=False):
     fix_imports: bool
 
 
-class NpySerializer(ValueSerializer[np.ndarray]):
+class NpySerializer(Serializer[np.ndarray]):
     """Serializer for Pandas DataFrames using Arrow."""
 
     name = "lakery.numpy.npy"
@@ -41,18 +41,16 @@ class NpySerializer(ValueSerializer[np.ndarray]):
         self._dump_args = dump_args or {}
         self._load_args = load_args or {}
 
-    def dump_value(self, value: np.ndarray, /) -> ValueDump:
+    def dump(self, value: np.ndarray, /) -> ContentDump:
         """Serialize the given DataFrame."""
         buffer = BytesIO()
         np.save(buffer, value, **self._dump_args)
         return {
             "content_encoding": None,
             "content_type": "application/x-npy.v3",
-            "content_bytes": buffer.getvalue(),
-            "serializer_name": self.name,
-            "serializer_version": self.version,
+            "content": buffer.getvalue(),
         }
 
-    def load_value(self, dump: ValueDump, /) -> np.ndarray:
+    def load(self, dump: ContentDump, /) -> np.ndarray:
         """Deserialize the given DataFrame."""
-        return np.load(BytesIO(dump["content_bytes"]), **self._load_args)
+        return np.load(BytesIO(dump["content"]), **self._load_args)

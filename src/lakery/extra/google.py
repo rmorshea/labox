@@ -75,7 +75,7 @@ class BlobStorage(Storage[str]):
         self._reader_type = reader_type
         self.__current_bucket = None
 
-    async def put_value(
+    async def put_content(
         self,
         value: bytes,
         digest: ValueDigest,
@@ -89,7 +89,7 @@ class BlobStorage(Storage[str]):
         await self._to_thread(writer.write, value)
         return location
 
-    async def get_value(self, location: str) -> bytes:
+    async def get_content(self, location: str) -> bytes:
         """Load the value dump for the given relation."""
         reader = self._reader_type(self._bucket.blob(location, chunk_size=self._object_chunk_size))
         with closing(reader) as reader:
@@ -99,7 +99,7 @@ class BlobStorage(Storage[str]):
                 msg = f"Failed to load value from {location!r}"
                 raise NoStorageData(msg) from error
 
-    async def put_stream(
+    async def put_content_stream(
         self,
         stream: AsyncIterable[bytes],
         get_digest: GetStreamDigest,
@@ -143,7 +143,7 @@ class BlobStorage(Storage[str]):
 
         return final_location
 
-    async def get_stream(self, location: str) -> AsyncGenerator[bytes]:
+    async def get_content_stream(self, location: str) -> AsyncGenerator[bytes]:
         """Load the stream dump for the given relation."""
         blob = self._bucket.blob(location, chunk_size=self._object_chunk_size)
         with closing(self._reader_type(blob)) as reader:

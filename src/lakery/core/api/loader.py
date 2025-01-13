@@ -150,18 +150,16 @@ async def load_content_from_record(
     serializer = serializers[record.serializer_name]
     storage = storages[record.storage_name]
     match record.serializer_type:
-        case SerializerTypeEnum.VALUE:
-            value = serializer.load_value(
+        case SerializerTypeEnum.CONTENT:
+            value = serializer.load(
                 {
                     "content_encoding": record.content_encoding,
                     "content_type": record.content_type,
-                    "content_bytes": await storage.get_value(record.storage_data),
-                    "serializer_name": record.serializer_name,
-                    "serializer_version": record.serializer_version,
+                    "content": await storage.get_content(record.storage_data),
                 }
             )
             return {"value": value, "serializer": serializer, "storage": storage}
-        case SerializerTypeEnum.STREAM:
+        case SerializerTypeEnum.CONTENT_STREAM:
             if not isinstance(serializer, StreamSerializer):
                 msg = f"Content {record.id} expects a stream serializer, got {serializer}."
                 raise TypeError(msg)
@@ -169,9 +167,7 @@ async def load_content_from_record(
                 {
                     "content_encoding": record.content_encoding,
                     "content_type": record.content_type,
-                    "content_byte_stream": storage.get_stream(record.storage_data),
-                    "serializer_name": record.serializer_name,
-                    "serializer_version": record.serializer_version,
+                    "content_stream": storage.get_content_stream(record.storage_data),
                 }
             )
             return {"stream": stream, "serializer": serializer, "storage": storage}

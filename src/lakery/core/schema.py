@@ -4,7 +4,7 @@ from collections.abc import Callable
 from collections.abc import Sequence
 from datetime import UTC
 from datetime import datetime
-from enum import StrEnum
+from enum import IntEnum
 from typing import Annotated
 from typing import Any
 from typing import TypeVar
@@ -86,13 +86,13 @@ UniqueConstraint(
 )
 
 
-class SerializerTypeEnum(StrEnum):
+class SerializerTypeEnum(IntEnum):
     """An enumeration of the types of serializers."""
 
-    VALUE = "VALUE"
-    """A value serializer."""
-    STREAM = "STREAM"
-    """A stream serializer."""
+    CONTENT = 1
+    """A content serializer."""
+    CONTENT_STREAM = 2
+    """A content stream serializer."""
 
 
 class StorageContentRecord(Base, kw_only=True):

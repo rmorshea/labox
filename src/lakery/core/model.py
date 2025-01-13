@@ -21,8 +21,8 @@ from lakery.core._registry import Registry
 
 if TYPE_CHECKING:
     from lakery.core.context import Registries
+    from lakery.core.serializer import Serializer
     from lakery.core.serializer import StreamSerializer
-    from lakery.core.serializer import ValueSerializer
     from lakery.core.storage import Storage
 
 
@@ -58,7 +58,7 @@ class ValueStorageSpec(Generic[T], TypedDict):
     """Spec for how to store and serialize a value."""
 
     value: T
-    serializer: ValueSerializer[T] | None
+    serializer: Serializer[T] | None
     storage: Storage | None
 
 
@@ -85,7 +85,7 @@ class ValueModel(Generic[T], StorageModel[Mapping[str, ValueStorageSpec]]):
 
     value: T
     """The value."""
-    serializer: ValueSerializer[T] | None = field(default=None, compare=False)
+    serializer: Serializer[T] | None = field(default=None, compare=False)
     """The serializer for the value."""
     storage: Storage | None = field(default=None, compare=False)
     """The storage for the value."""

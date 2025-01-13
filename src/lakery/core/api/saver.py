@@ -45,11 +45,11 @@ if TYPE_CHECKING:
 
     from lakery.common.utils import TagMap
     from lakery.core.model import StorageModel
+    from lakery.core.serializer import ContentDump
+    from lakery.core.serializer import ContentStreamDump
+    from lakery.core.serializer import Serializer
     from lakery.core.serializer import SerializerRegistry
-    from lakery.core.serializer import StreamDump
     from lakery.core.serializer import StreamSerializer
-    from lakery.core.serializer import ValueDump
-    from lakery.core.serializer import ValueSerializer
     from lakery.core.storage import GetStreamDigest
     from lakery.core.storage import Storage
     from lakery.core.storage import StreamDigest
@@ -185,14 +185,15 @@ async def _save_storage_value_spec(
     model_record_id: UUID,
     content_key: str,
     value: Any,
-    serializer: ValueSerializer | None,
+    serializer: Serializer | None,
     storage: Storage | None,
     registries: Registries,
 ) -> StorageContentRecord:
     storage = storage or registries.storages.default
-    dump = _make_value_dump(value, serializer, registries.serializers)
+    serializer = serializer or registries.serializers.infer_from_value_type(type(value))
+    dump = serializer.dump(value)
     digest = _make_value_dump_digest(dump)
-    storage_data = await storage.put_value(dump["content_bytes"], digest, tags)
+    storage_data = await storage.put_content(dump["content"], digest, tags)
     return StorageContentRecord(
         content_encoding=dump["content_encoding"],
         content_hash=digest["content_hash"],
@@ -201,9 +202,9 @@ async def _save_storage_value_spec(
         content_type=dump["content_type"],
         model_id=model_record_id,
         content_key=content_key,
-        serializer_name=dump["serializer_name"],
-        serializer_type=SerializerTypeEnum.VALUE,
-        serializer_version=dump["serializer_version"],
+        serializer_name=serializer.name,
+        serializer_type=SerializerTypeEnum.CONTENT,
+        serializer_version=serializer.version,
         storage_data=storage_data,
         storage_name=storage.name,
         storage_version=storage.version,
@@ -223,9 +224,16 @@ async def _save_storage_stream_spec(
     async with AsyncExitStack() as stack:
         if isasyncgen(stream):
             await stack.enter_async_context(aclosing(stream))
-        dump = await _make_stream_dump(stream, serializer, registries.serializers)
+
+        if serializer is None:
+            stream_iter = aiter(stream)
+            first_value = await anext(stream_iter)
+            serializer = registries.serializers.infer_from_stream_type(type(first_value))
+            stream = _continue_stream(first_value, stream_iter)
+
+        dump = serializer.dump_stream(stream)
         byte_stream, get_digest = _wrap_stream_dump(dump)
-        storage_data = await storage.put_stream(byte_stream, get_digest, tags)
+        storage_data = await storage.put_content_stream(byte_stream, get_digest, tags)
         try:
             digest = get_digest()
         except ValueError:
@@ -239,9 +247,9 @@ async def _save_storage_stream_spec(
             content_type=dump["content_type"],
             model_id=model_record_id,
             content_key=content_key,
-            serializer_name=dump["serializer_name"],
-            serializer_type=SerializerTypeEnum.STREAM,
-            serializer_version=dump["serializer_version"],
+            serializer_name=serializer.name,
+            serializer_type=SerializerTypeEnum.CONTENT_STREAM,
+            serializer_version=serializer.version,
             storage_data=storage_data,
             storage_name=storage.name,
             storage_version=storage.version,
@@ -249,8 +257,8 @@ async def _save_storage_stream_spec(
     raise AssertionError  # nocov
 
 
-def _wrap_stream_dump(dump: StreamDump) -> tuple[AsyncGenerator[bytes], GetStreamDigest]:
-    stream = dump["content_byte_stream"]
+def _wrap_stream_dump(dump: ContentStreamDump) -> tuple[AsyncGenerator[bytes], GetStreamDigest]:
+    stream = dump["content_stream"]
 
     content_hash = sha256()
     content_size = 0
@@ -281,14 +289,14 @@ def _wrap_stream_dump(dump: StreamDump) -> tuple[AsyncGenerator[bytes], GetStrea
     return wrapper(), get_digest
 
 
-def _make_value_dump_digest(dump: ValueDump) -> ValueDigest:
-    value = dump["content_bytes"]
-    content_hash = sha256(value)
+def _make_value_dump_digest(dump: ContentDump) -> ValueDigest:
+    content = dump["content"]
+    content_hash = sha256(content)
     return {
         "content_encoding": dump.get("content_encoding"),
         "content_hash": content_hash.hexdigest(),
         "content_hash_algorithm": content_hash.name,
-        "content_size": len(value),
+        "content_size": len(content),
         "content_type": dump["content_type"],
     }
 
@@ -297,20 +305,20 @@ class _SerializationHelper:
     def __init__(self, serializers: SerializerRegistry) -> None:
         self._serializers = serializers
 
-    def dump_value(
+    def dump(
         self,
         value: Any,
-        serializer: ValueSerializer | None,
-    ) -> ValueDump:
+        serializer: Serializer | None,
+    ) -> ContentDump:
         if serializer is None:
             serializer = self._serializers.infer_from_value_type(type(value))
-        return serializer.dump_value(value)
+        return serializer.dump(value)
 
     async def dump_stream(
         self,
         stream: AsyncIterable,
         serializer: StreamSerializer | None,
-    ) -> StreamDump:
+    ) -> ContentStreamDump:
         if serializer is not None:
             return serializer.dump_stream(stream)
 
@@ -318,12 +326,6 @@ class _SerializationHelper:
         first_value = await anext(stream_iter)
         serializer = self._serializers.infer_from_stream_type(type(first_value))
         return serializer.dump_stream(_continue_stream(first_value, stream_iter))
-
-
-async def _continue_stream(first_value: Any, stream: AsyncIterable[Any]) -> AsyncGenerator[Any]:
-    yield first_value
-    async for cont_value in stream:
-        yield cont_value
 
 
 async def _save_record_groups(
@@ -356,28 +358,7 @@ def _model_record_conflicts(record: StorageModelRecord):
     return and_(StorageModelRecord.name == record.name, StorageModelRecord.archived_at == NEVER)
 
 
-def _make_value_dump(
-    value: Any,
-    serializer: ValueSerializer | None,
-    serializers: SerializerRegistry,
-) -> ValueDump:
-    if serializer is None:
-        serializer = serializers.infer_from_value_type(type(value))
-    return serializer.dump_value(value)
-
-
-async def _make_stream_dump(
-    stream: AsyncIterable,
-    serializer: StreamSerializer | None,
-    serializers: SerializerRegistry,
-) -> StreamDump:
-    stream_iter = aiter(stream)
-    first_value = await anext(stream_iter)
-
-    async def wrapper() -> AsyncGenerator:
-        yield first_value
-        async for cont_value in stream:
-            yield cont_value
-
-    serializer = serializer or serializers.infer_from_stream_type(type(first_value))
-    return serializer.dump_stream(wrapper())
+async def _continue_stream(first_value: Any, stream: AsyncIterable[Any]) -> AsyncGenerator[Any]:
+    yield first_value
+    async for cont_value in stream:
+        yield cont_value

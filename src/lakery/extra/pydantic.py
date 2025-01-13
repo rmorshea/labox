@@ -25,7 +25,7 @@ from lakery.core.serializer import StreamSerializer
 
 if TYPE_CHECKING:
     from lakery.core.context import Registries
-    from lakery.core.serializer import ValueSerializer
+    from lakery.core.serializer import Serializer
     from lakery.core.storage import Storage
     from lakery.core.storage import StorageRegistry
 
@@ -53,7 +53,7 @@ class StorageModel(
         """
         return storages.default
 
-    def storage_model_internal_serializer(self, serializers: SerializerRegistry) -> ValueSerializer:
+    def storage_model_internal_serializer(self, serializers: SerializerRegistry) -> Serializer:
         """Return the serializer for "internal data" friom this model.
 
         "Internal data" refers to the data that Pydantic was able to
@@ -168,13 +168,11 @@ def _make_validator_func() -> cs.WithInfoValidatorFunction:
                 raise ValueError(msg)
         elif json_ext["__json_ext__"] == "content":
             serializer = registries.serializers[json_ext["serializer_name"]]
-            return serializer.load_value(
+            return serializer.load(
                 {
-                    "content_bytes": json_ext["content_base64"].encode("ascii"),
+                    "content": json_ext["content_base64"].encode("ascii"),
                     "content_encoding": json_ext["content_encoding"],
                     "content_type": json_ext["content_type"],
-                    "serializer_name": json_ext["serializer_name"],
-                    "serializer_version": json_ext["serializer_version"],
                 }
             )
         else:  # nocov
@@ -223,14 +221,14 @@ def _make_serializer_func(
             )
             return {"__json_ext__": "ref", "ref": ref_str}
 
-        dump = serializer.dump_value(value)
+        dump = serializer.dump(value)
         return {
             "__json_ext__": "content",
-            "content_base64": dump["content_bytes"].decode("ascii"),
+            "content_base64": dump["content"].decode("ascii"),
             "content_encoding": None,
             "content_type": dump["content_type"],
-            "serializer_name": dump["serializer_name"],
-            "serializer_version": dump["serializer_version"],
+            "serializer_name": serializer.name,
+            "serializer_version": serializer.version,
         }
 
     return serialize
@@ -254,7 +252,7 @@ def _get_lakery_schema_metadata(schema: cs.CoreSchema) -> _LakerySchemaMetadata:
 
 
 class _LakerySchemaMetadata(TypedDict, total=False):
-    serializer: ValueSerializer | StreamSerializer
+    serializer: Serializer | StreamSerializer
     storage: Storage
 
 

@@ -6,10 +6,10 @@ from io import StringIO
 from typing import TYPE_CHECKING
 
 from lakery.common.streaming import decode_async_byte_stream
-from lakery.core.serializer import StreamDump
+from lakery.core.serializer import ContentDump
+from lakery.core.serializer import ContentStreamDump
+from lakery.core.serializer import Serializer
 from lakery.core.serializer import StreamSerializer
-from lakery.core.serializer import ValueDump
-from lakery.core.serializer import ValueSerializer
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
@@ -27,7 +27,7 @@ JSON_STREAM_TYPES = (list, dict)
 """The types that can be serialized JSON in a stream."""
 
 
-class JsonSerializer(ValueSerializer[JsonType]):
+class JsonSerializer(Serializer[JsonType]):
     """A serializer for JSON data."""
 
     name = "lakery.json.value"
@@ -35,19 +35,17 @@ class JsonSerializer(ValueSerializer[JsonType]):
     types = JSON_SCALAR_TYPES
     content_type = "application/json"
 
-    def dump_value(self, value: JsonType) -> ValueDump:
+    def dump(self, value: JsonType) -> ContentDump:
         """Serialize the given value to JSON."""
         return {
             "content_encoding": "utf-8",
             "content_type": self.content_type,
-            "content_bytes": json.dumps(value, separators=(",", ":")).encode("utf-8"),
-            "serializer_name": self.name,
-            "serializer_version": self.version,
+            "content": json.dumps(value, separators=(",", ":")).encode("utf-8"),
         }
 
-    def load_value(self, dump: ValueDump) -> JsonType:
+    def load(self, dump: ContentDump) -> JsonType:
         """Deserialize the given JSON data."""
-        return json.loads(dump["content_bytes"].decode("utf-8"))
+        return json.loads(dump["content"].decode("utf-8"))
 
 
 class JsonStreamSerializer(StreamSerializer[JsonStreamType]):
@@ -58,33 +56,29 @@ class JsonStreamSerializer(StreamSerializer[JsonStreamType]):
     types = JSON_STREAM_TYPES
     content_type = "application/json"
 
-    def dump_value(self, value: Iterable[JsonStreamType]) -> ValueDump:
+    def dump(self, value: Iterable[JsonStreamType]) -> ContentDump:
         """Serialize the given value to JSON."""
         return {
             "content_encoding": "utf-8",
             "content_type": self.content_type,
-            "serializer_name": self.name,
-            "serializer_version": self.version,
-            "content_bytes": json.dumps(list(value), separators=(",", ":")).encode("utf-8"),
+            "content": json.dumps(list(value), separators=(",", ":")).encode("utf-8"),
         }
 
-    def load_value(self, dump: ValueDump) -> list[JsonStreamType]:
+    def load(self, dump: ContentDump) -> list[JsonStreamType]:
         """Deserialize the given JSON data."""
-        return json.loads(dump["content_bytes"].decode("utf-8"))
+        return json.loads(dump["content"].decode("utf-8"))
 
-    def dump_stream(self, stream: AsyncIterable[JsonStreamType]) -> StreamDump:
+    def dump_stream(self, stream: AsyncIterable[JsonStreamType]) -> ContentStreamDump:
         """Serialize the given stream of JSON data."""
         return {
             "content_encoding": "utf-8",
-            "content_byte_stream": _dump_json_stream(stream),
+            "content_stream": _dump_json_stream(stream),
             "content_type": self.content_type,
-            "serializer_name": self.name,
-            "serializer_version": self.version,
         }
 
-    def load_stream(self, dump: StreamDump) -> AsyncGenerator[JsonStreamType]:
+    def load_stream(self, dump: ContentStreamDump) -> AsyncGenerator[JsonStreamType]:
         """Deserialize the given stream of JSON data."""
-        return _load_json_stream(dump["content_byte_stream"])
+        return _load_json_stream(dump["content_stream"])
 
 
 async def _dump_json_stream(stream: AsyncIterable[JsonStreamType]) -> AsyncGenerator[bytes]:
