@@ -1,9 +1,12 @@
 from __future__ import annotations
 
-from collections.abc import AsyncIterable
 from collections.abc import Callable
 from collections.abc import Mapping
+from collections.abc import MutableMapping
+from dataclasses import dataclass
+from logging import getLogger
 from typing import TYPE_CHECKING
+from typing import Annotated
 from typing import Any
 from typing import Literal
 from typing import Self
@@ -16,22 +19,23 @@ from pydantic import GetCoreSchemaHandler
 from pydantic._internal._core_utils import walk_core_schema as _walk_core_schema
 from pydantic_core import core_schema as cs
 
+from lakery.core.model import AnyValueDump
 from lakery.core.model import StorageModel as _StorageModel
-from lakery.core.model import StorageSpec
-from lakery.core.model import StreamStorageSpec
-from lakery.core.model import ValueStorageSpec
-from lakery.core.serializer import SerializerRegistry
-from lakery.core.serializer import StreamSerializer
+from lakery.core.model import ValueDump
+from lakery.core.serializer import Serializer
+from lakery.core.storage import Storage
 
 if TYPE_CHECKING:
     from lakery.core.context import Registries
-    from lakery.core.serializer import Serializer
-    from lakery.core.storage import Storage
+    from lakery.core.serializer import SerializerRegistry
     from lakery.core.storage import StorageRegistry
 
 
+_LOG = getLogger(__name__)
+
+
 class StorageModel(
-    _StorageModel[Mapping[str, StorageSpec]],
+    _StorageModel[Mapping[str, AnyValueDump]],
     BaseModel,
     arbitrary_types_allowed=True,
 ):
@@ -62,9 +66,9 @@ class StorageModel(
         """
         return serializers.infer_from_value_type(dict)
 
-    def storage_model_to_spec(self, registries: Registries) -> Mapping[str, StorageSpec]:
+    def storage_model_dump(self, registries: Registries) -> Mapping[str, AnyValueDump]:
         """Turn the given model into its serialized components."""
-        external_content: dict[str, StorageSpec] = {}
+        external_content: dict[str, AnyValueDump] = {}
 
         next_external_id = 0
 
@@ -92,14 +96,14 @@ class StorageModel(
         }
 
     @classmethod
-    def storage_model_from_spec(
+    def storage_model_load(
         cls,
-        spec: Mapping[str, StorageSpec],
+        spec: Mapping[str, AnyValueDump],
         registries: Registries,
     ) -> Self:
         """Turn the given serialized components back into a model."""
         spec_dict = dict(spec)
-        data = cast("ValueStorageSpec", spec_dict.pop("data"))["value"]
+        data = cast("ValueDump", spec_dict.pop("data"))["value"]
         return cls.model_validate(
             data,
             context=_LakeryValidationContext(
@@ -107,6 +111,69 @@ class StorageModel(
                 registries=registries,
             ),
         )
+
+
+@dataclass(frozen=True)
+class StorageSpecMetadata:
+    """An annotation for specifying the storage and serialization of a field.
+
+    This could be used directly via `Annotated[..., StorageSpecMetadata(...)]` but
+    for convenience a shorthand `StorageSpec[...]` is provided. When using the
+    shorthand positional arguments can be passed with the syntax:
+
+    ```python
+    StorageSpec[my_serializer, my_storage]
+    ```
+
+    Keyword arguments can be provides with the slice syntax:
+
+    ```python
+    StorageSpec["serializer":my_serializer, "storage":my_storage]
+    ```
+    """
+
+    serializer: Serializer | None
+    storage: Storage | None
+
+    def __post_init__(self) -> None:
+        if self.serializer is not None and not isinstance(self.serializer, Serializer):
+            msg = f"Expected a Serializer, got {self.serializer}."
+            raise TypeError(msg)
+        if self.storage is not None and not isinstance(self.storage, Storage):
+            msg = f"Expected a Storage, got {self.storage}."
+            raise TypeError(msg)
+
+    def __class_getitem__(cls, annotation: Any, *metadata: Any) -> Annotated:
+        args: list[Any] = []
+        kwargs: dict[str, Any] = {}
+        for m in metadata:
+            match m:
+                case slice(start=key, stop=value, step=None):
+                    kwargs[key] = value
+                case _:
+                    args.append(m)
+        return Annotated[annotation, StorageSpecMetadata(*args, **kwargs)]
+
+    def __get_pydantic_core_schema__(
+        self,
+        source: Any,
+        handler: GetCoreSchemaHandler,
+    ) -> cs.CoreSchema:
+        schema = handler(source)
+        metadata: _SchemaMetadata = {}
+        if self.serializer is not None:
+            metadata["serializer"] = self.serializer
+        if self.storage is not None:
+            metadata["storage"] = self.storage
+        _set_schema_metadata(schema, metadata)
+        return schema
+
+
+if TYPE_CHECKING:
+    StorageSpec = Annotated
+    """A type-checker friendly alias for `StorageSpecMetadata`"""
+else:
+    StorageSpec = StorageSpecMetadata
 
 
 def _adapt_third_party_types(schema: cs.CoreSchema, handler: GetCoreSchemaHandler) -> cs.CoreSchema:
@@ -145,7 +212,7 @@ def _adapt_is_instance_schema(schema: cs.IsInstanceSchema) -> cs.JsonOrPythonSch
 
 def _make_validator_func() -> cs.WithInfoValidatorFunction:
     def validate(maybe_json_ext: Any, info: cs.FieldValidationInfo, /) -> Any:
-        context = _get_lakery_info_context(info)
+        context = _get_info_context(info)
         registries = context["registries"]
 
         if not isinstance(maybe_json_ext, Mapping):
@@ -185,36 +252,21 @@ def _make_validator_func() -> cs.WithInfoValidatorFunction:
 def _make_serializer_func(
     schema: cs.IsInstanceSchema,
 ) -> cs.FieldPlainInfoSerializerFunction:
-    metadata = _get_lakery_schema_metadata(schema)
+    metadata = _get_schema_metadata(schema)
     serializer_from_schema = metadata.get("serializer")
     storage_from_schema = metadata.get("storage")
 
     def serialize(model: BaseModel, value: Any, info: cs.FieldSerializationInfo, /) -> Any:
-        context = _get_lakery_info_context(info)
+        context = _get_info_context(info)
         external_content = context["external_content"]
         registries = context["registries"]
-
-        if isinstance(value, AsyncIterable):
-            if serializer_from_schema and not isinstance(serializer_from_schema, StreamSerializer):
-                msg = (
-                    f"{info.field_name} of {type(model)} expects "
-                    f"a StreamSerializer, got {serializer_from_schema}."
-                )
-                raise TypeError(msg)
-            ref_str = _make_ref_str(type(model), info, context)
-            external_content[ref_str] = StreamStorageSpec(
-                stream=value,
-                serializer=serializer_from_schema,
-                storage=storage_from_schema,
-            )
-            return {"__json_ext__": "ref", "ref": ref_str}
 
         cls = type(value)
         serializer = serializer_from_schema or registries.serializers.infer_from_value_type(cls)
 
         if storage_from_schema is not None:
             ref_str = _make_ref_str(type(model), info, context)
-            external_content[ref_str] = ValueStorageSpec(
+            external_content[ref_str] = ValueDump(
                 value=value,
                 serializer=serializer,
                 storage=storage_from_schema,
@@ -245,26 +297,35 @@ def _make_ref_str(
 _LAKERY_KEY = "lakery"
 
 
-def _get_lakery_schema_metadata(schema: cs.CoreSchema) -> _LakerySchemaMetadata:
+def _get_schema_metadata(schema: cs.CoreSchema) -> _SchemaMetadata:
     if not isinstance(metadata := schema.get("metadata"), Mapping):
         return {}
     return metadata.get(_LAKERY_KEY, {})
 
 
-class _LakerySchemaMetadata(TypedDict, total=False):
-    serializer: Serializer | StreamSerializer
+def _set_schema_metadata(schema: cs.CoreSchema, metadata: _SchemaMetadata) -> None:
+    if not isinstance(existing_metadata := schema.get("metadata"), Mapping):
+        msg = "Failed to set schema metadata - expected a mapping, got %s."
+        _LOG.warning(msg, existing_metadata)
+    if isinstance(existing_metadata, MutableMapping):
+        existing_metadata[_LAKERY_KEY] = metadata
+    schema["metadata"] = {_LAKERY_KEY: metadata}
+
+
+class _SchemaMetadata(TypedDict, total=False):
+    serializer: Serializer
     storage: Storage
 
 
 @overload
-def _get_lakery_info_context(info: cs.ValidationInfo) -> _LakeryValidationContext: ...
+def _get_info_context(info: cs.ValidationInfo) -> _LakeryValidationContext: ...
 
 
 @overload
-def _get_lakery_info_context(info: cs.SerializationInfo) -> _LakerySerializationContext: ...
+def _get_info_context(info: cs.SerializationInfo) -> _LakerySerializationContext: ...
 
 
-def _get_lakery_info_context(
+def _get_info_context(
     info: cs.ValidationInfo | cs.SerializationInfo,
 ) -> _LakeryValidationContext | _LakerySerializationContext:
     if not isinstance(ctx := info.context, Mapping):
@@ -278,13 +339,13 @@ def _get_lakery_info_context(
 
 
 class _LakerySerializationContext(TypedDict):
-    external_content: dict[str, StorageSpec]
+    external_content: dict[str, AnyValueDump]
     get_external_id: Callable[[], int]
     registries: Registries
 
 
 class _LakeryValidationContext(TypedDict):
-    external_content: dict[str, StorageSpec]
+    external_content: dict[str, AnyValueDump]
     registries: Registries
 
 

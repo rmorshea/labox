@@ -23,8 +23,8 @@ from lakery.common.anyio import start_given_future
 from lakery.common.exceptions import NotRegistered
 from lakery.core.context import DatabaseSession
 from lakery.core.context import Registries
+from lakery.core.model import AnyValueDump
 from lakery.core.model import StorageModel
-from lakery.core.model import StorageSpec
 from lakery.core.schema import NEVER
 from lakery.core.schema import SerializerTypeEnum
 from lakery.core.schema import StorageContentRecord
@@ -125,7 +125,7 @@ async def load_model_from_record(
     """Load the given model from the given record."""
     model_type = registries.models[record.model_type_id]
 
-    content_futures: dict[str, FutureResult[StorageSpec]] = {}
+    content_futures: dict[str, FutureResult[AnyValueDump]] = {}
     async with create_task_group() as tg:
         for content in record.contents:
             content_futures[content.content_key] = start_future(
@@ -137,7 +137,7 @@ async def load_model_from_record(
             )
 
     contents = {key: future.result() for key, future in content_futures.items()}
-    return model_type.storage_model_from_spec(contents, registries)
+    return model_type.storage_model_load(contents, registries)
 
 
 async def load_content_from_record(
@@ -145,7 +145,7 @@ async def load_content_from_record(
     *,
     serializers: SerializerRegistry,
     storages: StorageRegistry,
-) -> StorageSpec:
+) -> AnyValueDump:
     """Load the given content from the given record."""
     serializer = serializers[record.serializer_name]
     storage = storages[record.storage_name]
@@ -170,7 +170,7 @@ async def load_content_from_record(
                     "content_stream": storage.get_content_stream(record.storage_data),
                 }
             )
-            return {"stream": stream, "serializer": serializer, "storage": storage}
+            return {"value_stream": stream, "serializer": serializer, "storage": storage}
         case _:  # nocov
             msg = f"Unknown serializer type: {record.serializer_type}"
             raise ValueError(msg)

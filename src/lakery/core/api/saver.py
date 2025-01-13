@@ -94,7 +94,7 @@ class _ModelSaver:
     def save_soon(
         self,
         name: str,
-        model: StorageModel,
+        model: StorageModel[Any],
         *,
         tags: Mapping[str, str] | None = None,
     ) -> FutureResult[StorageModelRecord]:
@@ -126,7 +126,7 @@ async def _save_model(
 ) -> StorageModelRecord:
     """Save the given data to the database."""
     model_uuid = UUID(type(model).storage_model_uuid)
-    model_spec = model.storage_model_to_spec(registries)
+    model_spec = model.storage_model_dump(registries)
 
     record_id = uuid4()
     data_record_futures: list[FutureResult[StorageContentRecord]] = []

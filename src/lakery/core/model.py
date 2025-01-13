@@ -29,32 +29,32 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 S = TypeVar(
     "S",
-    bound=Mapping[str, "StorageSpec"]
-    | Mapping[str, "ValueStorageSpec"]
-    | Mapping[str, "StreamStorageSpec"],
-    default="StorageSpecMap",
+    bound=Mapping[str, "AnyValueDump"]
+    | Mapping[str, "ValueDump"]
+    | Mapping[str, "ValueStreamDump"],
+    default="ModelDump",
 )
 
 
 class StorageModel(Generic[S], abc.ABC):
-    """A model that can be stored and loaded."""
+    """A model that can be saved and loaded."""
 
     storage_model_uuid: ClassVar[LiteralString]
     """A unique ID to identify this model class."""
 
     @abc.abstractmethod
-    def storage_model_to_spec(self, registries: Registries, /) -> S:
+    def storage_model_dump(self, registries: Registries, /) -> S:
         """Turn the given model into its serialized components."""
         raise NotImplementedError
 
     @classmethod
     @abc.abstractmethod
-    def storage_model_from_spec(cls, spec: S, registries: Registries, /) -> Self:
+    def storage_model_load(cls, spec: S, registries: Registries, /) -> Self:
         """Turn the given serialized components back into a model."""
         raise NotImplementedError
 
 
-class ValueStorageSpec(Generic[T], TypedDict):
+class ValueDump(Generic[T], TypedDict):
     """Spec for how to store and serialize a value."""
 
     value: T
@@ -62,23 +62,23 @@ class ValueStorageSpec(Generic[T], TypedDict):
     storage: Storage | None
 
 
-class StreamStorageSpec(Generic[T], TypedDict):
+class ValueStreamDump(Generic[T], TypedDict):
     """Spec for how to store and serialize a stream."""
 
-    stream: AsyncIterable[T]
+    value_stream: AsyncIterable[T]
     serializer: StreamSerializer[T] | None
     storage: Storage | None
 
 
-StorageSpec: TypeAlias = ValueStorageSpec | StreamStorageSpec
+AnyValueDump: TypeAlias = ValueDump | ValueStreamDump
 """A spec for how to store and serialize a value or stream."""
 
-StorageSpecMap: TypeAlias = Mapping[str, StorageSpec]
+ModelDump: TypeAlias = Mapping[str, AnyValueDump]
 """A mapping of string identifiers to storage specs."""
 
 
 @dataclass(frozen=True)
-class ValueModel(Generic[T], StorageModel[Mapping[str, ValueStorageSpec]]):
+class ValueModel(Generic[T], StorageModel[Mapping[str, ValueDump]]):
     """Models a single value."""
 
     storage_model_uuid = "63b297f66dbc44bb8552f6f490cf21cb"
@@ -90,14 +90,14 @@ class ValueModel(Generic[T], StorageModel[Mapping[str, ValueStorageSpec]]):
     storage: Storage | None = field(default=None, compare=False)
     """The storage for the value."""
 
-    def storage_model_to_spec(self, _registries: Registries) -> Mapping[str, ValueStorageSpec]:
+    def storage_model_dump(self, _registries: Registries) -> Mapping[str, ValueDump]:
         """Turn the given model into its serialized components."""
         return {"": {"value": self.value, "serializer": self.serializer, "storage": self.storage}}
 
     @classmethod
-    def storage_model_from_spec(
+    def storage_model_load(
         cls,
-        spec: Mapping[str, ValueStorageSpec],
+        spec: Mapping[str, ValueDump],
         _registries: Registries,
     ) -> Self:
         """Turn the given serialized components back into a model."""
@@ -110,7 +110,7 @@ class ValueModel(Generic[T], StorageModel[Mapping[str, ValueStorageSpec]]):
 
 
 @dataclass(frozen=True)
-class StreamModel(Generic[T], StorageModel[Mapping[str, StreamStorageSpec]]):
+class StreamModel(Generic[T], StorageModel[Mapping[str, ValueStreamDump]]):
     """Models a single stream."""
 
     storage_model_uuid = "e80e8707ffdd4785b95b30247fa4398c"
@@ -122,20 +122,26 @@ class StreamModel(Generic[T], StorageModel[Mapping[str, StreamStorageSpec]]):
     storage: Storage | None = field(default=None, compare=False)
     """The storage for the stream."""
 
-    def storage_model_to_spec(self, _registries: Registries) -> Mapping[str, StreamStorageSpec]:
+    def storage_model_dump(self, _registries: Registries) -> Mapping[str, ValueStreamDump]:
         """Turn the given model into its serialized components."""
-        return {"": {"stream": self.stream, "serializer": self.serializer, "storage": self.storage}}
+        return {
+            "": {
+                "value_stream": self.stream,
+                "serializer": self.serializer,
+                "storage": self.storage,
+            }
+        }
 
     @classmethod
-    def storage_model_from_spec(
+    def storage_model_load(
         cls,
-        spec: Mapping[str, StreamStorageSpec],
+        spec: Mapping[str, ValueStreamDump],
         _registries: Registries,
     ) -> Self:
         """Turn the given serialized components back into a model."""
         stream_spec = spec[""]
         return cls(
-            stream=stream_spec["stream"],
+            stream=stream_spec["value_stream"],
             serializer=stream_spec["serializer"],
             storage=stream_spec["storage"],
         )
