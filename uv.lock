@@ -1190,7 +1190,7 @@ requires-dist = [
     { name = "plotly", marker = "extra == 'plotly'", specifier = ">=5,<6" },
     { name = "polars", marker = "extra == 'polars'", specifier = ">=1.18.0" },
     { name = "pyarrow", marker = "extra == 'pyarrow'", specifier = ">=18,<19" },
-    { name = "pybooster", specifier = ">=0.0.5,<1" },
+    { name = "pybooster", specifier = ">=0.0.7,<1" },
     { name = "pydantic", marker = "extra == 'pydantic'", specifier = ">=2,<3" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.36,<3" },
     { name = "tenacity", specifier = ">=9.0.0,<10" },
@@ -2250,16 +2250,16 @@ wheels = [
 
 [[package]]
 name = "pybooster"
-version = "0.0.5"
+version = "0.0.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "paramorator" },
     { name = "rustworkx" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d6/44/d71dedfb01ca7854e76a089cf12a9112c5978f558a1f12443fe0c0c44b17/pybooster-0.0.5.tar.gz", hash = "sha256:cd40b66194716687fcc97336ac9cb607ad08336243c4d52c8f0a457c1bcea953", size = 110799 }
+sdist = { url = "https://files.pythonhosted.org/packages/4e/d5/2bac2a380e80f53318d2d76971d3aa1cc4462ba24dca5a9b3c178050912f/pybooster-0.0.7.tar.gz", hash = "sha256:faaa75fa9e4590e0f073c4cce2e87d013432b777ceed2e59452b7f95bc579418", size = 124959 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/39/f5/cf447eeb8cd535bd786ed122ec0a3c9e3b69a1fadaf6d4920cee369349ef/pybooster-0.0.5-py3-none-any.whl", hash = "sha256:4fa991c4a5c2ae03b55510b0fed01b46ffd43483a1ebff71cd130dd2748a5a62", size = 20125 },
+    { url = "https://files.pythonhosted.org/packages/26/c4/eb87ae51992190f302a071d336bc9cde78fde07bc34e6f9b801e3ee340ba/pybooster-0.0.7-py3-none-any.whl", hash = "sha256:6dffaf170bf021984afcc69314b022fbb11b68f1e9c1b2d2f23f3ce90f01fd7f", size = 20171 },
 ]
 
 [[package]]

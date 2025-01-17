@@ -66,9 +66,11 @@ _LOG = getLogger(__name__)
 
 
 @contextmanager
-@injector.asynciterator(requires=(DatabaseSession, Registries))
+@injector.asynciterator(requires=(Registries, DatabaseSession))
 async def model_saver(
-    *, session: DatabaseSession = required, registries: Registries = required
+    *,
+    registries: Registries = required,
+    session: DatabaseSession = required,
 ) -> AsyncIterator[ModelSaver]:
     """Create a context manager for saving data."""
     futures: list[FutureResult[StorageModelRecord]] = []
@@ -127,7 +129,6 @@ async def _save_model(
     """Save the given data to the database."""
     model_uuid = UUID(type(model).storage_model_id)
     model_spec = model.storage_model_dump(registries)
-    print(model_spec)
 
     record_id = uuid4()
     data_record_futures: list[FutureResult[StorageContentRecord]] = []

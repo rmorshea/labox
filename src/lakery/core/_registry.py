@@ -75,3 +75,7 @@ class Registry(Mapping[K, V], abc.ABC):
 
     def __hash__(self) -> int:
         return hash((type(self), tuple(self._entries)))
+
+    def __repr__(self) -> str:
+        items = ", ".join(f"{k!r}: {v!r}" for k, v in self._entries.items())
+        return f"{type(self).__name__}({items})"

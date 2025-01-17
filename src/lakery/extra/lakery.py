@@ -2,10 +2,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
-from typing import Any
-from typing import Self
 from uuid import uuid4
 
 from anyio import create_task_group
@@ -24,37 +21,24 @@ if TYPE_CHECKING:
     from lakery.core.storage import ValueDigest
 
 
-class TemporaryDirectoryStorage(Storage[str]):
-    """A storage backend for testing that saves data to a temporary directory."""
+class LocalFileStorage(Storage[str]):
+    """A storage backend for testing that saves data to local files."""
 
-    name = "lakery.tempfile.TemporaryDirectory"
+    name = "lakery.os.local_file"
     version = 1
 
     def __init__(
         self,
-        tempdir: TemporaryDirectory | str | None = None,
-        chunk_size: int = 1024**2,  # 1MB chunk size by default
+        path: Path | str,
+        *,
+        mkdir: bool = False,
+        chunk_size: int = 5 * 1024**2,  # 5 MB
     ) -> None:
-        match tempdir:
-            case None:
-                self.tempdir = TemporaryDirectory()
-                self.path = Path(self.tempdir.name)
-            case str(path):
-                self.path = Path(path)
-            case tempdir:
-                self.tempdir = tempdir
-                self.path = Path(tempdir.name)
+        self.path = Path(path)
+        if mkdir:
+            self.path.mkdir(parents=True, exist_ok=True)
         self.chunk_size = chunk_size
         (self.path / "scratch").mkdir()
-
-    def __enter__(self) -> Self:
-        if not hasattr(self, "tempdir"):
-            msg = f"{self} does not own the temporary directory {self.path!r}"
-            raise RuntimeError(msg)
-        return self
-
-    def __exit__(self, *_: Any) -> None:
-        self.tempdir.cleanup()
 
     async def put_content(
         self,

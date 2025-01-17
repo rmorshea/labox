@@ -25,9 +25,10 @@ class Serializer(Generic[T]):
 
     name: LiteralString
     """The name of the serializer."""
+    version: int
+    """The version of the serializer."""
     types: tuple[type[T], ...]
     """The types that the serializer can handle."""
-    version: int
 
     @abc.abstractmethod
     def dump(self, value: T, /) -> ContentDump:

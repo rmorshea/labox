@@ -47,9 +47,11 @@ _Requests = tuple[
 
 
 @contextmanager
-@injector.asynciterator(requires=(DatabaseSession, Registries))
+@injector.asynciterator(requires=(Registries, DatabaseSession))
 async def data_loader(
-    *, session: DatabaseSession = required, registries: Registries = required
+    *,
+    registries: Registries = required,
+    session: DatabaseSession = required,
 ) -> AsyncIterator[DataLoader]:
     """Create a context manager for saving data."""
     requests: list[_Requests] = []
