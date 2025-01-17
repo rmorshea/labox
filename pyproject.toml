@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "lakery"
 version = "0.0.1a1"
-description = "Dependency injection without the boilerplate."
+description = "A data lake creation tool for Python."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { file = "LICENSE.txt" }
