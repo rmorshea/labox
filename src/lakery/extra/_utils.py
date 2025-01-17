@@ -32,6 +32,4 @@ def make_path_parts_from_digest(digest: ValueDigest | StreamDigest) -> Sequence[
 
 
 def _join_with_prefix(sep, parts: Sequence[str], prefix: str) -> str:
-    if prefix:
-        parts = (prefix, *parts)
-    return sep.join(parts)
+    return sep.join((prefix, *parts) if prefix else parts)

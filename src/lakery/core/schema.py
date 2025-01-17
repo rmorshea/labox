@@ -59,7 +59,7 @@ class _StrMixin(Base):
 
     id: Any
 
-    def __str__(self) -> str:
+    def __str__(self) -> str:  # nocov
         return f"{self.__class__.__name__}({self.id})"
 
 

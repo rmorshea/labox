@@ -12,5 +12,5 @@ class NotRegistered(KeyError):
 
         def __init__(self, msg: str) -> None: ...
 
-    def __repr__(self) -> str:
+    def __repr__(self) -> str:  # nocov
         return self.args[0]
