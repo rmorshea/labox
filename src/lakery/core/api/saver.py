@@ -44,7 +44,7 @@ if TYPE_CHECKING:
     from anyio.abc import TaskGroup
 
     from lakery.common.utils import TagMap
-    from lakery.core.model import StorageModel
+    from lakery.core.model import BaseStorageModel
     from lakery.core.serializer import ContentDump
     from lakery.core.serializer import ContentStreamDump
     from lakery.core.serializer import Serializer
@@ -94,7 +94,7 @@ class _ModelSaver:
     def save_soon(
         self,
         name: str,
-        model: StorageModel[Any],
+        model: BaseStorageModel[Any],
         *,
         tags: Mapping[str, str] | None = None,
     ) -> FutureResult[StorageModelRecord]:
@@ -120,12 +120,12 @@ ModelSaver: TypeAlias = _ModelSaver
 
 async def _save_model(
     name: str,
-    model: StorageModel,
+    model: BaseStorageModel,
     tags: TagMap,
     registries: Registries,
 ) -> StorageModelRecord:
     """Save the given data to the database."""
-    model_uuid = UUID(type(model).storage_model_uuid)
+    model_uuid = UUID(type(model).storage_model_id)
     model_spec = model.storage_model_dump(registries)
     print(model_spec)
 

@@ -24,7 +24,7 @@ from lakery.common.exceptions import NotRegistered
 from lakery.core.context import DatabaseSession
 from lakery.core.context import Registries
 from lakery.core.model import AnyValueDump
-from lakery.core.model import StorageModel
+from lakery.core.model import BaseStorageModel
 from lakery.core.schema import NEVER
 from lakery.core.schema import SerializerTypeEnum
 from lakery.core.schema import StorageContentRecord
@@ -39,9 +39,11 @@ if TYPE_CHECKING:
     from lakery.core.storage import StorageRegistry
 
 
-M = TypeVar("M", bound=StorageModel)
+M = TypeVar("M", bound=BaseStorageModel)
 
-_Requests = tuple[type[StorageModel] | None, str, datetime | None, FutureResult[StorageModel]]
+_Requests = tuple[
+    type[BaseStorageModel] | None, str, datetime | None, FutureResult[BaseStorageModel]
+]
 
 
 @contextmanager
@@ -97,11 +99,11 @@ class _DataLoader:
         *,
         name: str,
         version: datetime | None = ...,
-    ) -> FutureResult[StorageModel]: ...
+    ) -> FutureResult[BaseStorageModel]: ...
 
     def load_soon(
         self,
-        model_type: type[StorageModel] | None = None,
+        model_type: type[BaseStorageModel] | None = None,
         /,
         *,
         name: str,
@@ -121,7 +123,7 @@ async def load_model_from_record(
     record: StorageModelRecord,
     *,
     registries: Registries,
-) -> StorageModel:
+) -> BaseStorageModel:
     """Load the given model from the given record."""
     model_type = registries.models[record.model_type_id]
 

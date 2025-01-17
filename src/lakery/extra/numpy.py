@@ -10,21 +10,6 @@ from lakery.core.serializer import ContentDump
 from lakery.core.serializer import Serializer
 
 
-class NpyDumpArgs(TypedDict, total=False):
-    """Arguments for dumping a NumPy array."""
-
-    allow_pickle: bool
-    fix_imports: bool
-
-
-class NpyLoadArgs(TypedDict, total=False):
-    """Arguments for loading a NumPy array."""
-
-    mmap_mode: Literal["r+", "r", "w+", "c"] | None
-    allow_pickle: bool
-    fix_imports: bool
-
-
 class NpySerializer(Serializer[np.ndarray]):
     """Serializer for Pandas DataFrames using Arrow."""
 
@@ -54,3 +39,18 @@ class NpySerializer(Serializer[np.ndarray]):
     def load(self, dump: ContentDump, /) -> np.ndarray:
         """Deserialize the given DataFrame."""
         return np.load(BytesIO(dump["content"]), **self._load_args)
+
+
+class NpyDumpArgs(TypedDict, total=False):
+    """Arguments for dumping a NumPy array."""
+
+    allow_pickle: bool
+    fix_imports: bool
+
+
+class NpyLoadArgs(TypedDict, total=False):
+    """Arguments for loading a NumPy array."""
+
+    mmap_mode: Literal["r+", "r", "w+", "c"] | None
+    allow_pickle: bool
+    fix_imports: bool

@@ -25,42 +25,33 @@ class Registry(Mapping[K, V], abc.ABC):
     value_description: ClassVar[str]
     """A description for the type of value"""
 
-    def __init__(self, values: Sequence[V] = (), /) -> None:
-        if not values:
-            msg = "At least one item must be registered."
-            raise ValueError(msg)
-
+    def __init__(self, values: Sequence[V] = (), /, *, ignore_conflicts: bool = False) -> None:
         items = [(self.get_key(i), i) for i in values]
 
-        if conflicts := {n for n, c in Counter(k for k, _ in items).items() if c > 1}:
+        if not ignore_conflicts and (
+            conflicts := {n for n, c in Counter(k for k, _ in items).items() if c > 1}
+        ):
             msg = f"Conflicting {self.value_description.lower()} keys: {conflicts}"
             raise ValueError(msg)
 
-        self._entries = dict(items)
+        self._entries: Mapping[K, V] = dict(items)
 
     @abc.abstractmethod
     def get_key(self, value: V, /) -> K:
         """Get the key for the given value."""
         raise NotImplementedError
 
-    def merge(self, *other: Registry[K, V]) -> Self:
+    @classmethod
+    def merge(cls, *registries: Registry[K, V], ignore_conflicts: bool = False) -> Self:
         """Return a new registry that merges this one with the given ones."""
-        new_values = [v for r in (self, *other) for v in r.values()]
-        return self.__class__(new_values)
-
-    def add(self, value: V) -> V:
-        """Register the given value."""
-        if (key := self.get_key(value)) not in self._entries:
-            self._entries[key] = value
-        elif (existing := self._entries[key]) is not value:
-            msg = f"{self.value_description} {key!r} is registered as {existing}, not {value!r}."
-            raise ValueError(msg)
-        return value
+        new_values = [v for r in registries for v in r.values()]
+        return cls(new_values, ignore_conflicts=ignore_conflicts)
 
     def check_registered(self, value: V) -> None:
         """Ensure that the given value is registered - raises a ValueError if not."""
         if not self.is_registered(value):
-            msg = f"{self.value_description} {value!r} is not registered."
+            key = self.get_key(value)
+            msg = f"{self.value_description} {value!r} with key {key!r} is not registered."
             raise NotRegistered(msg)
 
     def is_registered(self, value: V) -> bool:
@@ -81,3 +72,6 @@ class Registry(Mapping[K, V], abc.ABC):
 
     def __len__(self) -> int:
         return len(self._entries)
+
+    def __hash__(self) -> int:
+        return hash((type(self), tuple(self._entries)))

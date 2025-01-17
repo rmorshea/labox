@@ -36,10 +36,10 @@ S = TypeVar(
 )
 
 
-class StorageModel(Generic[S], abc.ABC):
-    """A model that can be saved and loaded."""
+class BaseStorageModel(Generic[S], abc.ABC):
+    """A base class for models that can be stored and serialized."""
 
-    storage_model_uuid: ClassVar[LiteralString]
+    storage_model_id: ClassVar[LiteralString]
     """A unique ID to identify this model class."""
 
     @abc.abstractmethod
@@ -78,10 +78,10 @@ ModelDump: TypeAlias = Mapping[str, AnyValueDump]
 
 
 @dataclass(frozen=True)
-class ValueModel(Generic[T], StorageModel[Mapping[str, ValueDump]]):
+class ValueModel(Generic[T], BaseStorageModel[Mapping[str, ValueDump]]):
     """Models a single value."""
 
-    storage_model_uuid = "63b297f66dbc44bb8552f6f490cf21cb"
+    storage_model_id = "63b297f66dbc44bb8552f6f490cf21cb"
 
     value: T
     """The value."""
@@ -110,10 +110,10 @@ class ValueModel(Generic[T], StorageModel[Mapping[str, ValueDump]]):
 
 
 @dataclass(frozen=True)
-class StreamModel(Generic[T], StorageModel[Mapping[str, ValueStreamDump]]):
+class StreamModel(Generic[T], BaseStorageModel[Mapping[str, ValueStreamDump]]):
     """Models a single stream."""
 
-    storage_model_uuid = "e80e8707ffdd4785b95b30247fa4398c"
+    storage_model_id = "e80e8707ffdd4785b95b30247fa4398c"
 
     stream: AsyncIterable[T] = field(compare=False)
     """The stream."""
@@ -147,19 +147,28 @@ class StreamModel(Generic[T], StorageModel[Mapping[str, ValueStreamDump]]):
         )
 
 
-M = TypeVar("M", bound=StorageModel)
+M = TypeVar("M", bound=BaseStorageModel)
 
 
-class ModelRegistry(Registry[UUID, type[StorageModel]]):
+class ModelRegistry(Registry[UUID, type[BaseStorageModel]]):
     """A registry of storage model types."""
 
     value_description = "Storage model type"
 
-    def get_key(self, model: type[StorageModel]) -> UUID:
+    def get_key(self, model: type[BaseStorageModel]) -> UUID:
         """Get the key for the given model."""
-        return UUID(model.storage_model_uuid)
+        try:
+            uuid_str = model.__dict__["storage_model_id"]
+        except KeyError:
+            full_class_name = f"{model.__module__}.{model.__qualname__}"
+            msg = (
+                f"Class definition for {self.value_description.lower()} "
+                f"{full_class_name} is missing a 'storage_model_id'."
+            )
+            raise ValueError(msg) from None
+        return UUID(uuid_str)
 
     @classmethod
-    def with_core_models(cls, types: Sequence[type[StorageModel]] = ()) -> ModelRegistry:
+    def with_core_models(cls, types: Sequence[type[BaseStorageModel]] = ()) -> ModelRegistry:
         """Create a registry with the given core models."""
         return cls((ValueModel, StreamModel, *types))

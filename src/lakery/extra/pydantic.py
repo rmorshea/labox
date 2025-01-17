@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from base64 import b64decode
+from base64 import b64encode
 from collections.abc import Callable
 from collections.abc import Mapping
 from collections.abc import MutableMapping
@@ -9,18 +11,25 @@ from typing import TYPE_CHECKING
 from typing import Annotated
 from typing import Any
 from typing import Literal
+from typing import LiteralString
 from typing import Self
 from typing import TypedDict
+from typing import Unpack
 from typing import cast
 from typing import overload
+from uuid import UUID
+from uuid import uuid4
+from warnings import warn
 
 from pydantic import BaseModel
+from pydantic import ConfigDict
 from pydantic import GetCoreSchemaHandler
 from pydantic._internal._core_utils import walk_core_schema as _walk_core_schema
 from pydantic_core import core_schema as cs
 
 from lakery.core.model import AnyValueDump
-from lakery.core.model import StorageModel as _StorageModel
+from lakery.core.model import BaseStorageModel
+from lakery.core.model import ModelRegistry
 from lakery.core.model import ValueDump
 from lakery.core.serializer import Serializer
 from lakery.core.storage import Storage
@@ -32,14 +41,45 @@ if TYPE_CHECKING:
 
 
 _LOG = getLogger(__name__)
+_MODELS: set[type[StorageModel]] = set()
+
+
+def get_model_registry() -> ModelRegistry:
+    """Return a registry of all currently defined Pydantic storage models."""
+    return ModelRegistry(list(_MODELS))
 
 
 class StorageModel(
-    _StorageModel[Mapping[str, AnyValueDump]],
     BaseModel,
+    BaseStorageModel[Mapping[str, AnyValueDump]],
     arbitrary_types_allowed=True,
 ):
     """A Pydantic model that can be stored by Lakery."""
+
+    def __init_subclass__(
+        cls,
+        storage_id: LiteralString | Literal["none"],
+        **kwargs: Unpack[ConfigDict],
+    ) -> None:
+        if (super_init_subclass := super().__init_subclass__) is not object.__init_subclass__:
+            super_init_subclass(**kwargs)
+
+        if storage_id == "none":
+            _LOG.debug("Skipping storage model registration for %s.", cls)
+        else:
+            try:
+                UUID(storage_id)
+            except ValueError:
+                suggested_uuid = uuid4().hex
+                full_class_name = f"{cls.__module__}.{cls.__qualname__}"
+                msg = (
+                    f"Storage model {full_class_name!r} cannot be stored because {storage_id=!r} "
+                    f"is not a UUID - use {suggested_uuid!r} instead."
+                )
+                warn(msg, UserWarning, stacklevel=2)
+            else:
+                cls.storage_model_id = storage_id
+                _MODELS.add(cls)
 
     @classmethod
     def __get_pydantic_core_schema__(
@@ -47,24 +87,14 @@ class StorageModel(
         source: Any,
         handler: GetCoreSchemaHandler,
     ) -> cs.CoreSchema:
-        return _adapt_third_party_types(handler(source), handler)
-
-    def storage_model_internal_storage(self, storages: StorageRegistry) -> Storage:
-        """Return the storage for "internal data" for this model.
-
-        "Internal data" refers to the data that Pydantic was able to
-        dump without needing to use a serializer supplied by Lakery.
-        """
-        return storages.default
-
-    def storage_model_internal_serializer(self, serializers: SerializerRegistry) -> Serializer:
-        """Return the serializer for "internal data" friom this model.
-
-        "Internal data" refers to the data that Pydantic was able to
-        dump without needing to use a serializer supplied by Lakery.
-        In short this method should return a JSON serializer.
-        """
-        return serializers.infer_from_value_type(dict)
+        try:
+            StorageModel  # type:ignore[reportUnusedExpression] # noqa: B018
+        except NameError:
+            # we're defining the schema for this class
+            return handler(source)
+        else:
+            # we're defining the schema for a subclass
+            return _adapt_third_party_types(handler(source), handler)
 
     def storage_model_dump(self, registries: Registries) -> Mapping[str, AnyValueDump]:
         """Turn the given model into its serialized components."""
@@ -79,10 +109,12 @@ class StorageModel(
 
         data = self.model_dump(
             mode="python",
-            context=_LakerySerializationContext(
-                external_content=external_content,
-                get_external_id=get_external_id,
-                registries=registries,
+            context=_make_serialization_context(
+                _LakerySerializationContext(
+                    external_content=external_content,
+                    get_external_id=get_external_id,
+                    registries=registries,
+                )
             ),
         )
 
@@ -106,11 +138,30 @@ class StorageModel(
         data = cast("ValueDump", spec_dict.pop("data"))["value"]
         return cls.model_validate(
             data,
-            context=_LakeryValidationContext(
-                external_content=spec_dict,
-                registries=registries,
+            context=_make_validation_context(
+                _LakeryValidationContext(
+                    external_content=spec_dict,
+                    registries=registries,
+                )
             ),
         )
+
+    def storage_model_internal_storage(self, storages: StorageRegistry) -> Storage:
+        """Return the storage for "internal data" for this model.
+
+        "Internal data" refers to the data that Pydantic was able to
+        dump without needing to use a serializer supplied by Lakery.
+        """
+        return storages.default
+
+    def storage_model_internal_serializer(self, serializers: SerializerRegistry) -> Serializer:
+        """Return the serializer for "internal data" friom this model.
+
+        "Internal data" refers to the data that Pydantic was able to
+        dump without needing to use a serializer supplied by Lakery.
+        In short this method should return a JSON serializer.
+        """
+        return serializers.infer_from_value_type(dict)
 
 
 @dataclass(frozen=True)
@@ -143,16 +194,20 @@ class StorageSpecMetadata:
             msg = f"Expected a Storage, got {self.storage}."
             raise TypeError(msg)
 
-    def __class_getitem__(cls, annotation: Any, *metadata: Any) -> Annotated:
-        args: list[Any] = []
-        kwargs: dict[str, Any] = {}
+    def __class_getitem__(cls, args: tuple) -> Annotated:
+        annotation, *metadata = args
+        serializer: Serializer | None = None
+        storage: Storage | None = None
         for m in metadata:
             match m:
-                case slice(start=key, stop=value, step=None):
-                    kwargs[key] = value
+                case Serializer():
+                    serializer = m
+                case Storage():
+                    storage = m
                 case _:
-                    args.append(m)
-        return Annotated[annotation, StorageSpecMetadata(*args, **kwargs)]
+                    msg = f"Expected a Serializer or Storage, got {m!r}."
+                    raise TypeError(msg)
+        return Annotated[annotation, StorageSpecMetadata(serializer, storage)]
 
     def __get_pydantic_core_schema__(
         self,
@@ -180,8 +235,8 @@ def _adapt_third_party_types(schema: cs.CoreSchema, handler: GetCoreSchemaHandle
     def visit_is_instance_schema(schema: cs.CoreSchema, recurse):
         if schema["type"] == "definition-ref":
             return recurse(handler.resolve_ref_schema(schema), visit_is_instance_schema)
-        elif schema["type"] == "is-instance":
-            return _adapt_is_instance_schema(schema)
+        elif schema["type"] in ("is-instance", "any"):
+            return _adapt_core_schema(schema)
         elif "serialization" in schema:
             return schema  # Already adapted
         else:
@@ -190,7 +245,7 @@ def _adapt_third_party_types(schema: cs.CoreSchema, handler: GetCoreSchemaHandle
     return _walk_core_schema(schema, visit_is_instance_schema)
 
 
-def _adapt_is_instance_schema(schema: cs.IsInstanceSchema) -> cs.JsonOrPythonSchema:
+def _adapt_core_schema(schema: cs.CoreSchema) -> cs.JsonOrPythonSchema:
     return cs.json_or_python_schema(
         json_schema=cs.any_schema(),
         python_schema=cs.chain_schema(
@@ -212,6 +267,9 @@ def _adapt_is_instance_schema(schema: cs.IsInstanceSchema) -> cs.JsonOrPythonSch
 
 def _make_validator_func() -> cs.WithInfoValidatorFunction:
     def validate(maybe_json_ext: Any, info: cs.FieldValidationInfo, /) -> Any:
+        if not _has_info_context(info):
+            return maybe_json_ext
+
         context = _get_info_context(info)
         registries = context["registries"]
 
@@ -237,7 +295,7 @@ def _make_validator_func() -> cs.WithInfoValidatorFunction:
             serializer = registries.serializers[json_ext["serializer_name"]]
             return serializer.load(
                 {
-                    "content": json_ext["content_base64"].encode("ascii"),
+                    "content": b64decode(json_ext["content_base64"].encode("ascii")),
                     "content_encoding": json_ext["content_encoding"],
                     "content_type": json_ext["content_type"],
                 }
@@ -249,9 +307,7 @@ def _make_validator_func() -> cs.WithInfoValidatorFunction:
     return validate
 
 
-def _make_serializer_func(
-    schema: cs.IsInstanceSchema,
-) -> cs.FieldPlainInfoSerializerFunction:
+def _make_serializer_func(schema: cs.CoreSchema) -> cs.FieldPlainInfoSerializerFunction:
     metadata = _get_schema_metadata(schema)
     serializer_from_schema = metadata.get("serializer")
     storage_from_schema = metadata.get("storage")
@@ -276,7 +332,7 @@ def _make_serializer_func(
         dump = serializer.dump(value)
         return {
             "__json_ext__": "content",
-            "content_base64": dump["content"].decode("ascii"),
+            "content_base64": b64encode(dump["content"]).decode("ascii"),
             "content_encoding": None,
             "content_type": dump["content_type"],
             "serializer_name": serializer.name,
@@ -304,9 +360,13 @@ def _get_schema_metadata(schema: cs.CoreSchema) -> _SchemaMetadata:
 
 
 def _set_schema_metadata(schema: cs.CoreSchema, metadata: _SchemaMetadata) -> None:
-    if not isinstance(existing_metadata := schema.get("metadata"), Mapping):
-        msg = "Failed to set schema metadata - expected a mapping, got %s."
-        _LOG.warning(msg, existing_metadata)
+    if "metadata" in schema:
+        if not isinstance(existing_metadata := schema["metadata"], Mapping):
+            msg = "Failed to set schema metadata - expected a mapping, got %s."
+            _LOG.warning(msg, existing_metadata)
+            return
+    else:
+        existing_metadata = schema["metadata"] = {}
     if isinstance(existing_metadata, MutableMapping):
         existing_metadata[_LAKERY_KEY] = metadata
     schema["metadata"] = {_LAKERY_KEY: metadata}
@@ -315,6 +375,18 @@ def _set_schema_metadata(schema: cs.CoreSchema, metadata: _SchemaMetadata) -> No
 class _SchemaMetadata(TypedDict, total=False):
     serializer: Serializer
     storage: Storage
+
+
+def _make_validation_context(ctx: _LakeryValidationContext) -> dict[str, Any]:
+    return {_LAKERY_KEY: ctx}
+
+
+def _make_serialization_context(ctx: _LakerySerializationContext) -> dict[str, Any]:
+    return {_LAKERY_KEY: ctx}
+
+
+def _has_info_context(info: cs.ValidationInfo | cs.SerializationInfo) -> bool:
+    return isinstance(info.context, Mapping) and _LAKERY_KEY in info.context
 
 
 @overload

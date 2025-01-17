@@ -121,8 +121,6 @@ async def make_fake_stream_data(
             "content_encoding": None,
             "content_stream": make_stream(),
             "content_type": "application/octet-stream",
-            "serializer_name": "fake",
-            "serializer_version": 1,
         },
     )
 

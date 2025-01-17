@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 class TemporaryDirectoryStorage(Storage[str]):
     """A storage backend for testing that saves data to a temporary directory."""
 
-    name = "lakery.tempfile"
+    name = "lakery.tempfile.TemporaryDirectory"
     version = 1
 
     def __init__(
