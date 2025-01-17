@@ -58,13 +58,13 @@ class StorageModel(
 
     def __init_subclass__(
         cls,
-        storage_id: LiteralString | Literal["none"],
+        storage_id: LiteralString | None,
         **kwargs: Unpack[ConfigDict],
     ) -> None:
         if (super_init_subclass := super().__init_subclass__) is not object.__init_subclass__:
             super_init_subclass(**kwargs)
 
-        if storage_id == "none":
+        if storage_id is None:  # nocov
             _LOG.debug("Skipping storage model registration for %s.", cls)
         else:
             try:

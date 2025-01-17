@@ -1,13 +1,13 @@
 from typing import Any
 
 from lakery.core.context import Registries
-from lakery.core.model import ModelRegistry
 from lakery.core.serializer import SerializerRegistry
 from lakery.extra.json import JsonSerializer
 from lakery.extra.lakery import LocalFileStorage
 from lakery.extra.msgpack import MsgPackSerializer
 from lakery.extra.pydantic import StorageModel
 from lakery.extra.pydantic import StorageSpec
+from lakery.extra.pydantic import get_model_registry
 from tests.core_api_utils import assert_save_load_equivalence
 from tests.core_context_utils import basic_registries
 
@@ -28,10 +28,7 @@ class PydanticStorageModel(StorageModel, storage_id="1e76a0043a7d40a38daf87de09d
     spec_with_serializer_and_storage: StorageSpec[Any, json_serializer, local_storage]
 
 
-registries = Registries.merge(
-    registries,
-    Registries(models=ModelRegistry([PydanticStorageModel])),
-)
+registries = Registries.merge(registries, Registries(models=get_model_registry()))
 
 
 def test_dump_load_storage_model():
