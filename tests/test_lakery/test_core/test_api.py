@@ -6,10 +6,6 @@ from tests.core_context_utils import basic_registries
 SAMPLE_DATA = [{"message": "Hello, Alice!"}, {"message": "Goodbye, Alice!"}]
 
 
-def make_value_model():
-    return ValueModel(SAMPLE_DATA)
-
-
 def make_stream_model():
     async def stream():
         for item in SAMPLE_DATA:

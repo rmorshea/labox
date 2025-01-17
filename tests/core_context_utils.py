@@ -12,7 +12,7 @@ from lakery.extra.lakery import LocalFileStorage
 HERE = Path(__file__).parent
 TEST_STORAGE_DIR = HERE / ".storage"
 
-if TEST_STORAGE_DIR.exists():
+if TEST_STORAGE_DIR.exists():  # nocov
     shutil.rmtree(TEST_STORAGE_DIR)
 
 basic_registries = Registries(

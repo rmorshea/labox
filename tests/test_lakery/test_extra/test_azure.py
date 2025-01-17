@@ -91,7 +91,7 @@ class MockBlobClient:
     async def download_blob(self) -> MockStorageStreamDownloader:
         try:
             blob_state = self._state[self.url]
-        except KeyError:
+        except KeyError:  # nocov
             raise ResourceNotFoundError from None
         return MockStorageStreamDownloader(blob_state)
 

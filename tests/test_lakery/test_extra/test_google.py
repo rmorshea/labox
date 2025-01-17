@@ -96,7 +96,7 @@ class MockBlobReader:
     def read(self, size: int = -1) -> bytes:
         try:
             state = self._state[self._blob_name]
-        except KeyError:
+        except KeyError:  # nocov
             msg = "Blob not found"
             raise NotFound(msg) from None
         data = state["data"]
