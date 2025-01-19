@@ -29,7 +29,8 @@ theme:
   name: material
   icon:
     repo: fontawesome/brands/git-alt
-    logo: material/needle
+  logo: assets/logo.svg
+  favicon: assets/logo.svg
   features: [content.code.copy, toc.integrate]
   palette:
     # Palette toggle for automatic mode

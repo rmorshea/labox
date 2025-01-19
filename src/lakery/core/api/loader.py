@@ -18,7 +18,7 @@ from sqlalchemy import select
 from lakery.common.anyio import FutureResult
 from lakery.common.anyio import set_future_exception_forcefully
 from lakery.common.anyio import start_future
-from lakery.common.anyio import start_given_future
+from lakery.common.anyio import start_with_future
 from lakery.common.exceptions import NotRegistered
 from lakery.core.context import DatabaseSession
 from lakery.core.context import Registries
@@ -73,7 +73,7 @@ async def data_loader(
                 set_future_exception_forcefully(future, TypeError(msg))
                 continue
 
-            start_given_future(
+            start_with_future(
                 tg,
                 future,
                 load_model_from_record_group,

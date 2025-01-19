@@ -57,11 +57,11 @@ def start_future(
 ) -> FutureResult[R]:
     """Start a future in a task group."""
     future: FutureResult[R] = FutureResult()
-    start_given_future(task_group, future, func, *args, **kwargs)
+    start_with_future(task_group, future, func, *args, **kwargs)
     return future
 
 
-def start_given_future(
+def start_with_future(
     task_group: TaskGroup,
     future: FutureResult[R],
     func: Callable[P, Coroutine[Any, Any, R]],
