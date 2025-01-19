@@ -18,8 +18,8 @@ import pyarrow.fs as fs
 import pyarrow.parquet as pq
 
 from lakery.core.serializer import Content
-from lakery.core.serializer import StreamContent
 from lakery.core.serializer import Serializer
+from lakery.core.serializer import StreamContent
 from lakery.core.serializer import StreamSerializer
 
 

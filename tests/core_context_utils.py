@@ -7,7 +7,7 @@ from lakery.core.serializer import SerializerRegistry
 from lakery.core.storage import StorageRegistry
 from lakery.extra.json import JsonSerializer
 from lakery.extra.json import JsonStreamSerializer
-from lakery.extra.lakery.local_file_storage import LocalFileStorage
+from lakery.extra.os import FileStorage
 
 HERE = Path(__file__).parent
 TEST_STORAGE_DIR = HERE / ".storage"
@@ -17,6 +17,6 @@ if TEST_STORAGE_DIR.exists():  # nocov
 
 basic_registries = Registries(
     models=ModelRegistry.with_core_models(),
-    storages=StorageRegistry([LocalFileStorage(TEST_STORAGE_DIR, mkdir=True)]),
+    storages=StorageRegistry([FileStorage(TEST_STORAGE_DIR, mkdir=True)]),
     serializers=SerializerRegistry([JsonSerializer(), JsonStreamSerializer()]),
 )

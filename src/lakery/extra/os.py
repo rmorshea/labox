@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from lakery.core.storage import GetStreamDigest
 
 
-class LocalFileStorage(Storage[str]):
+class FileStorage(Storage[str]):
     """A storage backend for testing that saves data to local files."""
 
     name = "lakery.os.local_file"

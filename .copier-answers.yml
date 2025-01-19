@@ -3,8 +3,8 @@ _commit: v0.0.8
 _src_path: https://github.com/rmorshea/python-copier-template
 author_email: ryan.morshead@gmail.com
 author_name: Ryan Morshead
-project_description: An artifact management system for Python.
+project_description: A data storage framework for Python.
 project_title: lakery
 python_package_name: lakery
-python_version_range: '>=3.11'
+python_version_range: ">=3.11"
 repo_url: https://github.com/rmorshea/lakery

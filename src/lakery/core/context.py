@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
@@ -13,6 +14,7 @@ from lakery.core.serializer import SerializerRegistry
 from lakery.core.storage import StorageRegistry
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from collections.abc import Iterator
 
 
@@ -28,7 +30,7 @@ EMPTY_STORAGE_REGISTRY = StorageRegistry()
 """An empty registry of storages."""
 
 
-@dataclass
+@dataclass(frozen=True)
 class Registries:
     """A collection of registries."""
 
@@ -69,3 +71,13 @@ class Registries:
         )
         with injector.shared((Registries, new_registries)):
             yield new_registries
+
+    def begin_context(self) -> Callable[[], None]:
+        """Begin a global context for the registries and return a function to end it."""
+        ctx = self.context()
+        ctx.__enter__()
+
+        def end_global_context() -> None:
+            ctx.__exit__(None, None, None)
+
+        return end_global_context

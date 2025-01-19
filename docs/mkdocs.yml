@@ -1,11 +1,12 @@
 ---
 site_author: Ryan Morshead
-site_description: An artifact management system for Python.
+site_description: Data lakes made easy.
 site_name: lakery
 docs_dir: src
 repo_url: https://github.com/rmorshea/lakery
 nav:
   - Home: index.md
+  - Integrations: integrations.md
   - Contributing: contributing.md
 theme:
   name: material

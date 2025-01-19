@@ -1,5 +1,5 @@
-from lakery.core.model import StreamModel
-from lakery.core.model import ValueModel
+from lakery.core.model import Scalar
+from lakery.core.model import Stream
 from tests.core_api_utils import assert_save_load_equivalence
 from tests.core_context_utils import basic_registries
 
@@ -11,11 +11,11 @@ def make_stream_model():
         for item in SAMPLE_DATA:
             yield item
 
-    return StreamModel(stream())
+    return Stream(stream())
 
 
 async def test_simple_value_data_saver_and_loader_usage():
-    await assert_save_load_equivalence(ValueModel(SAMPLE_DATA), basic_registries)
+    await assert_save_load_equivalence(Scalar(SAMPLE_DATA), basic_registries)
 
 
 async def test_simple_stream_data_saver_and_loader_usage():

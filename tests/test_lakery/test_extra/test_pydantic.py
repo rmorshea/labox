@@ -3,8 +3,8 @@ from typing import Any
 from lakery.core.context import Registries
 from lakery.core.serializer import SerializerRegistry
 from lakery.extra.json import JsonSerializer
-from lakery.extra.lakery import LocalFileStorage
 from lakery.extra.msgpack import MsgPackSerializer
+from lakery.extra.os import FileStorage
 from lakery.extra.pydantic import StorageModel
 from lakery.extra.pydantic import StorageSpec
 from lakery.extra.pydantic import get_model_registry
@@ -16,7 +16,7 @@ registries = Registries.merge(
     Registries(serializers=SerializerRegistry([MsgPackSerializer()])),
 )
 
-local_storage = registries.storages[LocalFileStorage.name]
+local_storage = registries.storages[FileStorage.name]
 msgpack_serializer = registries.serializers[MsgPackSerializer.name]
 json_serializer = registries.serializers[JsonSerializer.name]
 

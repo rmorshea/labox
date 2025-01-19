@@ -46,9 +46,9 @@ if TYPE_CHECKING:
     from lakery.common.utils import TagMap
     from lakery.core.model import BaseStorageModel
     from lakery.core.serializer import Content
-    from lakery.core.serializer import StreamContent
     from lakery.core.serializer import Serializer
     from lakery.core.serializer import SerializerRegistry
+    from lakery.core.serializer import StreamContent
     from lakery.core.serializer import StreamSerializer
     from lakery.core.storage import Digest
     from lakery.core.storage import GetStreamDigest
@@ -67,22 +67,22 @@ _LOG = getLogger(__name__)
 
 @contextmanager
 @injector.asynciterator(requires=(Registries, DatabaseSession))
-async def model_saver(
+async def data_saver(
     *,
     registries: Registries = required,
     session: DatabaseSession = required,
-) -> AsyncIterator[ModelSaver]:
+) -> AsyncIterator[DataSaver]:
     """Create a context manager for saving data."""
     futures: list[FutureResult[StorageModelRecord]] = []
     try:
         async with create_task_group() as tg:
-            yield _ModelSaver(tg, futures, registries)
+            yield _DataSaver(tg, futures, registries)
     finally:
         records = [r for f in futures if (r := f.result(default=None))]
         await _save_record_groups(records, session, _COMMIT_RETRIES)
 
 
-class _ModelSaver:
+class _DataSaver:
     def __init__(
         self,
         task_group: TaskGroup,
@@ -116,7 +116,7 @@ class _ModelSaver:
         return future
 
 
-ModelSaver: TypeAlias = _ModelSaver
+DataSaver: TypeAlias = _DataSaver
 """Defines a protocol for saving data."""
 
 

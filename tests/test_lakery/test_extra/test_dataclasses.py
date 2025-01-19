@@ -7,8 +7,8 @@ from lakery.core.serializer import SerializerRegistry
 from lakery.extra.dataclasses import StorageModel
 from lakery.extra.dataclasses import get_model_registry
 from lakery.extra.json import JsonSerializer
-from lakery.extra.lakery import LocalFileStorage
 from lakery.extra.msgpack import MsgPackSerializer
+from lakery.extra.os import FileStorage
 from tests.core_api_utils import assert_save_load_equivalence
 from tests.core_context_utils import basic_registries
 
@@ -17,7 +17,7 @@ registries = Registries.merge(
     Registries(serializers=SerializerRegistry([MsgPackSerializer()])),
 )
 
-local_storage = registries.storages[LocalFileStorage.name]
+local_storage = registries.storages[FileStorage.name]
 msgpack_serializer = registries.serializers[MsgPackSerializer.name]
 json_serializer = registries.serializers[JsonSerializer.name]
 

@@ -9,8 +9,8 @@ from lakery.common.utils import slugify
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from lakery.core.storage import StreamDigest
     from lakery.core.storage import Digest
+    from lakery.core.storage import StreamDigest
 
 
 def make_temp_path(sep: str, digest: StreamDigest | Digest, *, prefix: str = "") -> str:

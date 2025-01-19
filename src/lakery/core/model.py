@@ -77,7 +77,7 @@ ManifestMap: TypeAlias = Mapping[str, AnyManifest]
 
 
 @dataclass(frozen=True)
-class ValueModel(Generic[T], BaseStorageModel[Mapping[str, Manifest]]):
+class Scalar(Generic[T], BaseStorageModel[Mapping[str, Manifest]]):
     """Models a single value."""
 
     storage_model_id = "63b297f66dbc44bb8552f6f490cf21cb"
@@ -105,7 +105,7 @@ class ValueModel(Generic[T], BaseStorageModel[Mapping[str, Manifest]]):
 
 
 @dataclass(frozen=True)
-class StreamModel(Generic[T], BaseStorageModel[Mapping[str, StreamManifest]]):
+class Stream(Generic[T], BaseStorageModel[Mapping[str, StreamManifest]]):
     """Models a single stream."""
 
     storage_model_id = "e80e8707ffdd4785b95b30247fa4398c"
@@ -164,4 +164,4 @@ class ModelRegistry(Registry[UUID, type[BaseStorageModel]]):
     @classmethod
     def with_core_models(cls, types: Sequence[type[BaseStorageModel]] = ()) -> ModelRegistry:
         """Create a registry with the given core models."""
-        return cls((ValueModel, StreamModel, *types))
+        return cls((Scalar, Stream, *types))

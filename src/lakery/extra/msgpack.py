@@ -8,8 +8,8 @@ from msgpack import Unpacker
 from msgpack.fallback import BytesIO
 
 from lakery.core.serializer import Content
-from lakery.core.serializer import StreamContent
 from lakery.core.serializer import Serializer
+from lakery.core.serializer import StreamContent
 from lakery.core.serializer import StreamSerializer
 
 if TYPE_CHECKING:

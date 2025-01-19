@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING
 
 from lakery.common.streaming import decode_async_byte_stream
 from lakery.core.serializer import Content
-from lakery.core.serializer import StreamContent
 from lakery.core.serializer import Serializer
+from lakery.core.serializer import StreamContent
 from lakery.core.serializer import StreamSerializer
 
 if TYPE_CHECKING:

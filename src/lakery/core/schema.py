@@ -50,11 +50,11 @@ JSON_OR_JSONB = JSON().with_variant(JSONB(), "postgresql")
 """A JSON type that uses JSONB in PostgreSQL."""
 
 
-class Base(MappedAsDataclass, DeclarativeBase):
+class BaseRecord(MappedAsDataclass, DeclarativeBase):
     """The base for lakery's core schema classes."""
 
 
-class _StrMixin(Base):
+class _StrMixin(BaseRecord):
     __abstract__ = True
 
     id: Any
@@ -63,7 +63,7 @@ class _StrMixin(Base):
         return f"{self.__class__.__name__}({self.id})"
 
 
-class StorageModelRecord(_StrMixin, Base, kw_only=True):
+class StorageModelRecord(_StrMixin, BaseRecord, kw_only=True):
     """A record describing a stored model."""
 
     __abstract__ = False
@@ -76,7 +76,7 @@ class StorageModelRecord(_StrMixin, Base, kw_only=True):
     tags: Mapped[TagMap | None] = mapped_column(JSON_OR_JSONB)
     """User defined tags associated with the stored model."""
     model_type_id: Mapped[UUID] = mapped_column()
-    """An ID that uniquely identifies the type of the stored model."""
+    """An ID that uniquely identifies the type of model that was stored."""
     created_at: Mapped[DateTimeTZ] = mapped_column(default=func.now())
     """The timestamp when the model was created."""
     archived_at: Mapped[DateTimeTZ] = mapped_column(default=NEVER)
@@ -104,7 +104,7 @@ class SerializerTypeEnum(IntEnum):
     """A content stream serializer."""
 
 
-class StorageContentRecord(_StrMixin, Base, kw_only=True):
+class StorageContentRecord(_StrMixin, BaseRecord, kw_only=True):
     """A record describing where and how a piece of content was saved."""
 
     __tablename__ = "lakery_storage_content"
