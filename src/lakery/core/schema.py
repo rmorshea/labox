@@ -127,14 +127,10 @@ class StorageContentRecord(_StrMixin, Base, kw_only=True):
     """The size of the data in bytes"""
     serializer_name: Mapped[str] = mapped_column()
     """The name of the serializer used to serialize the data."""
-    serializer_version: Mapped[int] = mapped_column()
-    """The version of the serializer used to serialize the data."""
     serializer_type: Mapped[SerializerTypeEnum] = mapped_column()
     """The type of the serializer used to serialize the data."""
     storage_name: Mapped[str] = mapped_column()
     """The name of the storage backend used to store the data."""
-    storage_version: Mapped[int] = mapped_column()
-    """The version of the storage backend used to store the data."""
     storage_data: Mapped[Any] = mapped_column(JSON_OR_JSONB)
     """The information needed to load data from the storage."""
     created_at: Mapped[DateTimeTZ] = mapped_column(default=func.now())

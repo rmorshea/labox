@@ -336,7 +336,6 @@ def _make_serializer_func(schema: cs.CoreSchema) -> cs.FieldPlainInfoSerializerF
             "content_encoding": None,
             "content_type": dump["content_type"],
             "serializer_name": serializer.name,
-            "serializer_version": serializer.version,
         }
 
     return serialize

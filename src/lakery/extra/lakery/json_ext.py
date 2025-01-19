@@ -46,8 +46,6 @@ class ContentJsonExt(TypedDict):
     """The MIME type of the data."""
     serializer_name: str
     """The name of the serializer used to serialize the data."""
-    serializer_version: int
-    """The version of the serializer used to serialize the data."""
 
 
 class ModelJsonExt(TypedDict):
@@ -158,7 +156,6 @@ def dump_json_content_ext(
         "content_encoding": content_dump["content_encoding"],
         "content_type": content_dump["content_type"],
         "serializer_name": serializer.name,
-        "serializer_version": serializer.version,
     }
 
 

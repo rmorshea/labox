@@ -52,7 +52,6 @@ def test_dump_load_storage_model():
                     "content_encoding": None,
                     "content_type": "application/msgpack",
                     "serializer_name": "lakery.msgpack.value",
-                    "serializer_version": 1,
                 },
                 "spec_with_serializer": {
                     "__json_ext__": "content",
@@ -60,7 +59,6 @@ def test_dump_load_storage_model():
                     "content_encoding": None,
                     "content_type": "application/msgpack",
                     "serializer_name": "lakery.msgpack.value",
-                    "serializer_version": 1,
                 },
                 "spec_with_storage": {
                     "__json_ext__": "ref",

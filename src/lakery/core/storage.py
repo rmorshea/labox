@@ -26,8 +26,6 @@ class Storage(Generic[T], abc.ABC):
 
     name: LiteralString
     """The name of the storage."""
-    version: int
-    """The version of the storage."""
 
     @abc.abstractmethod
     async def put_content(

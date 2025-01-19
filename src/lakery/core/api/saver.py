@@ -206,10 +206,8 @@ async def _save_storage_value_spec(
         content_key=content_key,
         serializer_name=serializer.name,
         serializer_type=SerializerTypeEnum.CONTENT,
-        serializer_version=serializer.version,
         storage_data=storage_data,
         storage_name=storage.name,
-        storage_version=storage.version,
     )
 
 
@@ -251,10 +249,8 @@ async def _save_storage_stream_spec(
             content_key=content_key,
             serializer_name=serializer.name,
             serializer_type=SerializerTypeEnum.CONTENT_STREAM,
-            serializer_version=serializer.version,
             storage_data=storage_data,
             storage_name=storage.name,
-            storage_version=storage.version,
         )
     raise AssertionError  # nocov
 
