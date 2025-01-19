@@ -14,8 +14,7 @@ from lakery.core.schema import BaseRecord
 @provider.asynciterator(provides=DatabaseSession)
 async def database_session(location: str) -> AsyncIterator[DatabaseSession]:
     engine = create_async_engine(f"sqlite+aiosqlite:///{location}")
-    async with engine.begin() as conn:
-        await conn.run_sync(BaseRecord.metadata.create_all)
+    await BaseRecord.create_all(engine)
     async with AsyncSession(engine) as session:
         yield DatabaseSession(session)
 

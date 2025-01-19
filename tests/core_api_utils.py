@@ -10,10 +10,11 @@ async def assert_save_load_equivalence(
     model: BaseStorageModel[Any], registries: Registries
 ) -> None:
     async with data_saver(registries=registries) as ms:
-        ms.save_soon("sample", model)
+        future_record = ms.save_soon(model)
+    record = future_record.result()
 
     async with data_loader(registries=registries) as ml:
-        model_future = ml.load_soon(type(model), name="sample")
-    loaded_model = model_future.result()
+        future_model = ml.load_soon(record, type(model))
+    loaded_model = future_model.result()
 
     assert loaded_model == model

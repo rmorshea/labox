@@ -16,44 +16,54 @@ See [integrations](integrations.md) for a list of available extras.
 
 ## Basic Usage
 
-Setup your database engine:
+Set up your async SQLAlchemy engine and create Lakery's tables:
 
-Pick your storages and serializers:
+```python
+from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine
+
+from lakery.core.schema import BaseRecord
+
+engine = create_async_engine("sqlite+aiosqlite:///temp.db")
+AsyncSession = async_sessionmaker(engine, expire_on_commit=True)
+BaseRecord.create_all(engine).run()
+```
+
+Pick your serializers and storages:
 
 ```python
 from lakery.core import Registries
 from lakery.core import SerializerRegistry
 from lakery.core import StorageRegistry
-from lakery.extra.json import JsonSerializer
-from lakery.extra.os import FileStorage
 
-registries = Registries(
-    serializers=SerializerRegistry([JsonSerializer()]),
-    storages=StorageRegistry([FileStorage("temp", mkdir=True)]),
-)
-
-registries.begin_context()
+serializers = SerializerRegistry([JsonSerializer()])
+storages = StorageRegistry([FileStorage("temp", mkdir=True)])
+registries = Registries(serializers=serializers, storages=storages)
 ```
 
-!!! note
-
-    Using `Registries.context()` is generally preferred for production code.
-    `Registries.begin_context()` best used for quick prototyping and testing.
-
-Store and retrieve data:
+Save and load some data:
 
 ```python
-from lakery.core import Scalar
+import asyncio
+
 from lakery.core import data_loader
 from lakery.core import data_saver
 
-data = Scalar({"hello": "world"})
 
-with data_saver() as saver:
-    saver.save_soon("my_data", data)
+async def main():
+    data = Scalar({"hello": "world"})
 
-with data_loader() as loader:
-    future = loader.load_soon("my_data")
+    async with AsyncSession() as session:
+        async with data_saver(registries=registries, session=session) as saver:
+            future_record = saver.save_soon(data)
+        record = future_record.result()
 
-assert future.result() == data
+        with data_loader() as loader:
+            future_data = loader.load_soon(record)
+        loaded_data = future_data.result()
+
+    assert loaded_data == data
+
+
+asyncio.run(main())
 ```

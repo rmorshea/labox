@@ -17,19 +17,11 @@ from anyio import create_task_group
 from anysync import contextmanager
 from pybooster import injector
 from pybooster import required
-from sqlalchemy import func
-from sqlalchemy import or_
-from sqlalchemy import update
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.sql import and_
-from tenacity import AsyncRetrying
-from tenacity import stop_after_attempt
 
 from lakery.common.anyio import FutureResult
 from lakery.common.anyio import start_future
 from lakery.core.context import DatabaseSession
 from lakery.core.context import Registries
-from lakery.core.schema import NEVER
 from lakery.core.schema import ContentRecord
 from lakery.core.schema import ManifestRecord
 from lakery.core.schema import SerializerTypeEnum
@@ -39,9 +31,9 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterable
     from collections.abc import AsyncIterator
     from collections.abc import Mapping
-    from collections.abc import Sequence
 
     from anyio.abc import TaskGroup
+    from sqlalchemy.ext.asyncio import AsyncSession
 
     from lakery.common.utils import TagMap
     from lakery.core.model import BaseStorageModel
@@ -70,7 +62,7 @@ _LOG = getLogger(__name__)
 async def data_saver(
     *,
     registries: Registries = required,
-    session: DatabaseSession = required,
+    session: DatabaseSession | AsyncSession = required,
 ) -> AsyncIterator[DataSaver]:
     """Create a context manager for saving data."""
     futures: list[FutureResult[ManifestRecord]] = []
@@ -78,8 +70,13 @@ async def data_saver(
         async with create_task_group() as tg:
             yield _DataSaver(tg, futures, registries)
     finally:
-        records = [r for f in futures if (r := f.result(default=None))]
-        await _save_record_groups(records, session, _COMMIT_RETRIES)
+        async with session.begin():
+            manifests = [m for f in futures if (m := f.result(default=None))]
+            session.add_all(manifests)
+            for m in manifests:
+                session.expunge(m)
+                for c in m.contents:
+                    session.expunge(c)
 
 
 class _DataSaver:
@@ -95,7 +92,6 @@ class _DataSaver:
 
     def save_soon(
         self,
-        name: str,
         model: BaseStorageModel[Any],
         *,
         tags: Mapping[str, str] | None = None,
@@ -106,7 +102,6 @@ class _DataSaver:
         future = start_future(
             self._task_group,
             _save_model,
-            name,
             model,
             tags or {},
             self._registries,
@@ -121,7 +116,6 @@ DataSaver: TypeAlias = _DataSaver
 
 
 async def _save_model(
-    name: str,
     model: BaseStorageModel,
     tags: TagMap,
     registries: Registries,
@@ -163,19 +157,18 @@ async def _save_model(
                     )
                 )
             else:
-                msg = f"Model {name!r} contains invalid manifest {manifest_key!r} - {manifest}"
+                msg = f"Invalid manifest {manifest_key!r} in {model!r} - {manifest}"
                 raise AssertionError(msg)
 
     contents: list[ContentRecord] = []
-    for key, f in zip(model_manifests, data_record_futures, strict=False):
+    for k, f in zip(model_manifests, data_record_futures, strict=False):
         if exc := f.exception():
-            msg = f"Failed to save {key!r} data for {name!r}"
+            msg = f"Failed to save {k!r} data for {model}"
             _LOG.error(msg, exc_info=(exc.__class__, exc, exc.__traceback__))
         contents.append(f.result())
 
     return ManifestRecord(
         id=record_id,
-        name=name,
         tags=tags,
         model_id=model_uuid,
         contents=contents,
@@ -324,36 +317,6 @@ class _SerializationHelper:
         first_value = await anext(stream_iter)
         serializer = self._serializers.infer_from_stream_type(type(first_value))
         return serializer.dump_stream(_continue_stream(first_value, stream_iter))
-
-
-async def _save_record_groups(
-    records: Sequence[ManifestRecord],
-    session: DatabaseSession,
-    retries: int,
-) -> None:
-    if not records:
-        return
-
-    archive_conflicting_records = (
-        update(ManifestRecord)
-        .where(or_(*(_model_record_conflicts(r) for r in records)))
-        .values({ManifestRecord.archived_at: func.now()})
-    )
-
-    async for attempt in AsyncRetrying(stop=stop_after_attempt(retries)):
-        with attempt:
-            try:
-                async with session.begin_nested():
-                    await session.execute(archive_conflicting_records)
-                    session.add_all(records)
-                    await session.commit()
-            except IntegrityError:
-                pass
-
-
-def _model_record_conflicts(record: ManifestRecord):
-    """Return a clause that matches records that conflict with the given one."""
-    return and_(ManifestRecord.name == record.name, ManifestRecord.archived_at == NEVER)
 
 
 async def _continue_stream(first_value: Any, stream: AsyncIterable[Any]) -> AsyncGenerator[Any]:

@@ -1,4 +1,5 @@
 from lakery.core.api.loader import DataLoader
+from lakery.core.api.loader import data_loader
 from lakery.core.api.saver import DataSaver
 from lakery.core.api.saver import data_saver
 from lakery.core.context import Registries
@@ -19,6 +20,7 @@ from lakery.core.serializer import StreamSerializer
 from lakery.core.storage import Digest
 from lakery.core.storage import GetStreamDigest
 from lakery.core.storage import Storage
+from lakery.core.storage import StorageRegistry
 from lakery.core.storage import StreamDigest
 
 __all__ = (
@@ -39,10 +41,12 @@ __all__ = (
     "Serializer",
     "SerializerRegistry",
     "Storage",
+    "StorageRegistry",
     "Stream",
     "StreamContent",
     "StreamDigest",
     "StreamManifest",
     "StreamSerializer",
+    "data_loader",
     "data_saver",
 )

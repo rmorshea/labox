@@ -9,7 +9,7 @@ packages = ["src/lakery"]
 [project]
 name = "lakery"
 version = "0.0.1a1"
-description = "A data lake creation tool for Python."
+description = "A data storage framework for Python."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { file = "LICENSE.txt" }
@@ -181,6 +181,7 @@ ban-relative-imports = "all"
     "SIM115", # Use context manager for opening files
     "T201",   # Print
     "TCH002", # Move third-party import into a type-checking block
+    "F821",   # Undefined name (see: https://github.com/adamtheturtle/doccmd/issues/275)
 ]
 
 [tool.yamlfix]

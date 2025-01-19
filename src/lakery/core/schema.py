@@ -5,12 +5,14 @@ from collections.abc import Sequence
 from datetime import UTC
 from datetime import datetime
 from enum import IntEnum
+from typing import TYPE_CHECKING
 from typing import Annotated
 from typing import Any
 from typing import TypeVar
 from uuid import UUID
 from uuid import uuid4
 
+from anysync import coroutine
 from sqlalchemy import JSON
 from sqlalchemy import ColumnElement
 from sqlalchemy import DateTime
@@ -26,6 +28,9 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.orm.decl_api import MappedAsDataclass
 
 from lakery.common.utils import TagMap  # noqa: TC001
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio.engine import AsyncEngine
 
 C = TypeVar("C", bound=MappedColumn)
 
@@ -53,6 +58,13 @@ JSON_OR_JSONB = JSON().with_variant(JSONB(), "postgresql")
 class BaseRecord(MappedAsDataclass, DeclarativeBase):
     """The base for lakery's core schema classes."""
 
+    @classmethod
+    @coroutine
+    async def create_all(cls, engine: AsyncEngine) -> None:
+        """Create all tables for the schema."""
+        async with engine.begin() as conn:
+            await conn.run_sync(cls.metadata.create_all)
+
 
 class _StrMixin(BaseRecord):
     __abstract__ = True
@@ -71,24 +83,14 @@ class ManifestRecord(_StrMixin, BaseRecord, kw_only=True):
 
     id: Mapped[UUID] = mapped_column(default_factory=uuid4, primary_key=True)
     """The ID of the stored model."""
-    name: Mapped[str] = mapped_column()
-    """The name of the stored model."""
     tags: Mapped[TagMap | None] = mapped_column(JSON_OR_JSONB)
     """User defined tags associated with the stored model."""
     model_id: Mapped[UUID] = mapped_column()
     """An ID that uniquely identifies the type of model that was stored."""
     created_at: Mapped[DateTimeTZ] = mapped_column(default=func.now())
     """The timestamp when the model was created."""
-    archived_at: Mapped[DateTimeTZ] = mapped_column(default=NEVER)
-    """The timestamp when the model was archived."""
     contents: Mapped[Sequence[ContentRecord]] = relationship(default=(), collection_class=list)
     """The contents of the stored model."""
-
-
-UniqueConstraint(
-    ManifestRecord.name,
-    ManifestRecord.archived_at,
-)
 
 
 class SerializerTypeEnum(IntEnum):
