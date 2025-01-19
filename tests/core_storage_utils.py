@@ -15,9 +15,9 @@ import pytest
 from lakery.core.api.saver import _wrap_stream_dump
 
 if TYPE_CHECKING:
+    from lakery.core.storage import Digest
     from lakery.core.storage import GetStreamDigest
     from lakery.core.storage import Storage
-    from lakery.core.storage import ValueDigest
 
 
 F = TypeVar("F", bound=Callable)
@@ -42,8 +42,8 @@ def parametrize_storage_assertions(test_function: F) -> F:
 
 async def assert_storage_can_put_and_get_value(storage: Storage) -> None:
     value, digest = make_fake_value_data(1024)
-    storage_data = await storage.put_content(value, digest, {})
-    assert (await storage.get_content(storage_data)) == value
+    storage_data = await storage.put_data(value, digest, {})
+    assert (await storage.get_data(storage_data)) == value
 
 
 async def assert_storage_can_put_and_get_stream(storage: Storage):
@@ -52,8 +52,8 @@ async def assert_storage_can_put_and_get_stream(storage: Storage):
         expected_value,
         digest,
     ):
-        relation = await storage.put_content_stream(stream, digest, {})
-        actual_value = b"".join([chunk async for chunk in storage.get_content_stream(relation)])
+        relation = await storage.put_data_stream(stream, digest, {})
+        actual_value = b"".join([chunk async for chunk in storage.get_data_stream(relation)])
         assert actual_value == expected_value
 
 
@@ -63,24 +63,24 @@ async def assert_storage_can_put_stream_and_get_value(storage: Storage):
         expected_value,
         digest,
     ):
-        relation = await storage.put_content_stream(stream, digest, {})
-        actual_value = await storage.get_content(relation)
+        relation = await storage.put_data_stream(stream, digest, {})
+        actual_value = await storage.get_data(relation)
         assert actual_value == expected_value
 
 
 async def assert_storage_can_put_value_and_get_stream(storage: Storage):
     value, digest = make_fake_value_data(1024)
-    relation = await storage.put_content(value, digest, {})
-    actual_value = b"".join([chunk async for chunk in storage.get_content_stream(relation)])
+    relation = await storage.put_data(value, digest, {})
+    actual_value = b"".join([chunk async for chunk in storage.get_data_stream(relation)])
     assert actual_value == value
 
 
-def make_fake_value_data(size: int) -> tuple[bytes, ValueDigest]:
+def make_fake_value_data(size: int) -> tuple[bytes, Digest]:
     value = os.urandom(size)
     value_hash = sha256(value)
     hash_str = value_hash.hexdigest()
 
-    digest: ValueDigest = {
+    digest: Digest = {
         "content_encoding": None,
         "content_hash_algorithm": value_hash.name,
         "content_hash": hash_str,
@@ -119,7 +119,7 @@ async def make_fake_stream_data(
     stream, get_digest = _wrap_stream_dump(
         {
             "content_encoding": None,
-            "content_stream": make_stream(),
+            "data_stream": make_stream(),
             "content_type": "application/octet-stream",
         },
     )

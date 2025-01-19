@@ -7,7 +7,7 @@ from lakery.core.serializer import SerializerRegistry
 from lakery.core.storage import StorageRegistry
 from lakery.extra.json import JsonSerializer
 from lakery.extra.json import JsonStreamSerializer
-from lakery.extra.lakery import LocalFileStorage
+from lakery.extra.lakery.local_file_storage import LocalFileStorage
 
 HERE = Path(__file__).parent
 TEST_STORAGE_DIR = HERE / ".storage"

@@ -30,10 +30,8 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 S = TypeVar(
     "S",
-    bound=Mapping[str, "AnyValueDump"]
-    | Mapping[str, "ValueDump"]
-    | Mapping[str, "ValueStreamDump"],
-    default="ModelDump",
+    bound=Mapping[str, "AnyManifest"] | Mapping[str, "Manifest"] | Mapping[str, "StreamManifest"],
+    default=Mapping[str, "AnyManifest"],
 )
 
 
@@ -45,41 +43,41 @@ class BaseStorageModel(Generic[S], abc.ABC):
 
     @abc.abstractmethod
     def storage_model_dump(self, registries: Registries, /) -> S:
-        """Turn the given model into its serialized components."""
+        """Dump the model to a series of storage manifests."""
         raise NotImplementedError
 
     @classmethod
     @abc.abstractmethod
-    def storage_model_load(cls, spec: S, registries: Registries, /) -> Self:
-        """Turn the given serialized components back into a model."""
+    def storage_model_load(cls, manifests: S, registries: Registries, /) -> Self:
+        """Load the model from a series of storage manifests."""
         raise NotImplementedError
 
 
-class ValueDump(Generic[T], TypedDict):
-    """Spec for how to store and serialize a value."""
+class Manifest(Generic[T], TypedDict):
+    """Describes where and how to store a value."""
 
     value: T
     serializer: Serializer[T] | None
     storage: Storage | None
 
 
-class ValueStreamDump(Generic[T], TypedDict):
-    """Spec for how to store and serialize a stream."""
+class StreamManifest(Generic[T], TypedDict):
+    """Describes where and how to store a stream."""
 
-    value_stream: AsyncIterable[T]
+    stream: AsyncIterable[T]
     serializer: StreamSerializer[T] | None
     storage: Storage | None
 
 
-AnyValueDump: TypeAlias = ValueDump | ValueStreamDump
-"""A spec for how to store and serialize a value or stream."""
+AnyManifest: TypeAlias = Manifest | StreamManifest
+"""A type alias for any manifest."""
 
-ModelDump: TypeAlias = Mapping[str, AnyValueDump]
-"""A mapping of string identifiers to storage specs."""
+ManifestMap: TypeAlias = Mapping[str, AnyManifest]
+"""A type alias for a mapping of manifests."""
 
 
 @dataclass(frozen=True)
-class ValueModel(Generic[T], BaseStorageModel[Mapping[str, ValueDump]]):
+class ValueModel(Generic[T], BaseStorageModel[Mapping[str, Manifest]]):
     """Models a single value."""
 
     storage_model_id = "63b297f66dbc44bb8552f6f490cf21cb"
@@ -91,27 +89,23 @@ class ValueModel(Generic[T], BaseStorageModel[Mapping[str, ValueDump]]):
     storage: Storage | None = field(default=None, compare=False)
     """The storage for the value."""
 
-    def storage_model_dump(self, _registries: Registries) -> Mapping[str, ValueDump]:
-        """Turn the given model into its serialized components."""
+    def storage_model_dump(self, _registries: Registries) -> Mapping[str, Manifest]:
+        """Dump the model to a series of storage manifests."""
         return {"": {"value": self.value, "serializer": self.serializer, "storage": self.storage}}
 
     @classmethod
     def storage_model_load(
         cls,
-        spec: Mapping[str, ValueDump],
+        manifests: Mapping[str, Manifest],
         _registries: Registries,
     ) -> Self:
-        """Turn the given serialized components back into a model."""
-        value_spec = spec[""]
-        return cls(
-            value=value_spec["value"],
-            serializer=value_spec["serializer"],
-            storage=value_spec["storage"],
-        )
+        """Load the model from a series of storage manifests."""
+        man = manifests[""]
+        return cls(value=man["value"], serializer=man["serializer"], storage=man["storage"])
 
 
 @dataclass(frozen=True)
-class StreamModel(Generic[T], BaseStorageModel[Mapping[str, ValueStreamDump]]):
+class StreamModel(Generic[T], BaseStorageModel[Mapping[str, StreamManifest]]):
     """Models a single stream."""
 
     storage_model_id = "e80e8707ffdd4785b95b30247fa4398c"
@@ -123,11 +117,11 @@ class StreamModel(Generic[T], BaseStorageModel[Mapping[str, ValueStreamDump]]):
     storage: Storage | None = field(default=None, compare=False)
     """The storage for the stream."""
 
-    def storage_model_dump(self, _registries: Registries) -> Mapping[str, ValueStreamDump]:
-        """Turn the given model into its serialized components."""
+    def storage_model_dump(self, _registries: Registries) -> Mapping[str, StreamManifest]:
+        """Dump the model to a series of storage manifests."""
         return {
             "": {
-                "value_stream": self.stream,
+                "stream": self.stream,
                 "serializer": self.serializer,
                 "storage": self.storage,
             }
@@ -136,16 +130,12 @@ class StreamModel(Generic[T], BaseStorageModel[Mapping[str, ValueStreamDump]]):
     @classmethod
     def storage_model_load(
         cls,
-        spec: Mapping[str, ValueStreamDump],
+        manifests: Mapping[str, StreamManifest],
         _registries: Registries,
     ) -> Self:
-        """Turn the given serialized components back into a model."""
-        stream_spec = spec[""]
-        return cls(
-            stream=stream_spec["value_stream"],
-            serializer=stream_spec["serializer"],
-            storage=stream_spec["storage"],
-        )
+        """Load the model from a series of storage manifests."""
+        man = manifests[""]
+        return cls(stream=man["stream"], serializer=man["serializer"], storage=man["storage"])
 
 
 M = TypeVar("M", bound=BaseStorageModel)

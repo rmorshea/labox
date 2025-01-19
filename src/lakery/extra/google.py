@@ -14,9 +14,9 @@ from google.cloud.storage.fileio import BlobReader
 from google.cloud.storage.fileio import BlobWriter
 
 from lakery.common.exceptions import NoStorageData
+from lakery.core.storage import Digest
 from lakery.core.storage import GetStreamDigest
 from lakery.core.storage import Storage
-from lakery.core.storage import ValueDigest
 from lakery.extra._utils import make_path_from_digest
 from lakery.extra._utils import make_temp_path
 
@@ -75,22 +75,22 @@ class BlobStorage(Storage[str]):
         self._reader_type = reader_type
         self.__current_bucket = None
 
-    async def put_content(
+    async def put_data(
         self,
-        value: bytes,
-        digest: ValueDigest,
+        data: bytes,
+        digest: Digest,
         tags: TagMap,
     ) -> str:
-        """Save the given value dump."""
+        """Save the given data."""
         location = make_path_from_digest("/", digest, prefix=self._object_name_prefix)
         blob = self._bucket.blob(location, chunk_size=self._object_chunk_size)
         blob.metadata = tags
         writer = self._writer_type(blob, content_type=digest["content_type"])
-        await self._to_thread(writer.write, value)
+        await self._to_thread(writer.write, data)
         return location
 
-    async def get_content(self, location: str) -> bytes:
-        """Load the value dump for the given relation."""
+    async def get_data(self, location: str) -> bytes:
+        """Load data from the given location."""
         reader = self._reader_type(self._bucket.blob(location, chunk_size=self._object_chunk_size))
         with closing(reader) as reader:
             try:
@@ -99,13 +99,13 @@ class BlobStorage(Storage[str]):
                 msg = f"Failed to load value from {location!r}"
                 raise NoStorageData(msg) from error
 
-    async def put_content_stream(
+    async def put_data_stream(
         self,
-        stream: AsyncIterable[bytes],
+        data_stream: AsyncIterable[bytes],
         get_digest: GetStreamDigest,
         tags: TagMap,
     ) -> str:
-        """Save the given stream dump."""
+        """Save the given data steam."""
         initial_digest = get_digest(allow_incomplete=True)
 
         temp_blob = self._bucket.blob(
@@ -115,7 +115,7 @@ class BlobStorage(Storage[str]):
         temp_blob.metadata = tags
         writer = self._writer_type(temp_blob, content_type=initial_digest["content_type"])
         try:
-            async for chunk in stream:
+            async for chunk in data_stream:
                 await self._to_thread(writer.write, chunk)
         except Exception:
             await self._to_thread(temp_blob.delete)
@@ -143,8 +143,8 @@ class BlobStorage(Storage[str]):
 
         return final_location
 
-    async def get_content_stream(self, location: str) -> AsyncGenerator[bytes]:
-        """Load the stream dump for the given relation."""
+    async def get_data_stream(self, location: str) -> AsyncGenerator[bytes]:
+        """Load a data stream from the given location."""
         blob = self._bucket.blob(location, chunk_size=self._object_chunk_size)
         with closing(self._reader_type(blob)) as reader:
             try:

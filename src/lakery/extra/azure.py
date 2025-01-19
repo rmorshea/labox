@@ -7,9 +7,9 @@ from azure.core.exceptions import ResourceNotFoundError
 from azure.storage.blob import ContentSettings
 
 from lakery.common.exceptions import NoStorageData
+from lakery.core.storage import Digest
 from lakery.core.storage import GetStreamDigest
 from lakery.core.storage import Storage
-from lakery.core.storage import ValueDigest
 from lakery.extra._utils import make_path_from_digest
 from lakery.extra._utils import make_temp_path
 
@@ -39,17 +39,17 @@ class BlobStorage(Storage[str]):
         self._path_prefix = path_prefix
         self._limiter = CapacityLimiter(max_concurrency) if max_concurrency else None
 
-    async def put_content(
+    async def put_data(
         self,
-        value: bytes,
-        digest: ValueDigest,
+        data: bytes,
+        digest: Digest,
         tags: TagMap,
     ) -> str:
-        """Save the given value dump."""
+        """Save the given value data."""
         location = make_path_from_digest("/", digest, prefix=self._path_prefix)
         blob_client = self._container_client.get_blob_client(blob=location)
         await blob_client.upload_blob(
-            value,
+            data,
             content_settings=ContentSettings(
                 content_type=digest["content_type"],
                 content_encoding=digest.get("content_encoding"),
@@ -58,8 +58,8 @@ class BlobStorage(Storage[str]):
         )
         return location
 
-    async def get_content(self, location: str) -> bytes:
-        """Load the value dump for the given relation."""
+    async def get_data(self, location: str) -> bytes:
+        """Load data from the given location."""
         blob_client = self._container_client.get_blob_client(blob=location)
         try:
             blob_reader = await blob_client.download_blob()
@@ -68,19 +68,19 @@ class BlobStorage(Storage[str]):
             raise NoStorageData(msg) from exc
         return await blob_reader.readall()
 
-    async def put_content_stream(
+    async def put_data_stream(
         self,
-        stream: AsyncIterable[bytes],
+        data_stream: AsyncIterable[bytes],
         get_digest: GetStreamDigest,
         tags: TagMap,
     ) -> str:
-        """Save the given stream dump."""
+        """Save the given data stream."""
         initial_digest = get_digest(allow_incomplete=True)
         temp_location = make_temp_path("/", initial_digest, prefix=self._path_prefix)
 
         temp_blob_client = self._container_client.get_blob_client(blob=temp_location)
         await temp_blob_client.upload_blob(
-            stream,
+            data_stream,
             content_settings=ContentSettings(
                 content_type=initial_digest["content_type"],
                 content_encoding=initial_digest.get("content_encoding"),
@@ -96,8 +96,8 @@ class BlobStorage(Storage[str]):
 
         return final_location
 
-    async def get_content_stream(self, location: str) -> AsyncGenerator[bytes]:
-        """Load the stream dump for the given relation."""
+    async def get_data_stream(self, location: str) -> AsyncGenerator[bytes]:
+        """Load a data stream from the given location."""
         blob_client = self._container_client.get_blob_client(blob=location)
         try:
             blob_reader = await blob_client.download_blob()

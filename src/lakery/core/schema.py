@@ -98,9 +98,9 @@ UniqueConstraint(
 class SerializerTypeEnum(IntEnum):
     """An enumeration of the types of serializers."""
 
-    CONTENT = 1
+    Content = 1
     """A content serializer."""
-    CONTENT_STREAM = 2
+    ContentStream = 2
     """A content stream serializer."""
 
 
@@ -113,8 +113,8 @@ class StorageContentRecord(_StrMixin, Base, kw_only=True):
     """The ID of the content."""
     model_id: Mapped[UUID] = mapped_column(ForeignKey(StorageModelRecord.id))
     """The ID of the model that the content belongs to."""
-    content_key: Mapped[str] = mapped_column()
-    """The key of the data within the storage model."""
+    model_manifest_id: Mapped[str] = mapped_column()
+    """The ID of the manifest that the content belongs to."""
     content_type: Mapped[str] = mapped_column()
     """The MIME type of the data."""
     content_encoding: Mapped[str | None] = mapped_column()
@@ -135,3 +135,9 @@ class StorageContentRecord(_StrMixin, Base, kw_only=True):
     """The information needed to load data from the storage."""
     created_at: Mapped[DateTimeTZ] = mapped_column(default=func.now())
     """The timestamp when the content was created."""
+
+
+UniqueConstraint(
+    StorageContentRecord.model_id,
+    StorageContentRecord.model_manifest_id,
+)

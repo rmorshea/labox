@@ -13,12 +13,12 @@ from typing import cast
 from typing import overload
 from uuid import UUID
 
-from lakery.core.model import AnyValueDump
+from lakery.core.model import AnyManifest
 from lakery.core.model import BaseStorageModel
 
 if TYPE_CHECKING:
     from lakery.core.context import Registries
-    from lakery.core.model import ValueDump
+    from lakery.core.model import Manifest
     from lakery.core.serializer import Serializer
     from lakery.core.storage import Storage
     from lakery.extra.json import JsonType
@@ -55,7 +55,7 @@ class ModelJsonExt(TypedDict):
 
     storage_model_id: str
     """The ID of the storage model."""
-    dump: dict[str, ContentJsonExt | RefJsonExt]
+    content: dict[str, ContentJsonExt | RefJsonExt]
     """Content dumped by the model."""
 
 
@@ -68,20 +68,20 @@ class JsonExtDumpContext(TypedDict):
 
     path: str
     registries: Registries
-    external: dict[str, ValueDump]
+    external: dict[str, Manifest]
 
 
 class JsonExtLoadContext(TypedDict):
     """The context for loading extended JSON data."""
 
     registries: Registries
-    external: dict[str, ValueDump]
+    external: dict[str, Manifest]
 
 
 def dump_json_ext(
     value: Any,
     context: JsonExtDumpContext,
-    default: Callable[[Any], ValueDump | None] = lambda x: None,
+    default: Callable[[Any], Manifest | None] = lambda x: None,
 ) -> JsonType:
     """Dump the given value to JSON with extensions."""
     path = context["path"]
@@ -116,7 +116,7 @@ def dump_json_ext(
 @overload
 def dump_any_json_ext(
     key: str,
-    data: ValueDump,
+    data: Manifest,
     context: JsonExtDumpContext,
 ) -> ContentJsonExt | RefJsonExt: ...
 
@@ -131,7 +131,7 @@ def dump_any_json_ext(
 
 def dump_any_json_ext(
     key: str,
-    data: BaseStorageModel | ValueDump,
+    data: BaseStorageModel | Manifest,
     context: JsonExtDumpContext,
 ) -> AnyJsonExt:
     """Dump the given value to a JSON extension."""
@@ -149,12 +149,12 @@ def dump_json_content_ext(
 ) -> ContentJsonExt:
     """Dump the given value to a JSON extension with embedded content."""
     serializer = serializer or context["registries"].serializers.infer_from_value_type(type(value))
-    content_dump = serializer.dump(value)
+    content = serializer.dump(value)
     return {
         "__json_ext__": "content",
-        "content_base64": b64encode(content_dump["content"]).decode("ascii"),
-        "content_encoding": content_dump["content_encoding"],
-        "content_type": content_dump["content_type"],
+        "content_base64": b64encode(content["data"]).decode("ascii"),
+        "content_encoding": content["content_encoding"],
+        "content_type": content["content_type"],
         "serializer_name": serializer.name,
     }
 
@@ -166,18 +166,18 @@ def dump_json_model_ext(value: BaseStorageModel, context: JsonExtDumpContext) ->
     return {
         "__json_ext__": "model",
         "storage_model_id": cls.storage_model_id,
-        "dump": {
-            k: dump_any_json_ext(k, _check_is_value_dump(v), context)
+        "content": {
+            k: dump_any_json_ext(k, _check_is_not_stream_manifest(v), context)
             for k, v in value.storage_model_dump(context["registries"]).items()
         },
     }
 
 
-def _check_is_value_dump(d: AnyValueDump) -> ValueDump:
-    if "value_stream" in d:
-        msg = f"Expected value dump, got value stream dump: {d}"
+def _check_is_not_stream_manifest(man: AnyManifest) -> Manifest:
+    if "stream" in man:
+        msg = f"Stream manifest not supported: {man}"
         raise ValueError(msg)
-    return d
+    return man
 
 
 def dump_json_ref_ext(
@@ -233,7 +233,7 @@ def load_json_content_ext(json_ext: ContentJsonExt, context: JsonExtLoadContext)
     serializer = context["registries"].serializers[json_ext["serializer_name"]]
     return serializer.load(
         {
-            "content": b64decode(json_ext["content_base64"].encode("ascii")),
+            "data": b64decode(json_ext["content_base64"].encode("ascii")),
             "content_encoding": json_ext["content_encoding"],
             "content_type": json_ext["content_type"],
         }
@@ -248,8 +248,8 @@ def load_json_ref_ext(value: RefJsonExt, context: JsonExtLoadContext) -> Any:
 def load_json_model_ext(value: ModelJsonExt, context: JsonExtLoadContext) -> BaseStorageModel:
     """Load a value from a JSON extension with a storage model."""
     cls = context["registries"].models[UUID(value["storage_model_id"])]
-    model_dump = {k: load_any_json_ext(v, context) for k, v in value["dump"].items()}
-    return cls.storage_model_load(model_dump, context["registries"])
+    manifests = {k: load_any_json_ext(v, context) for k, v in value["content"].items()}
+    return cls.storage_model_load(manifests, context["registries"])
 
 
 _load_func_by_ext = {

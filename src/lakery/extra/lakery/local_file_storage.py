@@ -17,8 +17,8 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from lakery.common.utils import TagMap
+    from lakery.core.storage import Digest
     from lakery.core.storage import GetStreamDigest
-    from lakery.core.storage import ValueDigest
 
 
 class LocalFileStorage(Storage[str]):
@@ -40,33 +40,33 @@ class LocalFileStorage(Storage[str]):
         self.chunk_size = chunk_size
         (self.path / "scratch").mkdir()
 
-    async def put_content(
+    async def put_data(
         self,
-        value: bytes,
-        digest: ValueDigest,
+        data: bytes,
+        digest: Digest,
         _tags: TagMap,
     ) -> str:
-        """Save the given value dump."""
+        """Save the given data."""
         content_path = self.path.joinpath(*make_path_parts_from_digest(digest))
         if not content_path.exists():
             content_path.parent.mkdir(parents=True, exist_ok=True)
-            content_path.write_bytes(value)
+            content_path.write_bytes(data)
         return _path_to_str(content_path)
 
-    async def get_content(self, location: str) -> bytes:
-        """Load the value dump for the given relation."""
+    async def get_data(self, location: str) -> bytes:
+        """Load data from the given location."""
         return _str_to_path(location).read_bytes()
 
-    async def put_content_stream(
+    async def put_data_stream(
         self,
-        stream: AsyncIterable[bytes],
+        data_stream: AsyncIterable[bytes],
         get_digest: GetStreamDigest,
         _tags: TagMap,
     ) -> str:
-        """Save the given stream dump."""
+        """Save the given data stream."""
         scratch_path = self._get_scratch_path()
         with scratch_path.open("wb") as file:
-            async for chunk in stream:
+            async for chunk in data_stream:
                 file.write(chunk)
         try:
             final_digest = get_digest()
@@ -78,8 +78,8 @@ class LocalFileStorage(Storage[str]):
             scratch_path.unlink(missing_ok=True)
         return _path_to_str(content_path)
 
-    async def get_content_stream(self, location: str) -> AsyncGenerator[bytes]:
-        """Load the stream dump for the given relation."""
+    async def get_data_stream(self, location: str) -> AsyncGenerator[bytes]:
+        """Load a stream of data from the given location."""
         path = _str_to_path(location)
         async with create_task_group() as tg:
             with start_async_iterator(tg, _iter_file_chunks(path, self.chunk_size)) as chunks:

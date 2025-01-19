@@ -18,9 +18,9 @@ from anyio.to_thread import run_sync
 from lakery.common.anyio import start_async_iterator
 from lakery.common.exceptions import NoStorageData
 from lakery.common.streaming import write_async_byte_stream_into
+from lakery.core.storage import Digest
 from lakery.core.storage import GetStreamDigest
 from lakery.core.storage import Storage
-from lakery.core.storage import ValueDigest
 from lakery.extra._utils import make_path_from_digest
 from lakery.extra._utils import make_temp_path
 
@@ -77,10 +77,10 @@ class S3Storage(Storage[str]):
         self._stream_writer_buffer_type = stream_writer_buffer_type
         self._stream_reader_part_size = stream_reader_part_size
 
-    async def put_content(
+    async def put_data(
         self,
-        value: bytes,
-        digest: ValueDigest,
+        data: bytes,
+        digest: Digest,
         tags: TagMap,
     ) -> str:
         """Save the given value."""
@@ -88,7 +88,7 @@ class S3Storage(Storage[str]):
         put_request: PutObjectRequestRequestTypeDef = {
             "Bucket": self._bucket_name,
             "Key": location,
-            "Body": value,
+            "Body": data,
             "ContentType": digest["content_type"],
             "Tagging": urlencode(tags),
         }
@@ -97,7 +97,7 @@ class S3Storage(Storage[str]):
         await self._to_thread(self._client.put_object, **put_request)
         return location
 
-    async def get_content(self, location: str) -> bytes:
+    async def get_data(self, location: str) -> bytes:
         """Load the value from the given location."""
         try:
             result = await self._to_thread(
@@ -110,13 +110,13 @@ class S3Storage(Storage[str]):
             msg = f"No data found for {location!r}."
             raise NoStorageData(msg) from error
 
-    async def put_content_stream(
+    async def put_data_stream(
         self,
-        stream: AsyncIterable[bytes],
+        data_stream: AsyncIterable[bytes],
         get_digest: GetStreamDigest,
         tags: TagMap,
     ) -> str:
-        """Save the given stream dump.
+        """Save the given data stream.
 
         This works by first saving the stream to a temporary key becuase the content
         hash is not known until the stream is fully read. The data has been written
@@ -144,7 +144,7 @@ class S3Storage(Storage[str]):
                 part_num = 1
                 etags: list[str] = []
                 while await write_async_byte_stream_into(
-                    stream, buffer, min_size=self._stream_writer_min_part_size
+                    data_stream, buffer, min_size=self._stream_writer_min_part_size
                 ):
                     buffer.seek(0)
                     etags.append(
@@ -202,7 +202,7 @@ class S3Storage(Storage[str]):
 
         return final_location
 
-    async def get_content_stream(self, location: str) -> AsyncGenerator[bytes]:
+    async def get_data_stream(self, location: str) -> AsyncGenerator[bytes]:
         """Load the stream from the given location."""
         try:
             result = await self._to_thread(

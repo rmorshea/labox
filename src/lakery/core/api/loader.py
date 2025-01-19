@@ -23,7 +23,7 @@ from lakery.common.anyio import start_given_future
 from lakery.common.exceptions import NotRegistered
 from lakery.core.context import DatabaseSession
 from lakery.core.context import Registries
-from lakery.core.model import AnyValueDump
+from lakery.core.model import AnyManifest
 from lakery.core.model import BaseStorageModel
 from lakery.core.schema import NEVER
 from lakery.core.schema import SerializerTypeEnum
@@ -129,41 +129,41 @@ async def load_model_from_record(
     """Load the given model from the given record."""
     model_type = registries.models[record.model_type_id]
 
-    content_futures: dict[str, FutureResult[AnyValueDump]] = {}
+    manifest_futures: dict[str, FutureResult[AnyManifest]] = {}
     async with create_task_group() as tg:
         for content in record.contents:
-            content_futures[content.content_key] = start_future(
+            manifest_futures[content.model_manifest_id] = start_future(
                 tg,
-                load_content_from_record,
+                load_manifest_from_record,
                 content,
                 serializers=registries.serializers,
                 storages=registries.storages,
             )
 
-    contents = {key: future.result() for key, future in content_futures.items()}
-    return model_type.storage_model_load(contents, registries)
+    manifests = {i: f.result() for i, f in manifest_futures.items()}
+    return model_type.storage_model_load(manifests, registries)
 
 
-async def load_content_from_record(
+async def load_manifest_from_record(
     record: StorageContentRecord,
     *,
     serializers: SerializerRegistry,
     storages: StorageRegistry,
-) -> AnyValueDump:
+) -> AnyManifest:
     """Load the given content from the given record."""
     serializer = serializers[record.serializer_name]
     storage = storages[record.storage_name]
     match record.serializer_type:
-        case SerializerTypeEnum.CONTENT:
+        case SerializerTypeEnum.Content:
             value = serializer.load(
                 {
                     "content_encoding": record.content_encoding,
                     "content_type": record.content_type,
-                    "content": await storage.get_content(record.storage_data),
+                    "data": await storage.get_data(record.storage_data),
                 }
             )
             return {"value": value, "serializer": serializer, "storage": storage}
-        case SerializerTypeEnum.CONTENT_STREAM:
+        case SerializerTypeEnum.ContentStream:
             if not isinstance(serializer, StreamSerializer):
                 msg = f"Content {record.id} expects a stream serializer, got {serializer}."
                 raise TypeError(msg)
@@ -171,10 +171,10 @@ async def load_content_from_record(
                 {
                     "content_encoding": record.content_encoding,
                     "content_type": record.content_type,
-                    "content_stream": storage.get_content_stream(record.storage_data),
+                    "data_stream": storage.get_data_stream(record.storage_data),
                 }
             )
-            return {"value_stream": stream, "serializer": serializer, "storage": storage}
+            return {"stream": stream, "serializer": serializer, "storage": storage}
         case _:  # nocov
             msg = f"Unknown serializer type: {record.serializer_type}"
             raise ValueError(msg)

@@ -16,9 +16,9 @@ from uuid import uuid4
 from warnings import warn
 
 from lakery.core.model import BaseStorageModel
-from lakery.core.model import ModelDump
+from lakery.core.model import Manifest
+from lakery.core.model import ManifestMap
 from lakery.core.model import ModelRegistry
-from lakery.core.model import ValueDump
 from lakery.core.serializer import Serializer
 from lakery.core.serializer import SerializerRegistry
 from lakery.core.storage import Storage
@@ -65,9 +65,9 @@ class StorageModel(BaseStorageModel):
                 cls.storage_model_id = storage_id
                 _MODELS.add(cls)
 
-    def storage_model_dump(self, registries: Registries) -> dict[str, ValueDump]:
+    def storage_model_dump(self, registries: Registries) -> dict[str, Manifest]:
         """Dump the model into a dictionary of values."""
-        external: dict[str, ValueDump] = {}
+        external: dict[str, Manifest] = {}
         context: _DumpContext = {"path": "", "registries": registries, "external": external}
         kwargs: dict[str, Any] = {}
         for f in fields(self):
@@ -79,7 +79,7 @@ class StorageModel(BaseStorageModel):
             data = (
                 value.storage_model_dump(registries)
                 if isinstance(value, BaseStorageModel)
-                else ValueDump(
+                else Manifest(
                     value=value,
                     serializer=_get_field_serializer(f),
                     storage=_get_field_storage(f),
@@ -98,9 +98,9 @@ class StorageModel(BaseStorageModel):
         }
 
     @classmethod
-    def storage_model_load(cls, dump: ModelDump, registries: Registries) -> Self:
-        """Load the model from a dictionary of values."""
-        external = cast("dict[str, ValueDump]", dict(dump))
+    def storage_model_load(cls, manifests: ManifestMap, registries: Registries) -> Self:
+        """Load the model from a dictionary a series of manifests."""
+        external = cast("dict[str, Manifest]", dict(manifests))
         data = external.pop("data")["value"]
         kwargs = load_json_ext(data, {"external": external, "registries": registries})
         return cls(**kwargs)
@@ -134,9 +134,9 @@ def _get_field_storage(field: Field) -> Storage | None:
 class _DumpContext(TypedDict):
     path: str
     registries: Registries
-    external: dict[str, ValueDump]
+    external: dict[str, Manifest]
 
 
 class _LoadContext(TypedDict):
     registries: Registries
-    external: dict[str, ValueDump]
+    external: dict[str, Manifest]

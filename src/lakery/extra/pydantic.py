@@ -26,10 +26,11 @@ from pydantic import GetCoreSchemaHandler
 from pydantic._internal._core_utils import walk_core_schema as _walk_core_schema
 from pydantic_core import core_schema as cs
 
-from lakery.core.model import AnyValueDump
+from lakery.core.model import AnyManifest
 from lakery.core.model import BaseStorageModel
+from lakery.core.model import Manifest
+from lakery.core.model import ManifestMap
 from lakery.core.model import ModelRegistry
-from lakery.core.model import ValueDump
 from lakery.core.serializer import Serializer
 from lakery.core.storage import Storage
 
@@ -51,7 +52,7 @@ def get_model_registry() -> ModelRegistry:
 
 class StorageModel(
     BaseModel,
-    BaseStorageModel[Mapping[str, AnyValueDump]],
+    BaseStorageModel[ManifestMap],
     arbitrary_types_allowed=True,
 ):
     """A Pydantic model that can be stored by Lakery."""
@@ -96,9 +97,9 @@ class StorageModel(
             # we're defining the schema for a subclass
             return _adapt_third_party_types(handler(source), handler)
 
-    def storage_model_dump(self, registries: Registries) -> Mapping[str, AnyValueDump]:
+    def storage_model_dump(self, registries: Registries) -> ManifestMap:
         """Turn the given model into its serialized components."""
-        external_content: dict[str, AnyValueDump] = {}
+        external: dict[str, AnyManifest] = {}
 
         next_external_id = 0
 
@@ -111,7 +112,7 @@ class StorageModel(
             mode="python",
             context=_make_serialization_context(
                 _LakerySerializationContext(
-                    external_content=external_content,
+                    external=external,
                     get_external_id=get_external_id,
                     registries=registries,
                 )
@@ -124,25 +125,18 @@ class StorageModel(
                 "serializer": self.storage_model_internal_serializer(registries.serializers),
                 "storage": self.storage_model_internal_storage(registries.storages),
             },
-            **external_content,
+            **external,
         }
 
     @classmethod
-    def storage_model_load(
-        cls,
-        spec: Mapping[str, AnyValueDump],
-        registries: Registries,
-    ) -> Self:
+    def storage_model_load(cls, manifests: ManifestMap, registries: Registries) -> Self:
         """Turn the given serialized components back into a model."""
-        spec_dict = dict(spec)
-        data = cast("ValueDump", spec_dict.pop("data"))["value"]
+        manifests = dict(manifests)
+        data = cast("Manifest", manifests.pop("data"))["value"]
         return cls.model_validate(
             data,
             context=_make_validation_context(
-                _LakeryValidationContext(
-                    external_content=spec_dict,
-                    registries=registries,
-                )
+                _LakeryValidationContext(external=manifests, registries=registries)
             ),
         )
 
@@ -283,7 +277,7 @@ def _make_validator_func() -> cs.WithInfoValidatorFunction:
 
         if json_ext["__json_ext__"] == "ref":
             ref_str = json_ext["ref"]
-            spec = context["external_content"][ref_str]
+            spec = context["external"][ref_str]
             if "value" in spec:
                 return spec["value"]
             elif "stream" in spec:
@@ -295,7 +289,7 @@ def _make_validator_func() -> cs.WithInfoValidatorFunction:
             serializer = registries.serializers[json_ext["serializer_name"]]
             return serializer.load(
                 {
-                    "content": b64decode(json_ext["content_base64"].encode("ascii")),
+                    "data": b64decode(json_ext["content_base64"].encode("ascii")),
                     "content_encoding": json_ext["content_encoding"],
                     "content_type": json_ext["content_type"],
                 }
@@ -314,7 +308,7 @@ def _make_serializer_func(schema: cs.CoreSchema) -> cs.FieldPlainInfoSerializerF
 
     def serialize(model: BaseModel, value: Any, info: cs.FieldSerializationInfo, /) -> Any:
         context = _get_info_context(info)
-        external_content = context["external_content"]
+        external = context["external"]
         registries = context["registries"]
 
         cls = type(value)
@@ -322,19 +316,19 @@ def _make_serializer_func(schema: cs.CoreSchema) -> cs.FieldPlainInfoSerializerF
 
         if storage_from_schema is not None:
             ref_str = _make_ref_str(type(model), info, context)
-            external_content[ref_str] = ValueDump(
+            external[ref_str] = Manifest(
                 value=value,
                 serializer=serializer,
                 storage=storage_from_schema,
             )
             return {"__json_ext__": "ref", "ref": ref_str}
 
-        dump = serializer.dump(value)
+        content = serializer.dump(value)
         return {
             "__json_ext__": "content",
-            "content_base64": b64encode(dump["content"]).decode("ascii"),
+            "content_base64": b64encode(content["data"]).decode("ascii"),
             "content_encoding": None,
-            "content_type": dump["content_type"],
+            "content_type": content["content_type"],
             "serializer_name": serializer.name,
         }
 
@@ -410,11 +404,11 @@ def _get_info_context(
 
 
 class _LakerySerializationContext(TypedDict):
-    external_content: dict[str, AnyValueDump]
+    external: dict[str, AnyManifest]
     get_external_id: Callable[[], int]
     registries: Registries
 
 
 class _LakeryValidationContext(TypedDict):
-    external_content: dict[str, AnyValueDump]
+    external: dict[str, AnyManifest]
     registries: Registries

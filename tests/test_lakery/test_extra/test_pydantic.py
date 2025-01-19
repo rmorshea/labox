@@ -41,9 +41,9 @@ def test_dump_load_storage_model():
         spec_with_serializer_and_storage=sample,
     )
 
-    dump = model.storage_model_dump(registries)
+    manifests = model.storage_model_dump(registries)
 
-    assert dump == {
+    assert manifests == {
         "data": {
             "value": {
                 "no_spec": {
@@ -84,7 +84,7 @@ def test_dump_load_storage_model():
         },
     }
 
-    loaded_model = PydanticStorageModel.storage_model_load(dump, registries)
+    loaded_model = PydanticStorageModel.storage_model_load(manifests, registries)
     assert loaded_model == model
 
 

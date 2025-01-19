@@ -28,62 +28,62 @@ class Storage(Generic[T], abc.ABC):
     """The name of the storage."""
 
     @abc.abstractmethod
-    async def put_content(
+    async def put_data(
         self,
-        value: bytes,
-        digest: ValueDigest,
+        data: bytes,
+        digest: Digest,
         tags: TagMap,
         /,
     ) -> T:
-        """Save the given value and return data that can be used to retrieve it."""
+        """Save the given data and return information that can be used to retrieve it."""
         raise NotImplementedError
 
     @abc.abstractmethod
-    async def get_content(self, data: T, /) -> bytes:
-        """Load a value using the given data."""
+    async def get_data(self, info: T, /) -> bytes:
+        """Load data using the given information."""
         raise NotImplementedError
 
     @abc.abstractmethod
-    async def put_content_stream(
+    async def put_data_stream(
         self,
-        stream: AsyncIterable[bytes],
+        data_stream: AsyncIterable[bytes],
         get_digest: GetStreamDigest,
         tags: TagMap,
         /,
     ) -> T:
-        """Save the given stream and return data that can be used to retrieve it."""
+        """Save the given stream and return information that can be used to retrieve it."""
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_content_stream(self, data: T, /) -> AsyncGenerator[bytes]:
-        """Load a stream using the given data."""
+    def get_data_stream(self, data: T, /) -> AsyncGenerator[bytes]:
+        """Load a stream of data using the given information."""
         raise NotImplementedError
 
 
-class ValueDigest(TypedDict):
-    """The digest of a dump."""
+class Digest(TypedDict):
+    """A digest describing serialized data."""
 
     content_encoding: str | None
-    """The encoding of the dumped content."""
+    """The encoding of the data."""
     content_type: str
     """The MIME type of the data."""
     content_hash_algorithm: str
-    """The algorithm used to hash the dumped content."""
+    """The algorithm used to hash the data."""
     content_hash: str
-    """The hash of the dumped content."""
+    """The hash of the data."""
     content_size: int
-    """The size of the dumped content in bytes."""
+    """The size of the data in bytes."""
 
 
-class StreamDigest(ValueDigest):
-    """The digest of a stream dump."""
+class StreamDigest(Digest):
+    """A digest describing a stream of serialized data."""
 
     is_complete: bool
     """A flag indicating whether the stream has been read in full."""
 
 
 class GetStreamDigest(Protocol):
-    """A protocol for getting the digest of a stream dump."""
+    """A protocol for getting the digest of stream content."""
 
     def __call__(self, *, allow_incomplete: bool = False) -> StreamDigest:
         """Get the digest of a stream dump.

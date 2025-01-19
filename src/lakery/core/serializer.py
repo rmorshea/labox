@@ -29,12 +29,12 @@ class Serializer(Generic[T]):
     """The types that the serializer can handle."""
 
     @abc.abstractmethod
-    def dump(self, value: T, /) -> ContentDump:
+    def dump(self, value: T, /) -> Content:
         """Serialize the given value."""
         raise NotImplementedError
 
     @abc.abstractmethod
-    def load(self, dump: ContentDump, /) -> T:
+    def load(self, content: Content, /) -> T:
         """Deserialize the given value."""
         raise NotImplementedError
 
@@ -43,20 +43,20 @@ class StreamSerializer(Serializer[Iterable[T]]):
     """A protocol for serializing/deserializing streams of values."""
 
     @abc.abstractmethod
-    def dump_stream(self, stream: AsyncIterable[T], /) -> ContentStreamDump:
+    def dump_stream(self, stream: AsyncIterable[T], /) -> StreamContent:
         """Serialize the given stream."""
         raise NotImplementedError
 
     @abc.abstractmethod
-    def load_stream(self, dump: ContentStreamDump, /) -> AsyncGenerator[T]:
+    def load_stream(self, content: StreamContent, /) -> AsyncGenerator[T]:
         """Deserialize the given stream."""
         raise NotImplementedError
 
 
-class ContentDump(TypedDict):
+class Content(TypedDict):
     """The serialized representation of a value value."""
 
-    content: bytes
+    data: bytes
     """The serialized data."""
     content_encoding: str | None
     """The encoding of the data."""
@@ -64,10 +64,10 @@ class ContentDump(TypedDict):
     """The MIME type of the data."""
 
 
-class ContentStreamDump(TypedDict):
+class StreamContent(TypedDict):
     """The serialized representation of a stream of values."""
 
-    content_stream: AsyncGenerator[bytes]
+    data_stream: AsyncGenerator[bytes]
     """The serialized data stream."""
     content_encoding: str | None
     """The encoding of the data."""
