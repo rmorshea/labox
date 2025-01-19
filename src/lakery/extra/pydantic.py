@@ -10,7 +10,6 @@ from logging import getLogger
 from typing import TYPE_CHECKING
 from typing import Annotated
 from typing import Any
-from typing import Literal
 from typing import LiteralString
 from typing import Self
 from typing import TypedDict
@@ -38,6 +37,7 @@ if TYPE_CHECKING:
     from lakery.core.context import Registries
     from lakery.core.serializer import SerializerRegistry
     from lakery.core.storage import StorageRegistry
+    from lakery.extra.lakery.json_ext import AnyJsonExt
 
 
 _LOG = getLogger(__name__)
@@ -279,7 +279,7 @@ def _make_validator_func() -> cs.WithInfoValidatorFunction:
         if "__json_ext__" not in maybe_json_ext:
             return maybe_json_ext
 
-        json_ext = cast("_JsonExt", maybe_json_ext)
+        json_ext = cast("AnyJsonExt", maybe_json_ext)
 
         if json_ext["__json_ext__"] == "ref":
             ref_str = json_ext["ref"]
@@ -419,29 +419,3 @@ class _LakerySerializationContext(TypedDict):
 class _LakeryValidationContext(TypedDict):
     external_content: dict[str, AnyValueDump]
     registries: Registries
-
-
-class _JsonRefExt(TypedDict):
-    __json_ext__: Literal["ref"]
-
-    ref: str
-    """The reference to the external content."""
-
-
-class _JsonContentExt(TypedDict):
-    __json_ext__: Literal["content"]
-
-    content_base64: str
-    """The base64 encoded data."""
-    content_encoding: str | None
-    """The encoding of the data."""
-    content_type: str
-    """The MIME type of the data."""
-    serializer_name: str
-    """The name of the serializer used to serialize the data."""
-    serializer_version: int
-    """The version of the serializer used to serialize the data."""
-
-
-_JsonExt = _JsonRefExt | _JsonContentExt
-"""The JSON extension for external content references."""

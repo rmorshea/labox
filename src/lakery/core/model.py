@@ -13,6 +13,7 @@ from typing import LiteralString
 from typing import Self
 from typing import TypeAlias
 from uuid import UUID
+from uuid import uuid4
 
 from sqlalchemy.util.typing import TypedDict
 from typing_extensions import TypeVar
@@ -161,9 +162,11 @@ class ModelRegistry(Registry[UUID, type[BaseStorageModel]]):
             uuid_str = model.__dict__["storage_model_id"]
         except KeyError:
             full_class_name = f"{model.__module__}.{model.__qualname__}"
+            suggested_id = uuid4().hex
             msg = (
                 f"Class definition for {self.value_description.lower()} "
-                f"{full_class_name} is missing a 'storage_model_id'."
+                f"{full_class_name} is missing a 'storage_model_id'. "
+                f"You may want to add {suggested_id!r} to your class."
             )
             raise ValueError(msg) from None
         return UUID(uuid_str)

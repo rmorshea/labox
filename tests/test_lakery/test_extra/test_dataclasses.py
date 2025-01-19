@@ -1,13 +1,14 @@
+from dataclasses import dataclass
+from dataclasses import field
 from typing import Any
 
 from lakery.core.context import Registries
 from lakery.core.serializer import SerializerRegistry
+from lakery.extra.dataclasses import StorageModel
+from lakery.extra.dataclasses import get_model_registry
 from lakery.extra.json import JsonSerializer
 from lakery.extra.lakery import LocalFileStorage
 from lakery.extra.msgpack import MsgPackSerializer
-from lakery.extra.pydantic import StorageModel
-from lakery.extra.pydantic import StorageSpec
-from lakery.extra.pydantic import get_model_registry
 from tests.core_api_utils import assert_save_load_equivalence
 from tests.core_context_utils import basic_registries
 
@@ -21,11 +22,18 @@ msgpack_serializer = registries.serializers[MsgPackSerializer.name]
 json_serializer = registries.serializers[JsonSerializer.name]
 
 
-class PydanticStorageModel(StorageModel, storage_id="1e76a0043a7d40a38daf87de09de1643"):
-    no_spec: Any
-    spec_with_serializer: StorageSpec[Any, msgpack_serializer]
-    spec_with_storage: StorageSpec[Any, local_storage]
-    spec_with_serializer_and_storage: StorageSpec[Any, json_serializer, local_storage]
+@dataclass
+class DataclasstorageModel(StorageModel, storage_id="d1d3cd96964a45bbb718de26f2671b87"):
+    default: Any
+    field_with_serializer: Any = field(
+        metadata={"serializer": msgpack_serializer},
+    )
+    field_with_storage: Any = field(
+        metadata={"storage": local_storage},
+    )
+    field_with_serializer_and_storage: Any = field(
+        metadata={"serializer": json_serializer, "storage": local_storage}
+    )
 
 
 registries = Registries.merge(registries, Registries(models=get_model_registry()))
@@ -34,11 +42,11 @@ registries = Registries.merge(registries, Registries(models=get_model_registry()
 def test_dump_load_storage_model():
     sample = {"hello": "world", "answer": 42}
 
-    model = PydanticStorageModel(
-        no_spec=sample,
-        spec_with_serializer=sample,
-        spec_with_storage=sample,
-        spec_with_serializer_and_storage=sample,
+    model = DataclasstorageModel(
+        default=sample,
+        field_with_serializer=sample,
+        field_with_storage=sample,
+        field_with_serializer_and_storage=sample,
     )
 
     dump = model.storage_model_dump(registries)
@@ -46,7 +54,7 @@ def test_dump_load_storage_model():
     assert dump == {
         "data": {
             "value": {
-                "no_spec": {
+                "default": {
                     "__json_ext__": "content",
                     "content_base64": "gqVoZWxsb6V3b3JsZKZhbnN3ZXIq",
                     "content_encoding": None,
@@ -54,7 +62,7 @@ def test_dump_load_storage_model():
                     "serializer_name": "lakery.msgpack.value",
                     "serializer_version": 1,
                 },
-                "spec_with_serializer": {
+                "field_with_serializer": {
                     "__json_ext__": "content",
                     "content_base64": "gqVoZWxsb6V3b3JsZKZhbnN3ZXIq",
                     "content_encoding": None,
@@ -62,42 +70,48 @@ def test_dump_load_storage_model():
                     "serializer_name": "lakery.msgpack.value",
                     "serializer_version": 1,
                 },
-                "spec_with_storage": {
+                "field_with_storage": {
                     "__json_ext__": "ref",
-                    "ref": "ref.PydanticStorageModel.spec_with_storage.1",
+                    "ref": "/field_with_storage",
                 },
-                "spec_with_serializer_and_storage": {
+                "field_with_serializer_and_storage": {
                     "__json_ext__": "ref",
-                    "ref": "ref.PydanticStorageModel.spec_with_serializer_and_storage.2",
+                    "ref": "/field_with_serializer_and_storage",
                 },
             },
             "serializer": msgpack_serializer,
             "storage": local_storage,
         },
-        "ref.PydanticStorageModel.spec_with_storage.1": {
-            "serializer": msgpack_serializer,
+        "/field_with_storage": {
+            "value": {
+                "answer": 42,
+                "hello": "world",
+            },
+            "serializer": None,
             "storage": local_storage,
-            "value": {"answer": 42, "hello": "world"},
         },
-        "ref.PydanticStorageModel.spec_with_serializer_and_storage.2": {
+        "/field_with_serializer_and_storage": {
+            "value": {
+                "answer": 42,
+                "hello": "world",
+            },
             "serializer": json_serializer,
             "storage": local_storage,
-            "value": {"answer": 42, "hello": "world"},
         },
     }
 
-    loaded_model = PydanticStorageModel.storage_model_load(dump, registries)
+    loaded_model = DataclasstorageModel.storage_model_load(dump, registries)
     assert loaded_model == model
 
 
 async def test_save_load_storage_model():
     sample = {"hello": "world", "answer": 42}
     await assert_save_load_equivalence(
-        PydanticStorageModel(
-            no_spec=sample,
-            spec_with_serializer=sample,
-            spec_with_storage=sample,
-            spec_with_serializer_and_storage=sample,
+        DataclasstorageModel(
+            default=sample,
+            field_with_serializer=sample,
+            field_with_storage=sample,
+            field_with_serializer_and_storage=sample,
         ),
         registries,
     )
