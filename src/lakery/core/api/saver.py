@@ -30,9 +30,9 @@ from lakery.common.anyio import start_future
 from lakery.core.context import DatabaseSession
 from lakery.core.context import Registries
 from lakery.core.schema import NEVER
+from lakery.core.schema import ContentRecord
+from lakery.core.schema import ManifestRecord
 from lakery.core.schema import SerializerTypeEnum
-from lakery.core.schema import StorageContentRecord
-from lakery.core.schema import StorageModelRecord
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
@@ -58,7 +58,7 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 P = ParamSpec("P")
-D = TypeVar("D", bound=StorageModelRecord)
+D = TypeVar("D", bound=ManifestRecord)
 
 
 _COMMIT_RETRIES = 3
@@ -73,7 +73,7 @@ async def data_saver(
     session: DatabaseSession = required,
 ) -> AsyncIterator[DataSaver]:
     """Create a context manager for saving data."""
-    futures: list[FutureResult[StorageModelRecord]] = []
+    futures: list[FutureResult[ManifestRecord]] = []
     try:
         async with create_task_group() as tg:
             yield _DataSaver(tg, futures, registries)
@@ -86,7 +86,7 @@ class _DataSaver:
     def __init__(
         self,
         task_group: TaskGroup,
-        futures: list[FutureResult[StorageModelRecord]],
+        futures: list[FutureResult[ManifestRecord]],
         registries: Registries,
     ):
         self._futures = futures
@@ -99,7 +99,7 @@ class _DataSaver:
         model: BaseStorageModel[Any],
         *,
         tags: Mapping[str, str] | None = None,
-    ) -> FutureResult[StorageModelRecord]:
+    ) -> FutureResult[ManifestRecord]:
         """Schedule the given model to be saved."""
         self._registries.models.check_registered(type(model))
 
@@ -125,15 +125,15 @@ async def _save_model(
     model: BaseStorageModel,
     tags: TagMap,
     registries: Registries,
-) -> StorageModelRecord:
+) -> ManifestRecord:
     """Save the given data to the database."""
     model_uuid = UUID(type(model).storage_model_id)
     model_manifests = model.storage_model_dump(registries)
 
     record_id = uuid4()
-    data_record_futures: list[FutureResult[StorageContentRecord]] = []
+    data_record_futures: list[FutureResult[ContentRecord]] = []
     async with create_task_group() as tg:
-        for model_manifest_id, manifest in model_manifests.items():
+        for manifest_key, manifest in model_manifests.items():
             if "value" in manifest:
                 data_record_futures.append(
                     start_future(
@@ -141,7 +141,7 @@ async def _save_model(
                         _save_storage_value_spec,
                         tags,
                         record_id,
-                        model_manifest_id,
+                        manifest_key,
                         manifest["value"],
                         manifest.get("serializer"),
                         manifest.get("storage"),
@@ -155,7 +155,7 @@ async def _save_model(
                         _save_storage_stream_spec,
                         tags,
                         record_id,
-                        model_manifest_id,
+                        manifest_key,
                         manifest["stream"],
                         manifest.get("serializer"),
                         manifest.get("storage"),
@@ -163,47 +163,47 @@ async def _save_model(
                     )
                 )
             else:
-                msg = f"Model {name!r} contains invalid manifest {model_manifest_id!r} - {manifest}"
+                msg = f"Model {name!r} contains invalid manifest {manifest_key!r} - {manifest}"
                 raise AssertionError(msg)
 
-    contents: list[StorageContentRecord] = []
+    contents: list[ContentRecord] = []
     for key, f in zip(model_manifests, data_record_futures, strict=False):
         if exc := f.exception():
             msg = f"Failed to save {key!r} data for {name!r}"
             _LOG.error(msg, exc_info=(exc.__class__, exc, exc.__traceback__))
         contents.append(f.result())
 
-    return StorageModelRecord(
+    return ManifestRecord(
         id=record_id,
         name=name,
         tags=tags,
-        model_type_id=model_uuid,
+        model_id=model_uuid,
         contents=contents,
     )
 
 
 async def _save_storage_value_spec(
     tags: TagMap,
-    model_record_id: UUID,
-    model_manifest_id: str,
+    manifest_id: UUID,
+    manifest_key: str,
     value: Any,
     serializer: Serializer | None,
     storage: Storage | None,
     registries: Registries,
-) -> StorageContentRecord:
+) -> ContentRecord:
     storage = storage or registries.storages.default
     serializer = serializer or registries.serializers.infer_from_value_type(type(value))
     content = serializer.dump(value)
     digest = _make_value_dump_digest(content)
     storage_data = await storage.put_data(content["data"], digest, tags)
-    return StorageContentRecord(
+    return ContentRecord(
         content_encoding=content["content_encoding"],
         content_hash=digest["content_hash"],
         content_hash_algorithm=digest["content_hash_algorithm"],
         content_size=digest["content_size"],
         content_type=content["content_type"],
-        model_id=model_record_id,
-        model_manifest_id=model_manifest_id,
+        manifest_id=manifest_id,
+        manifest_key=manifest_key,
         serializer_name=serializer.name,
         serializer_type=SerializerTypeEnum.Content,
         storage_data=storage_data,
@@ -213,13 +213,13 @@ async def _save_storage_value_spec(
 
 async def _save_storage_stream_spec(
     tags: TagMap,
-    model_record_id: UUID,
-    model_manifest_id: str,
+    manifest_id: UUID,
+    manifest_key: str,
     stream: AsyncIterable[Any],
     serializer: StreamSerializer | None,
     storage: Storage | None,
     registries: Registries,
-) -> StorageContentRecord:
+) -> ContentRecord:
     storage = storage or registries.storages.default
     async with AsyncExitStack() as stack:
         if isasyncgen(stream):
@@ -239,14 +239,14 @@ async def _save_storage_stream_spec(
         except ValueError:
             msg = f"Storage {storage.name!r} did not fully consume the data stream."
             raise RuntimeError(msg) from None
-        return StorageContentRecord(
+        return ContentRecord(
             content_encoding=content["content_encoding"],
             content_hash=digest["content_hash"],
             content_hash_algorithm=digest["content_hash_algorithm"],
             content_size=digest["content_size"],
             content_type=content["content_type"],
-            model_id=model_record_id,
-            model_manifest_id=model_manifest_id,
+            manifest_id=manifest_id,
+            manifest_key=manifest_key,
             serializer_name=serializer.name,
             serializer_type=SerializerTypeEnum.ContentStream,
             storage_data=storage_data,
@@ -327,7 +327,7 @@ class _SerializationHelper:
 
 
 async def _save_record_groups(
-    records: Sequence[StorageModelRecord],
+    records: Sequence[ManifestRecord],
     session: DatabaseSession,
     retries: int,
 ) -> None:
@@ -335,9 +335,9 @@ async def _save_record_groups(
         return
 
     archive_conflicting_records = (
-        update(StorageModelRecord)
+        update(ManifestRecord)
         .where(or_(*(_model_record_conflicts(r) for r in records)))
-        .values({StorageModelRecord.archived_at: func.now()})
+        .values({ManifestRecord.archived_at: func.now()})
     )
 
     async for attempt in AsyncRetrying(stop=stop_after_attempt(retries)):
@@ -351,9 +351,9 @@ async def _save_record_groups(
                 pass
 
 
-def _model_record_conflicts(record: StorageModelRecord):
+def _model_record_conflicts(record: ManifestRecord):
     """Return a clause that matches records that conflict with the given one."""
-    return and_(StorageModelRecord.name == record.name, StorageModelRecord.archived_at == NEVER)
+    return and_(ManifestRecord.name == record.name, ManifestRecord.archived_at == NEVER)
 
 
 async def _continue_stream(first_value: Any, stream: AsyncIterable[Any]) -> AsyncGenerator[Any]:

@@ -26,9 +26,9 @@ from lakery.core.context import Registries
 from lakery.core.model import AnyManifest
 from lakery.core.model import BaseStorageModel
 from lakery.core.schema import NEVER
+from lakery.core.schema import ContentRecord
+from lakery.core.schema import ManifestRecord
 from lakery.core.schema import SerializerTypeEnum
-from lakery.core.schema import StorageContentRecord
-from lakery.core.schema import StorageModelRecord
 from lakery.core.serializer import SerializerRegistry
 from lakery.core.serializer import StreamSerializer
 
@@ -66,7 +66,7 @@ async def data_loader(
                 set_future_exception_forcefully(future, ValueError("No record found."))
                 continue
             try:
-                actual_model_type = registries.models[rec.model_type_id]
+                actual_model_type = registries.models[rec.model_id]
             except NotRegistered as error:
                 set_future_exception_forcefully(future, error)
                 continue
@@ -122,17 +122,17 @@ DataLoader: TypeAlias = _DataLoader
 
 
 async def load_model_from_record(
-    record: StorageModelRecord,
+    record: ManifestRecord,
     *,
     registries: Registries,
 ) -> BaseStorageModel:
     """Load the given model from the given record."""
-    model_type = registries.models[record.model_type_id]
+    model_type = registries.models[record.model_id]
 
     manifest_futures: dict[str, FutureResult[AnyManifest]] = {}
     async with create_task_group() as tg:
         for content in record.contents:
-            manifest_futures[content.model_manifest_id] = start_future(
+            manifest_futures[content.manifest_key] = start_future(
                 tg,
                 load_manifest_from_record,
                 content,
@@ -145,7 +145,7 @@ async def load_model_from_record(
 
 
 async def load_manifest_from_record(
-    record: StorageContentRecord,
+    record: ContentRecord,
     *,
     serializers: SerializerRegistry,
     storages: StorageRegistry,
@@ -183,21 +183,21 @@ async def load_manifest_from_record(
 async def _load_model_records(
     session: DatabaseSession,
     query: Sequence[tuple[str, datetime | None]],
-) -> Sequence[StorageModelRecord | None]:
+) -> Sequence[ManifestRecord | None]:
     """Load the model records for the given query in the order requested."""
     stmt = (
-        select(StorageModelRecord)
+        select(ManifestRecord)
         .where(
             or_(
                 *(
                     and_(
-                        StorageModelRecord.name == name,
+                        ManifestRecord.name == name,
                         (
-                            StorageModelRecord.archived_at == NEVER
+                            ManifestRecord.archived_at == NEVER
                             if version is None
                             else and_(
-                                StorageModelRecord.created_at <= version,
-                                StorageModelRecord.archived_at > version,
+                                ManifestRecord.created_at <= version,
+                                ManifestRecord.archived_at > version,
                             )
                         ),
                     )
@@ -205,10 +205,10 @@ async def _load_model_records(
                 )
             )
         )
-        .options(joinedload(StorageModelRecord.contents))
+        .options(joinedload(ManifestRecord.contents))
     )
 
-    records_by_name: dict[str, StorageModelRecord] = {
+    records_by_name: dict[str, ManifestRecord] = {
         record.name: record for record in (await session.scalars(stmt)).unique()
     }
 

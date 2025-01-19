@@ -9,8 +9,8 @@ from lakery.core.model import Scalar
 from lakery.core.model import Stream
 from lakery.core.model import StreamManifest
 from lakery.core.schema import BaseRecord
-from lakery.core.schema import StorageContentRecord
-from lakery.core.schema import StorageModelRecord
+from lakery.core.schema import ContentRecord
+from lakery.core.schema import ManifestRecord
 from lakery.core.serializer import Content
 from lakery.core.serializer import Serializer
 from lakery.core.serializer import SerializerRegistry
@@ -25,20 +25,20 @@ __all__ = (
     "BaseRecord",
     "BaseStorageModel",
     "Content",
+    "ContentRecord",
     "DataLoader",
     "DataLoader",
     "DataSaver",
     "Digest",
     "GetStreamDigest",
     "Manifest",
+    "ManifestRecord",
     "ModelRegistry",
     "Registries",
     "Scalar",
     "Serializer",
     "SerializerRegistry",
     "Storage",
-    "StorageContentRecord",
-    "StorageModelRecord",
     "Stream",
     "StreamContent",
     "StreamDigest",

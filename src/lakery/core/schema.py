@@ -63,11 +63,11 @@ class _StrMixin(BaseRecord):
         return f"{self.__class__.__name__}({self.id})"
 
 
-class StorageModelRecord(_StrMixin, BaseRecord, kw_only=True):
-    """A record describing a stored model."""
+class ManifestRecord(_StrMixin, BaseRecord, kw_only=True):
+    """A record acting as a manifest for a stored model."""
 
     __abstract__ = False
-    __tablename__ = "lakery_storage_model"
+    __tablename__ = "lakery_manifests"
 
     id: Mapped[UUID] = mapped_column(default_factory=uuid4, primary_key=True)
     """The ID of the stored model."""
@@ -75,23 +75,19 @@ class StorageModelRecord(_StrMixin, BaseRecord, kw_only=True):
     """The name of the stored model."""
     tags: Mapped[TagMap | None] = mapped_column(JSON_OR_JSONB)
     """User defined tags associated with the stored model."""
-    model_type_id: Mapped[UUID] = mapped_column()
+    model_id: Mapped[UUID] = mapped_column()
     """An ID that uniquely identifies the type of model that was stored."""
     created_at: Mapped[DateTimeTZ] = mapped_column(default=func.now())
     """The timestamp when the model was created."""
     archived_at: Mapped[DateTimeTZ] = mapped_column(default=NEVER)
     """The timestamp when the model was archived."""
-
-    contents: Mapped[Sequence[StorageContentRecord]] = relationship(
-        default=(),
-        collection_class=list,
-    )
+    contents: Mapped[Sequence[ContentRecord]] = relationship(default=(), collection_class=list)
     """The contents of the stored model."""
 
 
 UniqueConstraint(
-    StorageModelRecord.name,
-    StorageModelRecord.archived_at,
+    ManifestRecord.name,
+    ManifestRecord.archived_at,
 )
 
 
@@ -104,17 +100,17 @@ class SerializerTypeEnum(IntEnum):
     """A content stream serializer."""
 
 
-class StorageContentRecord(_StrMixin, BaseRecord, kw_only=True):
+class ContentRecord(_StrMixin, BaseRecord, kw_only=True):
     """A record describing where and how a piece of content was saved."""
 
-    __tablename__ = "lakery_storage_content"
+    __tablename__ = "lakery_contents"
 
     id: Mapped[UUID] = mapped_column(default_factory=uuid4, primary_key=True)
     """The ID of the content."""
-    model_id: Mapped[UUID] = mapped_column(ForeignKey(StorageModelRecord.id))
-    """The ID of the model that the content belongs to."""
-    model_manifest_id: Mapped[str] = mapped_column()
+    manifest_id: Mapped[UUID] = mapped_column(ForeignKey(ManifestRecord.id))
     """The ID of the manifest that the content belongs to."""
+    manifest_key: Mapped[str] = mapped_column()
+    """A key that uniquely identifies the content within the manifest."""
     content_type: Mapped[str] = mapped_column()
     """The MIME type of the data."""
     content_encoding: Mapped[str | None] = mapped_column()
@@ -138,6 +134,6 @@ class StorageContentRecord(_StrMixin, BaseRecord, kw_only=True):
 
 
 UniqueConstraint(
-    StorageContentRecord.model_id,
-    StorageContentRecord.model_manifest_id,
+    ContentRecord.manifest_id,
+    ContentRecord.manifest_key,
 )
