@@ -6,6 +6,7 @@ docs_dir: src
 repo_url: https://github.com/rmorshea/lakery
 nav:
   - Home: index.md
+<<<<<<< before updating
   - Usage:
       - Overview: usage/overview.md
       - Patterns: usage/patterns.md
@@ -28,14 +29,20 @@ nav:
       - Polars: integrations/polars.md
       - PyArrow: integrations/pyarrow.md
       - Pydantic: integrations/pydantic.md
+=======
+>>>>>>> after updating
   - Reference: reference/
   - Contributing: contributing.md
 theme:
   name: material
   icon:
     repo: fontawesome/brands/git-alt
+<<<<<<< before updating
   logo: logo.svg
   favicon: logo.svg
+=======
+    logo: material/needle
+>>>>>>> after updating
   features:
     [content.code.copy, toc.integrate, content.code.annotate, navigation.tabs]
   palette:
