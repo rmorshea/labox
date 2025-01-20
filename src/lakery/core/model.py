@@ -57,16 +57,22 @@ class Manifest(Generic[T], TypedDict):
     """Describes where and how to store a value."""
 
     value: T
+    """The value to store."""
     serializer: Serializer[T] | None
+    """The serializer to apply to the value."""
     storage: Storage | None
+    """The storage to send the serialized value to."""
 
 
 class StreamManifest(Generic[T], TypedDict):
     """Describes where and how to store a stream."""
 
     stream: AsyncIterable[T]
+    """The stream of data to store."""
     serializer: StreamSerializer[T] | None
+    """The serializer to apply to the stream."""
     storage: Storage | None
+    """The storage to send the serialized stream to."""
 
 
 AnyManifest: TypeAlias = Manifest | StreamManifest
@@ -77,7 +83,7 @@ ManifestMap: TypeAlias = Mapping[str, AnyManifest]
 
 
 @dataclass(frozen=True)
-class Scalar(Generic[T], BaseStorageModel[Mapping[str, Manifest]]):
+class Singular(Generic[T], BaseStorageModel[Mapping[str, Manifest]]):
     """Models a single value."""
 
     storage_model_id = "63b297f66dbc44bb8552f6f490cf21cb"
@@ -105,8 +111,8 @@ class Scalar(Generic[T], BaseStorageModel[Mapping[str, Manifest]]):
 
 
 @dataclass(frozen=True)
-class Stream(Generic[T], BaseStorageModel[Mapping[str, StreamManifest]]):
-    """Models a single stream."""
+class Streamed(Generic[T], BaseStorageModel[Mapping[str, StreamManifest]]):
+    """Models a stream of data."""
 
     storage_model_id = "e80e8707ffdd4785b95b30247fa4398c"
 
@@ -164,4 +170,4 @@ class ModelRegistry(Registry[UUID, type[BaseStorageModel]]):
     @classmethod
     def with_core_models(cls, types: Sequence[type[BaseStorageModel]] = ()) -> ModelRegistry:
         """Create a registry with the given core models."""
-        return cls((Scalar, Stream, *types))
+        return cls((Singular, Streamed, *types))

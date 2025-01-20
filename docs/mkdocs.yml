@@ -6,17 +6,21 @@ docs_dir: src
 repo_url: https://github.com/rmorshea/lakery
 nav:
   - Home: index.md
-  - Components:
-      - Models: components/models.md
-      - Serializers: components/serializers.md
-      - Storages: components/storages.md
+  - Usage:
+      - Overview: usage/overview.md
+      - Patterns: usage/patterns.md
+  - Concepts:
+      - Models: concepts/models.md
+      - Serializers: concepts/serializers.md
+      - Storages: concepts/storages.md
+      - Schema: concepts/schema.md
   - Integrations:
       - AWS: integrations/aws.md
       - Azure: integrations/azure.md
       - Dataclasses: integrations/dataclasses.md
       - Google: integrations/google.md
       - JSON: integrations/json.md
-      - MessagePack: integrations/messagepack.md
+      - MessagePack: integrations/msgpack.md
       - NumPy: integrations/numpy.md
       - OS: integrations/os.md
       - Pandas: integrations/pandas.md
@@ -24,14 +28,16 @@ nav:
       - Polars: integrations/polars.md
       - PyArrow: integrations/pyarrow.md
       - Pydantic: integrations/pydantic.md
+  - Reference: reference/
   - Contributing: contributing.md
 theme:
   name: material
   icon:
     repo: fontawesome/brands/git-alt
-  logo: assets/logo.svg
-  favicon: assets/logo.svg
-  features: [content.code.copy, toc.integrate]
+  logo: logo.svg
+  favicon: logo.svg
+  features:
+    [content.code.copy, toc.integrate, content.code.annotate, navigation.tabs]
   palette:
     # Palette toggle for automatic mode
     - media: (prefers-color-scheme)
@@ -56,21 +62,33 @@ plugins:
   - mkdocstrings:
       handlers:
         python:
+          paths: [src]
           options:
-            load_external_modules: true
-            docstring_style: google
-            members_order: alphabetical
+            docstring_options:
+              ignore_init_summary: true
+            docstring_section_style: list
+            filters: ["!^_"]
+            heading_level: 1
+            inherited_members: true
             merge_init_into_class: true
+            parameter_headings: true
             separate_signature: true
-            show_labels: false
-            show_object_full_path: true
             show_root_heading: true
-            show_source: true
-            show_submodules: true
+            show_root_full_path: false
+            show_signature_annotations: true
+            show_source: false
             show_symbol_type_heading: true
             show_symbol_type_toc: true
             signature_crossrefs: true
+            summary: true
+  - literate-nav:
+      nav_file: SUMMARY.md
+  - gen-files:
+      scripts:
+        - gen_reference.py
+
 markdown_extensions:
+  - def_list
   - pymdownx.highlight:
       anchor_linenums: true
       line_spans: __span
@@ -88,3 +106,8 @@ markdown_extensions:
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.saneheaders
+  - pymdownx.extra
+
+watch:
+  - gen_reference.py

@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from dataclasses import field
 from typing import Any
 
+from sqlalchemy.ext.asyncio.session import AsyncSession
+
 from lakery.core.context import Registries
 from lakery.core.serializer import SerializerRegistry
 from lakery.extra.dataclasses import StorageModel
@@ -102,7 +104,7 @@ def test_dump_load_storage_model():
     assert loaded_model == model
 
 
-async def test_save_load_storage_model():
+async def test_save_load_storage_model(session: AsyncSession):
     sample = {"hello": "world", "answer": 42}
     await assert_save_load_equivalence(
         DataclasstorageModel(
@@ -112,4 +114,5 @@ async def test_save_load_storage_model():
             field_with_serializer_and_storage=sample,
         ),
         registries,
+        session,
     )

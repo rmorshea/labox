@@ -10,8 +10,6 @@ from typing import overload
 
 from anyio import create_task_group
 from anysync import contextmanager
-from pybooster import injector
-from pybooster import required
 from sqlalchemy import inspect as orm_inspect
 from sqlalchemy import select
 
@@ -20,8 +18,6 @@ from lakery.common.anyio import set_future_exception_forcefully
 from lakery.common.anyio import start_future
 from lakery.common.anyio import start_with_future
 from lakery.common.exceptions import NotRegistered
-from lakery.core.context import DatabaseSession
-from lakery.core.context import Registries
 from lakery.core.model import AnyManifest
 from lakery.core.model import BaseStorageModel
 from lakery.core.schema import ContentRecord
@@ -36,6 +32,7 @@ if TYPE_CHECKING:
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
+    from lakery.core.context import Registries
     from lakery.core.storage import StorageRegistry
 
 
@@ -46,11 +43,10 @@ _RecordGroup = tuple[ManifestRecord, Sequence[ContentRecord]]
 
 
 @contextmanager
-@injector.asynciterator(requires=(Registries, DatabaseSession))
 async def data_loader(
     *,
-    registries: Registries = required,
-    session: DatabaseSession | AsyncSession = required,
+    registries: Registries,
+    session: AsyncSession,
 ) -> AsyncIterator[DataLoader]:
     """Create a context manager for saving data."""
     requests: list[_Requests] = []

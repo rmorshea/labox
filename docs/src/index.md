@@ -12,7 +12,7 @@ pip install lakery  # core package
 pip install lakery[all]  # all built-in extras
 ```
 
-See [integrations](integrations.md) for a list of available extras.
+See the "Integrations" for the full list of extras.
 
 ## Basic Usage
 
@@ -51,14 +51,14 @@ from lakery.core import data_saver
 
 
 async def main():
-    data = Scalar({"hello": "world"})
+    data = Singular({"hello": "world"})
 
     async with AsyncSession() as session:
         async with data_saver(registries=registries, session=session) as saver:
             future_record = saver.save_soon(data)
         record = future_record.result()
 
-        with data_loader() as loader:
+        with data_loader(registries=registries, session=session) as loader:
             future_data = loader.load_soon(record)
         loaded_data = future_data.result()
 

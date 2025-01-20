@@ -15,13 +15,9 @@ from uuid import uuid4
 
 from anyio import create_task_group
 from anysync import contextmanager
-from pybooster import injector
-from pybooster import required
 
 from lakery.common.anyio import FutureResult
 from lakery.common.anyio import start_future
-from lakery.core.context import DatabaseSession
-from lakery.core.context import Registries
 from lakery.core.schema import ContentRecord
 from lakery.core.schema import ManifestRecord
 from lakery.core.schema import SerializerTypeEnum
@@ -36,6 +32,7 @@ if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
     from lakery.common.utils import TagMap
+    from lakery.core.context import Registries
     from lakery.core.model import BaseStorageModel
     from lakery.core.serializer import Content
     from lakery.core.serializer import Serializer
@@ -58,11 +55,10 @@ _LOG = getLogger(__name__)
 
 
 @contextmanager
-@injector.asynciterator(requires=(Registries, DatabaseSession))
 async def data_saver(
     *,
-    registries: Registries = required,
-    session: DatabaseSession | AsyncSession = required,
+    registries: Registries,
+    session: AsyncSession,
 ) -> AsyncIterator[DataSaver]:
     """Create a context manager for saving data."""
     futures: list[FutureResult[ManifestRecord]] = []

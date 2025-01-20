@@ -1,5 +1,7 @@
 from typing import Any
 
+from sqlalchemy.ext.asyncio.session import AsyncSession
+
 from lakery.core.context import Registries
 from lakery.core.serializer import SerializerRegistry
 from lakery.extra.json import JsonSerializer
@@ -88,7 +90,7 @@ def test_dump_load_storage_model():
     assert loaded_model == model
 
 
-async def test_save_load_storage_model():
+async def test_save_load_storage_model(session: AsyncSession):
     sample = {"hello": "world", "answer": 42}
     await assert_save_load_equivalence(
         PydanticStorageModel(
@@ -98,4 +100,5 @@ async def test_save_load_storage_model():
             spec_with_serializer_and_storage=sample,
         ),
         registries,
+        session,
     )
