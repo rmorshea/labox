@@ -69,12 +69,8 @@ docs = [
     "mkdocs-material==9.5.39",
     "mkdocs-open-in-new-tab==1.0.5",
     "mkdocs==1.6.1",
-<<<<<<< before updating
-    "mkdocstrings-python==1.11.1",
     "mkdocs-literate-nav==0.6.1",
-=======
     "mkdocstrings-python==1.13.0",
->>>>>>> after updating
 ]
 lint = [
     { include-group = "test" },
@@ -157,11 +153,7 @@ unfixable = [
     "COM819", # Trailing comma
 ]
 fixable = ["ALL"]
-<<<<<<< before updating
-extend-safe-fixes = ["TC"]
-=======
 extend-safe-fixes = ["TCH"]
->>>>>>> after updating
 [tool.ruff.lint.isort]
 known-first-party = ["lakery"]
 force-single-line = true
