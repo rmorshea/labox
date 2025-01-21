@@ -38,6 +38,9 @@ class Serializer(Generic[T]):
         """Deserialize the given value."""
         raise NotImplementedError
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.name!r})"
+
 
 class StreamSerializer(Serializer[Iterable[T]]):
     """A protocol for serializing/deserializing streams of values."""

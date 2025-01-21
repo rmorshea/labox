@@ -36,8 +36,7 @@ theme:
     repo: fontawesome/brands/git-alt
   logo: logo.svg
   favicon: logo.svg
-  features:
-    [content.code.copy, toc.integrate, content.code.annotate, navigation.tabs]
+  features: [content.code.copy, toc.integrate, content.code.annotate, navigation.tabs]
   palette:
     # Palette toggle for automatic mode
     - media: (prefers-color-scheme)
@@ -45,13 +44,13 @@ theme:
         icon: material/brightness-auto
         name: Switch to light mode
         # Palette toggle for light mode
-    - media: "(prefers-color-scheme: light)"
+    - media: '(prefers-color-scheme: light)'
       scheme: default
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
         # Palette toggle for dark mode
-    - media: "(prefers-color-scheme: dark)"
+    - media: '(prefers-color-scheme: dark)'
       scheme: slate
       toggle:
         icon: material/brightness-4
@@ -67,7 +66,7 @@ plugins:
             docstring_options:
               ignore_init_summary: true
             docstring_section_style: list
-            filters: ["!^_"]
+            filters: ['!^_']
             heading_level: 1
             inherited_members: true
             merge_init_into_class: true
@@ -84,9 +83,7 @@ plugins:
   - literate-nav:
       nav_file: SUMMARY.md
   - gen-files:
-      scripts:
-        - gen_reference.py
-
+      scripts: [gen_reference.py]
 markdown_extensions:
   - def_list
   - pymdownx.highlight:
@@ -108,6 +105,4 @@ markdown_extensions:
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - pymdownx.saneheaders
   - pymdownx.extra
-
-watch:
-  - gen_reference.py
+watch: [gen_reference.py, ../src]

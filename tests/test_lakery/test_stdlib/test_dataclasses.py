@@ -6,11 +6,11 @@ from sqlalchemy.ext.asyncio.session import AsyncSession
 
 from lakery.core.context import Registries
 from lakery.core.serializer import SerializerRegistry
-from lakery.extra.dataclasses import StorageModel
-from lakery.extra.dataclasses import get_model_registry
-from lakery.extra.json import JsonSerializer
 from lakery.extra.msgpack import MsgPackSerializer
-from lakery.extra.os import FileStorage
+from lakery.stdlib.dataclasses import DataclassModel
+from lakery.stdlib.dataclasses import get_model_registry
+from lakery.stdlib.json import JsonSerializer
+from lakery.stdlib.os import FileStorage
 from tests.core_api_utils import assert_save_load_equivalence
 from tests.core_context_utils import basic_registries
 
@@ -25,7 +25,7 @@ json_serializer = registries.serializers[JsonSerializer.name]
 
 
 @dataclass
-class DataclasstorageModel(StorageModel, storage_id="d1d3cd96964a45bbb718de26f2671b87"):
+class SampleModel(DataclassModel, storage_id="d1d3cd96964a45bbb718de26f2671b87"):
     default: Any
     field_with_serializer: Any = field(
         metadata={"serializer": msgpack_serializer},
@@ -44,7 +44,7 @@ registries = Registries.merge(registries, Registries(models=get_model_registry()
 def test_dump_load_storage_model():
     sample = {"hello": "world", "answer": 42}
 
-    model = DataclasstorageModel(
+    model = SampleModel(
         default=sample,
         field_with_serializer=sample,
         field_with_storage=sample,
@@ -100,14 +100,14 @@ def test_dump_load_storage_model():
         },
     }
 
-    loaded_model = DataclasstorageModel.storage_model_load(manifests, registries)
+    loaded_model = SampleModel.storage_model_load(manifests, registries)
     assert loaded_model == model
 
 
 async def test_save_load_storage_model(session: AsyncSession):
     sample = {"hello": "world", "answer": 42}
     await assert_save_load_equivalence(
-        DataclasstorageModel(
+        SampleModel(
             default=sample,
             field_with_serializer=sample,
             field_with_storage=sample,

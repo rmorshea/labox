@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from typing import Generic
 from typing import LiteralString
 from typing import Protocol
+from typing import Self
 from typing import TypedDict
 from typing import TypeVar
 
@@ -59,6 +60,9 @@ class Storage(Generic[T], abc.ABC):
         """Load a stream of data using the given information."""
         raise NotImplementedError
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.name!r})"
+
 
 class Digest(TypedDict):
     """A digest describing serialized data."""
@@ -107,20 +111,46 @@ class StorageRegistry(Registry[str, Storage]):
         self,
         storages: Sequence[Storage] = (),
         *,
-        first_is_default: bool = True,
+        default: Storage | None = None,
         ignore_conflicts: bool = False,
     ) -> None:
-        super().__init__(storages, ignore_conflicts=ignore_conflicts)
-        self._first_is_default = first_is_default
+        super().__init__(
+            (default, *storages) if default else storages,
+            ignore_conflicts=ignore_conflicts,
+        )
+        self._default = default
 
     @property
     def default(self) -> Storage:
         """Get the default storage."""
-        if not self._first_is_default:
-            msg = f"Usage of default {self.value_description.lower()} disabled."
+        if not self._default:
+            msg = f"No default {self.value_description.lower()} is set."
             raise ValueError(msg)
-        return self[next(iter(self))]
+        return self._default
+
+    def has_default(self) -> bool:
+        """Return whether a default storage is set."""
+        return self._default is not None
 
     def get_key(self, storage: Storage) -> str:
         """Get the key for the given storage."""
         return storage.name
+
+    @classmethod
+    def merge(cls, *registries: Self, ignore_conflicts: bool = False) -> Self:
+        """Merge the given registries into a new registry."""
+        new_storages: list[Storage] = []
+
+        default = None
+        for r in registries:
+            storages = list(r.values())
+            if r.has_default():
+                if default and not ignore_conflicts:
+                    msg = f"Conflicting default storages: {default!r} and {r.default!r}"
+                    raise ValueError(msg)
+                default = r.default
+                new_storages.extend(storages[1:])
+            else:
+                new_storages.extend(storages)
+
+        return cls(new_storages, ignore_conflicts=ignore_conflicts, default=default)

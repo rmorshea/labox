@@ -4,12 +4,12 @@ from sqlalchemy.ext.asyncio.session import AsyncSession
 
 from lakery.core.context import Registries
 from lakery.core.serializer import SerializerRegistry
-from lakery.extra.json import JsonSerializer
 from lakery.extra.msgpack import MsgPackSerializer
-from lakery.extra.os import FileStorage
 from lakery.extra.pydantic import StorageModel
 from lakery.extra.pydantic import StorageSpec
 from lakery.extra.pydantic import get_model_registry
+from lakery.stdlib.json import JsonSerializer
+from lakery.stdlib.os import FileStorage
 from tests.core_api_utils import assert_save_load_equivalence
 from tests.core_context_utils import basic_registries
 

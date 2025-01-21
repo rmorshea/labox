@@ -10,11 +10,14 @@ from typing import Any
 from typing import LiteralString
 from typing import Self
 from typing import TypedDict
+from typing import TypeVar
 from typing import cast
 from uuid import UUID
 from uuid import uuid4
 from warnings import warn
 
+from lakery.builtin.json_ext import dump_any_json_ext
+from lakery.builtin.json_ext import load_json_ext
 from lakery.core.model import BaseStorageModel
 from lakery.core.model import Manifest
 from lakery.core.model import ManifestMap
@@ -23,23 +26,20 @@ from lakery.core.serializer import Serializer
 from lakery.core.serializer import SerializerRegistry
 from lakery.core.storage import Storage
 from lakery.core.storage import StorageRegistry
-from lakery.extra.lakery.json_ext import dump_any_json_ext
-from lakery.extra.lakery.json_ext import load_json_ext
 
 if TYPE_CHECKING:
     from lakery.core.context import Registries
 
-_LOG = getLogger(__name__)
-_MODELS: set[type[StorageModel]] = set()
+T = TypeVar("T")
 
 
 def get_model_registry() -> ModelRegistry:
-    """Return a registry of all currently defined Pydantic storage models."""
-    return ModelRegistry(list(_MODELS))
+    """Return a registry of models from this module."""
+    return ModelRegistry(_MODELS)
 
 
 @dataclass
-class StorageModel(BaseStorageModel):
+class DataclassModel(BaseStorageModel):
     """A dataclass model that can be stored by Lakery."""
 
     _: KW_ONLY
@@ -140,3 +140,9 @@ class _DumpContext(TypedDict):
 class _LoadContext(TypedDict):
     registries: Registries
     external: dict[str, Manifest]
+
+
+_MODELS: set[type[BaseStorageModel[Any]]] = set()
+
+
+_LOG = getLogger(__name__)

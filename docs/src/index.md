@@ -32,12 +32,16 @@ BaseRecord.create_all(engine).run()
 Pick your serializers and storages:
 
 ```python
+from lakery.builtin import get_model_registry
 from lakery.core import Registries
 from lakery.core import SerializerRegistry
 from lakery.core import StorageRegistry
+from lakery.stdlib.json import JsonSerializer
+from lakery.stdlib.os import FileStorage
 
 serializers = SerializerRegistry([JsonSerializer()])
-storages = StorageRegistry([FileStorage("temp", mkdir=True)])
+storages = StorageRegistry(default=FileStorage("temp", mkdir=True))
+models = get_model_registry()  # includes built-in models
 registries = Registries(serializers=serializers, storages=storages)
 ```
 

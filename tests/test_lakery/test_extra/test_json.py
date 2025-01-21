@@ -1,5 +1,5 @@
-from lakery.extra.json import JsonSerializer
-from lakery.extra.json import JsonStreamSerializer
+from lakery.stdlib.json import JsonSerializer
+from lakery.stdlib.json import JsonStreamSerializer
 from tests.core_serializer_utils import make_stream_serializer_test
 from tests.core_serializer_utils import make_value_serializer_test
 

@@ -50,6 +50,9 @@ plotly = ["plotly>=5,<6"]
 polars = ["polars>=1.18.0"]
 pyarrow = ["pyarrow>=18,<19"]
 pydantic = ["pydantic>=2,<3"]
+imageio = [
+    "imageio>=2,<3",
+]
 [project.urls]
 Source = "https://github.com/rmorshea/lakery"
 

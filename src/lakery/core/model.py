@@ -3,9 +3,6 @@ from __future__ import annotations
 import abc
 from collections.abc import AsyncIterable
 from collections.abc import Mapping
-from collections.abc import Sequence
-from dataclasses import dataclass
-from dataclasses import field
 from typing import TYPE_CHECKING
 from typing import ClassVar
 from typing import Generic
@@ -39,17 +36,22 @@ class BaseStorageModel(Generic[S], abc.ABC):
     """A base class for models that can be stored and serialized."""
 
     storage_model_id: ClassVar[LiteralString]
-    """A unique ID to identify this model class."""
+    """A UUID that uniquely identifies the model.
+
+    This is used to later determine which class to reconstitute when loading data later.
+    That means you should **never copy or change this** value once it's been used to
+    save data.
+    """
 
     @abc.abstractmethod
     def storage_model_dump(self, registries: Registries, /) -> S:
-        """Dump the model to a series of storage manifests."""
+        """Return a mapping of manifests that describe where and how to store the model."""
         raise NotImplementedError
 
     @classmethod
     @abc.abstractmethod
     def storage_model_load(cls, manifests: S, registries: Registries, /) -> Self:
-        """Load the model from a series of storage manifests."""
+        """Reconstitute the model from a mapping of manifests."""
         raise NotImplementedError
 
 
@@ -82,68 +84,6 @@ ManifestMap: TypeAlias = Mapping[str, AnyManifest]
 """A type alias for a mapping of manifests."""
 
 
-@dataclass(frozen=True)
-class Singular(Generic[T], BaseStorageModel[Mapping[str, Manifest]]):
-    """Models a single value."""
-
-    storage_model_id = "63b297f66dbc44bb8552f6f490cf21cb"
-
-    value: T
-    """The value."""
-    serializer: Serializer[T] | None = field(default=None, compare=False)
-    """The serializer for the value."""
-    storage: Storage | None = field(default=None, compare=False)
-    """The storage for the value."""
-
-    def storage_model_dump(self, _registries: Registries) -> Mapping[str, Manifest]:
-        """Dump the model to a series of storage manifests."""
-        return {"": {"value": self.value, "serializer": self.serializer, "storage": self.storage}}
-
-    @classmethod
-    def storage_model_load(
-        cls,
-        manifests: Mapping[str, Manifest],
-        _registries: Registries,
-    ) -> Self:
-        """Load the model from a series of storage manifests."""
-        man = manifests[""]
-        return cls(value=man["value"], serializer=man["serializer"], storage=man["storage"])
-
-
-@dataclass(frozen=True)
-class Streamed(Generic[T], BaseStorageModel[Mapping[str, StreamManifest]]):
-    """Models a stream of data."""
-
-    storage_model_id = "e80e8707ffdd4785b95b30247fa4398c"
-
-    stream: AsyncIterable[T] = field(compare=False)
-    """The stream."""
-    serializer: StreamSerializer[T] | None = field(default=None, compare=False)
-    """The serializer for the stream."""
-    storage: Storage | None = field(default=None, compare=False)
-    """The storage for the stream."""
-
-    def storage_model_dump(self, _registries: Registries) -> Mapping[str, StreamManifest]:
-        """Dump the model to a series of storage manifests."""
-        return {
-            "": {
-                "stream": self.stream,
-                "serializer": self.serializer,
-                "storage": self.storage,
-            }
-        }
-
-    @classmethod
-    def storage_model_load(
-        cls,
-        manifests: Mapping[str, StreamManifest],
-        _registries: Registries,
-    ) -> Self:
-        """Load the model from a series of storage manifests."""
-        man = manifests[""]
-        return cls(stream=man["stream"], serializer=man["serializer"], storage=man["storage"])
-
-
 M = TypeVar("M", bound=BaseStorageModel)
 
 
@@ -166,8 +106,3 @@ class ModelRegistry(Registry[UUID, type[BaseStorageModel]]):
             )
             raise ValueError(msg) from None
         return UUID(uuid_str)
-
-    @classmethod
-    def with_core_models(cls, types: Sequence[type[BaseStorageModel]] = ()) -> ModelRegistry:
-        """Create a registry with the given core models."""
-        return cls((Singular, Streamed, *types))

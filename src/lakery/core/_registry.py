@@ -2,18 +2,14 @@ from __future__ import annotations
 
 import abc
 from collections import Counter
+from collections.abc import Iterable
 from collections.abc import Iterator
 from collections.abc import Mapping
-from typing import TYPE_CHECKING
 from typing import ClassVar
 from typing import Self
 from typing import TypeVar
 
 from lakery.common.exceptions import NotRegistered
-
-if TYPE_CHECKING:
-    from collections.abc import Sequence
-
 
 K = TypeVar("K")
 V = TypeVar("V")
@@ -25,7 +21,7 @@ class Registry(Mapping[K, V], abc.ABC):
     value_description: ClassVar[str]
     """A description for the type of value"""
 
-    def __init__(self, values: Sequence[V] = (), /, *, ignore_conflicts: bool = False) -> None:
+    def __init__(self, values: Iterable[V] = (), /, *, ignore_conflicts: bool = False) -> None:
         items = [(self.get_key(i), i) for i in values]
 
         if not ignore_conflicts and (
@@ -42,7 +38,7 @@ class Registry(Mapping[K, V], abc.ABC):
         raise NotImplementedError
 
     @classmethod
-    def merge(cls, *registries: Registry[K, V], ignore_conflicts: bool = False) -> Self:
+    def merge(cls, *registries: Self, ignore_conflicts: bool = False) -> Self:
         """Return a new registry that merges this one with the given ones."""
         new_values = [v for r in registries for v in r.values()]
         return cls(new_values, ignore_conflicts=ignore_conflicts)

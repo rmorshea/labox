@@ -35,10 +35,10 @@ from lakery.core.serializer import Serializer
 from lakery.core.storage import Storage
 
 if TYPE_CHECKING:
+    from lakery.builtin.json_ext import AnyJsonExt
     from lakery.core.context import Registries
     from lakery.core.serializer import SerializerRegistry
     from lakery.core.storage import StorageRegistry
-    from lakery.extra.lakery.json_ext import AnyJsonExt
 
 
 _LOG = getLogger(__name__)

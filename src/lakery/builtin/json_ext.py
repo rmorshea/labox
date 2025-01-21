@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from lakery.core.model import Manifest
     from lakery.core.serializer import Serializer
     from lakery.core.storage import Storage
-    from lakery.extra.json import JsonType
+    from lakery.stdlib.json import JsonType
 
 
 class RefJsonExt(TypedDict):
