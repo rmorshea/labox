@@ -21,7 +21,7 @@ EMPTY_STORAGE_REGISTRY = StorageRegistry()
 """An empty registry of storages."""
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class Registries:
     """A collection of registries."""
 
@@ -33,18 +33,28 @@ class Registries:
     """A registry of storages."""
 
     @classmethod
-    def merge(cls, *others: Registries, ignore_conflicts: bool = False) -> Registries:
+    def merge(
+        cls,
+        *others: Registries,
+        models: ModelRegistry = EMPTY_MODEL_REGISTRY,
+        serializers: SerializerRegistry = EMPTY_SERIALIZER_REGISTRY,
+        storages: StorageRegistry = EMPTY_STORAGE_REGISTRY,
+        ignore_conflicts: bool = False,
+    ) -> Registries:
         """Return a new collection of registries that merges this one with the given ones."""
         return Registries(
             models=ModelRegistry.merge(
+                models,
                 *(r.models for r in others),
                 ignore_conflicts=ignore_conflicts,
             ),
             serializers=SerializerRegistry.merge(
+                serializers,
                 *(r.serializers for r in others),
                 ignore_conflicts=ignore_conflicts,
             ),
             storages=StorageRegistry.merge(
+                storages,
                 *(r.storages for r in others),
                 ignore_conflicts=ignore_conflicts,
             ),

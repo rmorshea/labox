@@ -10,7 +10,11 @@ from plotly.io import to_json
 from lakery.core.serializer import Content
 from lakery.core.serializer import Serializer
 
-_ = to_json, from_json
+__all__ = (
+    "FigureDumpArgs",
+    "FigureLoadArgs",
+    "FigureSerializer",
+)
 
 
 class FigureDumpArgs(TypedDict, total=False):

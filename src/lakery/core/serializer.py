@@ -3,12 +3,14 @@ from __future__ import annotations
 import abc
 from collections.abc import Iterable
 from typing import TYPE_CHECKING
+from typing import Any
 from typing import Generic
 from typing import LiteralString
 from typing import TypedDict
 from typing import TypeVar
 
 from typing_extensions import AsyncGenerator
+from typing_extensions import TypeIs
 
 from lakery.core._registry import Registry
 
@@ -90,22 +92,32 @@ class SerializerRegistry(Registry[str, Serializer | StreamSerializer]):
         ignore_conflicts: bool = False,
     ) -> None:
         super().__init__(serializers, ignore_conflicts=ignore_conflicts)
+
+        non_stream_serializers: list[Serializer] = []
+        stream_serializers: list[StreamSerializer] = []
+        for serializer in serializers:
+            if isinstance(serializer, StreamSerializer):
+                stream_serializers.append(serializer)
+            else:
+                non_stream_serializers.append(serializer)
+
         self._by_value_type = {
             type_: serializer
-            for serializer in self.values()
-            if isinstance(serializer, Serializer | StreamSerializer)
+            for serializer in [*stream_serializers, *non_stream_serializers]
             for type_ in serializer.types
         }
         self._by_stream_type = {
-            type_: serializer
-            for serializer in self.values()
-            if isinstance(serializer, StreamSerializer)
-            for type_ in serializer.types
+            type_: serializer for serializer in stream_serializers for type_ in serializer.types
         }
 
     def get_key(self, serializer: Serializer | StreamSerializer) -> str:
         """Get the key for the given serializer."""
         return serializer.name
+
+    @classmethod
+    def can_register(cls, value: Any) -> TypeIs[Serializer | StreamSerializer]:
+        """Return whether the given value is a valid serializer."""
+        return isinstance(value, Serializer | StreamSerializer)
 
     def infer_from_value_type(self, cls: type[T]) -> Serializer[T]:
         """Get the first serializer that can handle the given type or its parent classes."""

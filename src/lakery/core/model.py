@@ -4,6 +4,7 @@ import abc
 from collections.abc import AsyncIterable
 from collections.abc import Mapping
 from typing import TYPE_CHECKING
+from typing import Any
 from typing import ClassVar
 from typing import Generic
 from typing import LiteralString
@@ -13,6 +14,7 @@ from uuid import UUID
 from uuid import uuid4
 
 from sqlalchemy.util.typing import TypedDict
+from typing_extensions import TypeIs
 from typing_extensions import TypeVar
 
 from lakery.core._registry import Registry
@@ -24,15 +26,10 @@ if TYPE_CHECKING:
     from lakery.core.storage import Storage
 
 
-T = TypeVar("T")
-S = TypeVar(
-    "S",
-    bound=Mapping[str, "AnyManifest"] | Mapping[str, "Manifest"] | Mapping[str, "StreamManifest"],
-    default=Mapping[str, "AnyManifest"],
-)
+T = TypeVar("T", default=Any)
 
 
-class BaseStorageModel(Generic[S], abc.ABC):
+class BaseStorageModel(abc.ABC):
     """A base class for models that can be stored and serialized."""
 
     storage_model_id: ClassVar[LiteralString]
@@ -44,13 +41,13 @@ class BaseStorageModel(Generic[S], abc.ABC):
     """
 
     @abc.abstractmethod
-    def storage_model_dump(self, registries: Registries, /) -> S:
+    def storage_model_dump(self, registries: Registries, /) -> ManifestMap:
         """Return a mapping of manifests that describe where and how to store the model."""
         raise NotImplementedError
 
     @classmethod
     @abc.abstractmethod
-    def storage_model_load(cls, manifests: S, registries: Registries, /) -> Self:
+    def storage_model_load(cls, manifests: ManifestMap, registries: Registries, /) -> Self:
         """Reconstitute the model from a mapping of manifests."""
         raise NotImplementedError
 
@@ -84,9 +81,6 @@ ManifestMap: TypeAlias = Mapping[str, AnyManifest]
 """A type alias for a mapping of manifests."""
 
 
-M = TypeVar("M", bound=BaseStorageModel)
-
-
 class ModelRegistry(Registry[UUID, type[BaseStorageModel]]):
     """A registry of storage model types."""
 
@@ -101,8 +95,17 @@ class ModelRegistry(Registry[UUID, type[BaseStorageModel]]):
             suggested_id = uuid4().hex
             msg = (
                 f"Class definition for {self.value_description.lower()} "
-                f"{full_class_name} is missing a 'storage_model_id'. "
-                f"You may want to add {suggested_id!r} to your class."
+                f"{full_class_name} is missing a 'storage_model_id' attribute. "
+                f"You may want to add {suggested_id!r} to your class definition."
             )
             raise ValueError(msg) from None
         return UUID(uuid_str)
+
+    @classmethod
+    def can_register(cls, value: Any) -> TypeIs[type[BaseStorageModel]]:
+        """Return whether the given value is a valid serializer."""
+        return (
+            isinstance(value, type)
+            and issubclass(value, BaseStorageModel)
+            and "storage_model_id" in value.__dict__
+        )

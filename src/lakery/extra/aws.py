@@ -33,6 +33,8 @@ if TYPE_CHECKING:
 
     from lakery.common.utils import TagMap
 
+__all__ = ("S3Storage",)
+
 P = ParamSpec("P")
 R = TypeVar("R")
 

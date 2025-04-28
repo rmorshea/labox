@@ -22,6 +22,15 @@ from lakery.core.serializer import Serializer
 from lakery.core.serializer import StreamContent
 from lakery.core.serializer import StreamSerializer
 
+__all__ = (
+    "ArrowRecordBatchStreamSerializer",
+    "ArrowTableSerializer",
+    "ParquetReadOptions",
+    "ParquetRecordBatchStreamSerializer",
+    "ParquetTableSerializer",
+    "ParquetWriteOptions",
+)
+
 
 class _ArrowTableBase:
     content_type = "application/vnd.apache.arrow.file"

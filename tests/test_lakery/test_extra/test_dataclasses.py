@@ -5,28 +5,22 @@ from typing import Any
 from sqlalchemy.ext.asyncio.session import AsyncSession
 
 from lakery.core.context import Registries
-from lakery.core.serializer import SerializerRegistry
+from lakery.core.model import ModelRegistry
+from lakery.extra.dataclasses import DataclassModel
+from lakery.extra.json import JsonSerializer
 from lakery.extra.msgpack import MsgPackSerializer
-from lakery.stdlib.dataclasses import DataclassModel
-from lakery.stdlib.dataclasses import get_model_registry
-from lakery.stdlib.json import JsonSerializer
-from lakery.stdlib.os import FileStorage
+from lakery.extra.os import FileStorage
 from tests.core_api_utils import assert_save_load_equivalence
 from tests.core_context_utils import basic_registries
 
-registries = Registries.merge(
-    basic_registries,
-    Registries(serializers=SerializerRegistry([MsgPackSerializer()])),
-)
-
-local_storage = registries.storages[FileStorage.name]
-msgpack_serializer = registries.serializers[MsgPackSerializer.name]
-json_serializer = registries.serializers[JsonSerializer.name]
+local_storage = basic_registries.storages[FileStorage.name]
+msgpack_serializer = basic_registries.serializers[MsgPackSerializer.name]
+json_serializer = basic_registries.serializers[JsonSerializer.name]
 
 
 @dataclass
 class SampleModel(DataclassModel, storage_id="d1d3cd96964a45bbb718de26f2671b87"):
-    default: Any
+    field_with_no_meta: Any
     field_with_serializer: Any = field(
         metadata={"serializer": msgpack_serializer},
     )
@@ -38,14 +32,17 @@ class SampleModel(DataclassModel, storage_id="d1d3cd96964a45bbb718de26f2671b87")
     )
 
 
-registries = Registries.merge(registries, Registries(models=get_model_registry()))
+registries = Registries.merge(
+    basic_registries,
+    models=ModelRegistry([SampleModel]),
+)
 
 
 def test_dump_load_storage_model():
     sample = {"hello": "world", "answer": 42}
 
     model = SampleModel(
-        default=sample,
+        field_with_no_meta=sample,
         field_with_serializer=sample,
         field_with_storage=sample,
         field_with_serializer_and_storage=sample,
@@ -56,7 +53,7 @@ def test_dump_load_storage_model():
     assert manifests == {
         "data": {
             "value": {
-                "default": {
+                "field_with_no_meta": {
                     "__json_ext__": "content",
                     "content_base64": "gqVoZWxsb6V3b3JsZKZhbnN3ZXIq",
                     "content_encoding": None,
@@ -108,7 +105,7 @@ async def test_save_load_storage_model(session: AsyncSession):
     sample = {"hello": "world", "answer": 42}
     await assert_save_load_equivalence(
         SampleModel(
-            default=sample,
+            field_with_no_meta=sample,
             field_with_serializer=sample,
             field_with_storage=sample,
             field_with_serializer_and_storage=sample,

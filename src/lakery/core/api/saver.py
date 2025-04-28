@@ -88,7 +88,7 @@ class _DataSaver:
 
     def save_soon(
         self,
-        model: BaseStorageModel[Any],
+        model: BaseStorageModel,
         *,
         tags: Mapping[str, str] | None = None,
     ) -> FutureResult[ManifestRecord]:

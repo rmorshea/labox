@@ -18,6 +18,13 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from collections.abc import Iterable
 
+__all__ = (
+    "MSG_PACK_TYPES",
+    "MsgPackSerializer",
+    "MsgPackStreamSerializer",
+    "MsgPackType",
+)
+
 MsgPackType = (
     Any  # Include any to account for msgpack extension types
     | int

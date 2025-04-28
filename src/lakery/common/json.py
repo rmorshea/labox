@@ -21,7 +21,20 @@ if TYPE_CHECKING:
     from lakery.core.model import Manifest
     from lakery.core.serializer import Serializer
     from lakery.core.storage import Storage
-    from lakery.stdlib.json import JsonType
+
+JsonType = (
+    int
+    | str
+    | float
+    | bool
+    | dict[str, "JsonType"]
+    | list["JsonType"]
+    | tuple["JsonType", ...]
+    | None
+)
+"""A type alias for JSON data."""
+JsonStreamType = dict[str, JsonType] | list[JsonType] | tuple[JsonType, ...]
+"""A type alias for a a value in a stream of JSON data."""
 
 
 class RefJsonExt(TypedDict):

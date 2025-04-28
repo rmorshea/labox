@@ -1,59 +1,24 @@
 # Models
 
-Lakery relies on "models" to define where and how to store your data. Models are classes
-inheriting from [`BaseStorageModel`][lakery.core.model.BaseStorageModel] that implement
-a handful of abstract methods in order to do so:
+Lakery relies on "models" to define where and how to store your data. There are a few
+built-in models for [singular][lakery.common.model.Streamed] and [streamed][lakery.common.model.Streamed]
+data in addition to basic support for [dataclasses](#dataclass-model). These built-in
+models may be sufficient for simple use cases, but you'll pretty quickly reach for
+integrations with 3rd party libraries like [Pydantic](../integrations/pydantic.md),
+or start thinking about creating your own [custom models](#custom-models).
 
-```python
-from typing import Self
-
-from lakery.core.model import BaseStorageModel
-
-
-class MyModel(BaseStorageModel):
-    # (1) String containing a UUID that uniquely identifies the model.
-    storage_model_id = "..."
-
-    # (2) Method returning manifests that describe where and how to store the model.
-    def storage_model_dump(self, registries: Registries) -> ManifestMap: ...
-
-    # (3) Method that reconstitutes the model from manifests it previously saved.
-    @classmethod
-    def storage_model_load(cls, manifests: ManifestMap, registries: Registries) -> Self: ...
-```
-
-1. String containing a UUID that uniquely identifies the model. This is used to later
-    determine which class to reconstitute when loading data later. That means you should
-    **never copy or change this value** once it's been used to save data.
-
-1. Method that returns a mapping of [`Manifest`][lakery.core.model.Manifest] dicts that
-    that describe where and how to store the constituent parts of the model. This is
-    later passed to the [`storage_model_load`][lakery.core.model.BaseStorageModel.storage_model_load]
-    method.
-
-1. Method that takes the mapping of [`Manifest`][lakery.core.model.Manifest] dicts and
-    reconstitutes the model from them.
-
-Lakery provides built-in models for
-[singular][lakery.builtin.Streamed] and [streamed][lakery.builtin.Streamed] data
-in addition to basic support for [dataclasses](#dataclass-model). Integrations
-with 3rd party libraries like [Pydantic](../integrations/pydantic.md) provide
-implementations that understand how to decompose and reconstitute more complex data
-structures. These built-in models should be sufficient for most use cases but, if you
-need to, you can also create your own [custom models](#custom-models).
-
-## Built-in Models
+## Simple Models
 
 ### Singular
 
-The [`Singular`][lakery.builtin.Singular] model can be used to save any value you
+The [`Singular`][lakery.common.model.Singular] model can be used to save any value you
 already have in memory. For example, you might have a `pandas.DataFrame` that you want
 to save as a Parquet file. All you need to do is wrap it in a `Singular` instance:
 
 ```python
 import pandas as pd
 
-from lakery.builtin import Singular
+from lakery.common.model import Singular
 
 my_df = pd.DataFrame({"hello": ["world"]})
 singular_df = Singular(my_df)
@@ -75,7 +40,7 @@ The same is true of storages. If you're storage registry does not have a
 is required.
 
 ```python
-from lakery.builtin import FileStorage
+from lakery.extra.os import FileStorage
 
 file_storage = FileStorage("temp", mkdir=True)  # (1)!
 singular_df = Singular(df, storage=file_storage)
@@ -83,7 +48,7 @@ singular_df = Singular(df, storage=file_storage)
 
 ### Streamed
 
-The [`Streamed`][lakery.builtin.Streamed] model can be used to save data that is
+The [`Streamed`][lakery.common.model.Streamed] model can be used to save data that is
 asynchronously generated. For example, you might have a function that generates data
 you want to save as a Parquet file. You can wrap that asynchronous generator in a
 `Streamed` instance:
@@ -91,7 +56,7 @@ you want to save as a Parquet file. You can wrap that asynchronous generator in 
 ```python
 import pyarrow as pa
 
-from lakery.builtin import Streamed
+from lakery.common.model import Streamed
 from lakery.extra.pyarrow import ParquetRecordBatchStreamSerializer
 
 
@@ -109,7 +74,7 @@ streamed_data = Streamed(generate_data(), serializer=parquet_stream_serializer)
 
     Unlike with `Singular`, passing an explicit serializer to `Streamed` is
     **highly recommended**. This is because determine what serializer to use involves
-    waiting for the first element of the stream to be generated which means you will
+    waiting for the first element of the stream to be generated. This means will
     not get an early error if a serializer cannot be found.
 
 As above, if you're storage registry does not have a [default storage](registries.md#declaring-a-default-storage)
@@ -118,9 +83,9 @@ then declaring one here is required.
 ```python
 import pyarrow as pa
 
-from lakery.builtin import Streamed
+from lakery.common.model import Streamed
+from lakery.extra.os import FileStorage
 from lakery.extra.pyarrow import ParquetRecordBatchStreamSerializer
-from lakery.stdlib.os import FileStorage
 
 
 async def generate_data():
@@ -136,11 +101,11 @@ streamed_data = Streamed(
 )
 ```
 
-### Dataclass Model
+### Dataclasses
 
-The [`DataclassModel`][lakery.stdlib.dataclasses.DataclassModel] model can be used to save standard
-Python dataclasses. For example, you might have a dataclass that holds the results of
-a scientific experiment:
+The [`DataclassModel`][lakery.extra.dataclasses.DataclassModel] model can be used to save standard
+Python dataclasses. For example, you might have a dataclass that holds the results of a scientific
+experiment:
 
 ```python
 from dataclasses import dataclass
@@ -162,9 +127,9 @@ To turn this into a model that can be saved with Lakery, you need to inherit fro
 from dataclasses import dataclass
 from dataclasses import field
 
+from lakery.extra.dataclasses import DataclassModel
 from lakery.extra.numpy import NpySerializer
 from lakery.extra.pandas import DataFrameSerializer
-from lakery.stdlib.dataclasses import DataclassModel
 
 npy_serializer = NpySerializer()
 df_serializer = DataFrameSerializer()
@@ -187,6 +152,9 @@ models where the structure is known ahead of time, it's recommended to be explic
 Storages may also be specified in the same way under a `"storage"` key in the `metadata`.
 
 ## Custom Models
+
+Implementing your own model involved inheriting from the
+[`BaseStorageModel`][lakery.core.model.BaseStorageModel] class.
 
 Assume you have a already have a class that holds data from a scientific experiment:
 

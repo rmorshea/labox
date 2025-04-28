@@ -10,6 +10,8 @@ from numpy.typing import NDArray
 from lakery.core.serializer import Content
 from lakery.core.serializer import Serializer
 
+__all__ = ("Media", "MediaSerializer")
+
 
 @dataclass(kw_only=True)
 class Media:

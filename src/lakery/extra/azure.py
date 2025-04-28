@@ -22,6 +22,9 @@ if TYPE_CHECKING:
     from lakery.common.utils import TagMap
 
 
+__all__ = ("BlobStorage",)
+
+
 class BlobStorage(Storage[str]):
     """Storage for Azure Blob data."""
 

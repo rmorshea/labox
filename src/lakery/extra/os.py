@@ -20,6 +20,8 @@ if TYPE_CHECKING:
     from lakery.core.storage import Digest
     from lakery.core.storage import GetStreamDigest
 
+__all__ = ("FileStorage",)
+
 
 class FileStorage(Storage[str]):
     """A storage backend for testing that saves data to local files."""

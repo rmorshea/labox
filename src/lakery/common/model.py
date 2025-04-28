@@ -1,40 +1,42 @@
 from __future__ import annotations
 
-from collections.abc import AsyncIterable
-from collections.abc import Mapping
 from dataclasses import dataclass
 from dataclasses import field
 from logging import getLogger
 from typing import TYPE_CHECKING
-from typing import Any
+from typing import ClassVar
 from typing import Generic
+from typing import LiteralString
 from typing import Self
 from typing import TypeVar
 
 from lakery.core.model import BaseStorageModel
 from lakery.core.model import Manifest
-from lakery.core.model import ModelRegistry
+from lakery.core.model import ManifestMap
 from lakery.core.model import StreamManifest
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterable
+    from collections.abc import Mapping
+
     from lakery.core.context import Registries
     from lakery.core.serializer import Serializer
     from lakery.core.serializer import StreamSerializer
     from lakery.core.storage import Storage
 
+__all__ = (
+    "Singular",
+    "Streamed",
+)
+
 T = TypeVar("T")
 
 
-def get_model_registry() -> ModelRegistry:
-    """Return a registry of models from this module."""
-    return ModelRegistry(_MODELS)
-
-
 @dataclass(frozen=True)
-class Singular(Generic[T], BaseStorageModel[Mapping[str, Manifest]]):
+class Singular(Generic[T], BaseStorageModel):
     """Models a single value."""
 
-    storage_model_id = "63b297f66dbc44bb8552f6f490cf21cb"
+    storage_model_id: ClassVar[LiteralString] = "63b297f66dbc44bb8552f6f490cf21cb"
 
     value: T
     """The value."""
@@ -51,19 +53,20 @@ class Singular(Generic[T], BaseStorageModel[Mapping[str, Manifest]]):
     @classmethod
     def storage_model_load(
         cls,
-        manifests: Mapping[str, Manifest],
+        manifests: ManifestMap,
         _registries: Registries,
     ) -> Self:
         """Load the model from a series of storage manifests."""
         man = manifests[""]
+        assert "value" in man, f"Missing value in manifest {man}"  # noqa: S101
         return cls(value=man["value"], serializer=man["serializer"], storage=man["storage"])
 
 
 @dataclass(frozen=True)
-class Streamed(Generic[T], BaseStorageModel[Mapping[str, StreamManifest]]):
+class Streamed(Generic[T], BaseStorageModel):
     """Models a stream of data."""
 
-    storage_model_id = "e80e8707ffdd4785b95b30247fa4398c"
+    storage_model_id: ClassVar[LiteralString] = "e80e8707ffdd4785b95b30247fa4398c"
 
     stream: AsyncIterable[T] = field(compare=False)
     """The stream."""
@@ -85,18 +88,13 @@ class Streamed(Generic[T], BaseStorageModel[Mapping[str, StreamManifest]]):
     @classmethod
     def storage_model_load(
         cls,
-        manifests: Mapping[str, StreamManifest],
+        manifests: ManifestMap,
         _registries: Registries,
     ) -> Self:
         """Load the model from a series of storage manifests."""
         man = manifests[""]
+        assert "stream" in man, f"Missing stream in manifest {man}"  # noqa: S101
         return cls(stream=man["stream"], serializer=man["serializer"], storage=man["storage"])
-
-
-_MODELS: set[type[BaseStorageModel[Any]]] = {
-    Singular,
-    Streamed,
-}
 
 
 _LOG = getLogger(__name__)

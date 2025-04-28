@@ -9,6 +9,12 @@ import numpy as np
 from lakery.core.serializer import Content
 from lakery.core.serializer import Serializer
 
+__all__ = (
+    "NpyDumpArgs",
+    "NpyLoadArgs",
+    "NpySerializer",
+)
+
 
 class NpySerializer(Serializer[np.ndarray]):
     """Serializer for Pandas DataFrames using Arrow."""

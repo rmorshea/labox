@@ -5,11 +5,18 @@ from collections import Counter
 from collections.abc import Iterable
 from collections.abc import Iterator
 from collections.abc import Mapping
+from importlib import import_module
+from typing import TYPE_CHECKING
+from typing import Any
 from typing import ClassVar
 from typing import Self
+from typing import TypeIs
 from typing import TypeVar
 
 from lakery.common.exceptions import NotRegistered
+
+if TYPE_CHECKING:
+    from types import ModuleType
 
 K = TypeVar("K")
 V = TypeVar("V")
@@ -38,7 +45,13 @@ class Registry(Mapping[K, V], abc.ABC):
         raise NotImplementedError
 
     @classmethod
-    def merge(cls, *registries: Self, ignore_conflicts: bool = False) -> Self:
+    @abc.abstractmethod
+    def can_register(cls, value: Any, /) -> TypeIs[V]:
+        """Return whether the given value is a valid registry value."""
+        raise NotImplementedError
+
+    @classmethod
+    def merge(cls, *registries: Any, ignore_conflicts: bool = False) -> Self:
         """Return a new registry that merges this one with the given ones."""
         new_values = [v for r in registries for v in r.values()]
         return cls(new_values, ignore_conflicts=ignore_conflicts)
@@ -55,6 +68,27 @@ class Registry(Mapping[K, V], abc.ABC):
         if (key := self.get_key(value)) not in self._entries:
             return False
         return self._entries[key] is value
+
+    @classmethod
+    def from_modules(
+        cls,
+        *modules: ModuleType | str,
+        ignore_conflicts: bool = False,
+        **kwargs: Any,
+    ) -> Self:
+        """Create a registry from a module."""
+        model_types: list[V] = []
+        for mod in modules:
+            if isinstance(mod, str):
+                mod = import_module(mod)
+            if not hasattr(mod, "__all__"):
+                msg = f"Module {mod} must have an '__all__' attribute."
+                raise ValueError(msg)
+            for name in mod.__all__:
+                maybe = getattr(mod, name, None)
+                if cls.can_register(maybe):
+                    model_types.append(maybe)
+        return cls(model_types, ignore_conflicts=ignore_conflicts, **kwargs)
 
     def __getitem__(self, key: K) -> V:
         try:

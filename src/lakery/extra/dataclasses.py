@@ -16,26 +16,24 @@ from uuid import UUID
 from uuid import uuid4
 from warnings import warn
 
-from lakery.builtin.json_ext import dump_any_json_ext
-from lakery.builtin.json_ext import load_json_ext
+from lakery.common.json import dump_any_json_ext
+from lakery.common.json import load_json_ext
 from lakery.core.model import BaseStorageModel
 from lakery.core.model import Manifest
 from lakery.core.model import ManifestMap
-from lakery.core.model import ModelRegistry
 from lakery.core.serializer import Serializer
 from lakery.core.serializer import SerializerRegistry
 from lakery.core.storage import Storage
 from lakery.core.storage import StorageRegistry
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from lakery.core.context import Registries
 
+__all__ = ("DataclassModel",)
+
 T = TypeVar("T")
-
-
-def get_model_registry() -> ModelRegistry:
-    """Return a registry of models from this module."""
-    return ModelRegistry(_MODELS)
 
 
 @dataclass
@@ -63,9 +61,8 @@ class DataclassModel(BaseStorageModel):
                 warn(msg, UserWarning, stacklevel=2)
             else:
                 cls.storage_model_id = storage_id
-                _MODELS.add(cls)
 
-    def storage_model_dump(self, registries: Registries) -> dict[str, Manifest]:
+    def storage_model_dump(self, registries: Registries) -> Mapping[str, Manifest]:
         """Dump the model into a dictionary of values."""
         external: dict[str, Manifest] = {}
         context: _DumpContext = {"path": "", "registries": registries, "external": external}
@@ -76,14 +73,17 @@ class DataclassModel(BaseStorageModel):
 
             value = getattr(self, f.name)
 
-            data = (
-                value.storage_model_dump(registries)
-                if isinstance(value, BaseStorageModel)
-                else Manifest(
-                    value=value,
-                    serializer=_get_field_serializer(f),
-                    storage=_get_field_storage(f),
+            if isinstance(value, BaseStorageModel):
+                msg = (
+                    f"DataclassModel does not support nested models: {f.name}={value} - "
+                    "consider using lakery.extra.pydantic.StorageModel instead"
                 )
+                raise TypeError(msg)
+
+            data = Manifest(
+                value=value,
+                serializer=_get_field_serializer(f),
+                storage=_get_field_storage(f),
             )
 
             kwargs[f.name] = dump_any_json_ext(f.name, data, context)
@@ -140,9 +140,6 @@ class _DumpContext(TypedDict):
 class _LoadContext(TypedDict):
     registries: Registries
     external: dict[str, Manifest]
-
-
-_MODELS: set[type[BaseStorageModel[Any]]] = set()
 
 
 _LOG = getLogger(__name__)

@@ -16,19 +16,13 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterable
     from collections.abc import Iterable
 
-JsonType = (
-    int
-    | str
-    | float
-    | bool
-    | dict[str, "JsonType"]
-    | list["JsonType"]
-    | tuple["JsonType", ...]
-    | None
+from lakery.common.json import JsonStreamType
+from lakery.common.json import JsonType
+
+__all__ = (
+    "JsonSerializer",
+    "JsonStreamSerializer",
 )
-"""A type alias for JSON data."""
-JsonStreamType = dict[str, JsonType] | list[JsonType] | tuple[JsonType, ...]
-"""A type alias for a a value in a stream of JSON data."""
 
 JSON_SCALAR_TYPES = (int, str, float, bool, type(None), dict, list, tuple)
 """The types that can be serialized to JSON."""

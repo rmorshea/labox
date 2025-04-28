@@ -17,6 +17,12 @@ if TYPE_CHECKING:
     from polars._typing import ParallelStrategy
     from polars._typing import ParquetCompression
 
+__all__ = (
+    "ParquetDataFrameSerializer",
+    "ParquetDumpArgs",
+    "ParquetLoadArgs",
+)
+
 
 class ParquetDumpArgs(TypedDict, total=False):
     """Arguments for dumping a Polars DataFrame to Parquet."""

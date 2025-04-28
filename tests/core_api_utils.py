@@ -1,5 +1,3 @@
-from typing import Any
-
 from sqlalchemy.ext.asyncio.session import AsyncSession
 
 from lakery.core.api.loader import data_loader
@@ -9,7 +7,7 @@ from lakery.core.model import BaseStorageModel
 
 
 async def assert_save_load_equivalence(
-    model: BaseStorageModel[Any],
+    model: BaseStorageModel,
     registries: Registries,
     session: AsyncSession,
 ) -> None:

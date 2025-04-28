@@ -23,38 +23,32 @@ from warnings import warn
 from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import GetCoreSchemaHandler
-from pydantic._internal._core_utils import walk_core_schema as _walk_core_schema
 from pydantic_core import core_schema as cs
+from pydantic_walk_core_schema import walk_core_schema
 
 from lakery.core.model import AnyManifest
 from lakery.core.model import BaseStorageModel
 from lakery.core.model import Manifest
 from lakery.core.model import ManifestMap
-from lakery.core.model import ModelRegistry
 from lakery.core.serializer import Serializer
 from lakery.core.storage import Storage
 
 if TYPE_CHECKING:
-    from lakery.builtin.json_ext import AnyJsonExt
+    from lakery.common.json import AnyJsonExt
     from lakery.core.context import Registries
     from lakery.core.serializer import SerializerRegistry
     from lakery.core.storage import StorageRegistry
 
 
+__all__ = (
+    "StorageModel",
+    "StorageSpec",
+)
+
 _LOG = getLogger(__name__)
-_MODELS: set[type[StorageModel]] = set()
 
 
-def get_model_registry() -> ModelRegistry:
-    """Return a registry of all currently defined Pydantic storage models."""
-    return ModelRegistry(list(_MODELS))
-
-
-class StorageModel(
-    BaseModel,
-    BaseStorageModel[ManifestMap],
-    arbitrary_types_allowed=True,
-):
+class StorageModel(BaseModel, BaseStorageModel, arbitrary_types_allowed=True):
     """A Pydantic model that can be stored by Lakery."""
 
     def __init_subclass__(
@@ -80,7 +74,6 @@ class StorageModel(
                 warn(msg, UserWarning, stacklevel=2)
             else:
                 cls.storage_model_id = storage_id
-                _MODELS.add(cls)
 
     @classmethod
     def __get_pydantic_core_schema__(
@@ -236,7 +229,7 @@ def _adapt_third_party_types(schema: cs.CoreSchema, handler: GetCoreSchemaHandle
         else:
             return recurse(schema, visit_is_instance_schema)
 
-    return _walk_core_schema(schema, visit_is_instance_schema)
+    return walk_core_schema(schema, visit_is_instance_schema)
 
 
 def _adapt_core_schema(schema: cs.CoreSchema) -> cs.JsonOrPythonSchema:

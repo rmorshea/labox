@@ -49,7 +49,10 @@ pandas = ["pandas>=2,<3", "lakery[pyarrow]"]
 plotly = ["plotly>=5,<6"]
 polars = ["polars>=1.18.0"]
 pyarrow = ["pyarrow>=18,<19"]
-pydantic = ["pydantic>=2,<3"]
+pydantic = [
+    "pydantic-walk-core-schema>=1.0.0",
+    "pydantic>=2,<3",
+]
 imageio = [
     "imageio>=2,<3",
 ]
@@ -100,6 +103,9 @@ test = [
     "aiosqlite==0.20.0",
     "moto>=5.0.22",
     "aiohttp>=3.11.10",
+]
+pydantic = [
+    "pydantic-walk-core-schema>=1.0.0",
 ]
 
 [tool.pytest.ini_options]
