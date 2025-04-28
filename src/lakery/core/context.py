@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import NewType
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from lakery.common.utils import frozenclass
 from lakery.core.model import ModelRegistry
 from lakery.core.serializer import SerializerRegistry
 from lakery.core.storage import StorageRegistry
@@ -21,7 +21,7 @@ EMPTY_STORAGE_REGISTRY = StorageRegistry()
 """An empty registry of storages."""
 
 
-@dataclass(frozen=True, kw_only=True)
+@frozenclass
 class Registries:
     """A collection of registries."""
 

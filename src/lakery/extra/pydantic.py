@@ -5,7 +5,6 @@ from base64 import b64encode
 from collections.abc import Callable
 from collections.abc import Mapping
 from collections.abc import MutableMapping
-from dataclasses import dataclass
 from logging import getLogger
 from typing import TYPE_CHECKING
 from typing import Annotated
@@ -26,6 +25,7 @@ from pydantic import GetCoreSchemaHandler
 from pydantic_core import core_schema as cs
 from pydantic_walk_core_schema import walk_core_schema
 
+from lakery.common.utils import frozenclass
 from lakery.core.model import AnyManifest
 from lakery.core.model import BaseStorageModel
 from lakery.core.model import Manifest
@@ -151,7 +151,7 @@ class StorageModel(BaseModel, BaseStorageModel, arbitrary_types_allowed=True):
         return serializers.infer_from_value_type(dict)
 
 
-@dataclass(frozen=True)
+@frozenclass(kw_only=False)
 class StorageSpecMetadata:
     """An annotation for specifying the storage and serialization of a field.
 

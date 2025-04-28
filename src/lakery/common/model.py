@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from dataclasses import field
 from logging import getLogger
 from typing import TYPE_CHECKING
@@ -10,6 +9,9 @@ from typing import LiteralString
 from typing import Self
 from typing import TypeVar
 
+from annotated_types import KW_ONLY
+
+from lakery.common.utils import frozenclass
 from lakery.core.model import BaseStorageModel
 from lakery.core.model import Manifest
 from lakery.core.model import ManifestMap
@@ -32,7 +34,7 @@ __all__ = (
 T = TypeVar("T")
 
 
-@dataclass(frozen=True)
+@frozenclass(kw_only=False)
 class Singular(Generic[T], BaseStorageModel):
     """Models a single value."""
 
@@ -40,6 +42,9 @@ class Singular(Generic[T], BaseStorageModel):
 
     value: T
     """The value."""
+
+    _ = KW_ONLY
+
     serializer: Serializer[T] | None = field(default=None, compare=False)
     """The serializer for the value."""
     storage: Storage | None = field(default=None, compare=False)
@@ -62,7 +67,7 @@ class Singular(Generic[T], BaseStorageModel):
         return cls(value=man["value"], serializer=man["serializer"], storage=man["storage"])
 
 
-@dataclass(frozen=True)
+@frozenclass(kw_only=False)
 class Streamed(Generic[T], BaseStorageModel):
     """Models a stream of data."""
 
@@ -70,6 +75,9 @@ class Streamed(Generic[T], BaseStorageModel):
 
     stream: AsyncIterable[T] = field(compare=False)
     """The stream."""
+
+    _ = KW_ONLY
+
     serializer: StreamSerializer[T] | None = field(default=None, compare=False)
     """The serializer for the stream."""
     storage: Storage | None = field(default=None, compare=False)

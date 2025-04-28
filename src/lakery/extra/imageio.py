@@ -1,5 +1,4 @@
 from collections.abc import Sequence
-from dataclasses import dataclass
 from io import BytesIO
 from mimetypes import MimeTypes
 
@@ -7,13 +6,14 @@ import numpy as np
 from imageio import v3 as imageio
 from numpy.typing import NDArray
 
+from lakery.common.utils import frozenclass
 from lakery.core.serializer import Content
 from lakery.core.serializer import Serializer
 
 __all__ = ("Media", "MediaSerializer")
 
 
-@dataclass(kw_only=True)
+@frozenclass
 class Media:
     """A dataclass representing some media."""
 
