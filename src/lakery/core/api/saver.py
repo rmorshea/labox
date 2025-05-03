@@ -66,13 +66,24 @@ async def data_saver(
         async with create_task_group() as tg:
             yield _DataSaver(tg, futures, registries)
     finally:
+        errors: list[BaseException] = []
+        manifests: list[ManifestRecord] = []
+        for f in futures:
+            if e := f.exception():
+                errors.append(e)
+            else:
+                manifests.append(f.result())
+
         async with session.begin():
-            manifests = [m for f in futures if (m := f.result(default=None))]
             session.add_all(manifests)
             for m in manifests:
                 session.expunge(m)
                 for c in m.contents:
                     session.expunge(c)
+
+        if errors:
+            msg = f"Failed to save {len(errors)} out of {len(futures)} items."
+            raise BaseExceptionGroup(msg, errors)
 
 
 class _DataSaver:

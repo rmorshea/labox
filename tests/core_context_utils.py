@@ -19,7 +19,7 @@ if TEST_STORAGE_DIR.exists():  # nocov
 
 basic_registries = Registries(
     models=ModelRegistry.from_modules(
-        "lakery.common",
+        "lakery.common.models",
         "lakery.extra.pydantic",
         "lakery.extra.dataclasses",
     ),

@@ -29,7 +29,8 @@ AsyncSession = async_sessionmaker(engine, expire_on_commit=True)
 BaseRecord.create_all(engine).run()
 ```
 
-Pick your serializers and storages:
+Pick your [serializers](./concepts/serializers.md),
+[storages](.concepts/storages.md), and [models](./concepts/models.md):
 
 ```python
 from lakery.core import ModelRegistry
@@ -41,8 +42,9 @@ from lakery.extra.os import FileStorage
 
 serializers = SerializerRegistry([JsonSerializer()])
 storages = StorageRegistry(default=FileStorage("temp", mkdir=True))
-models = ModelRegistry.from_modules("lakery.common.models")  # include built-in models
-registries = Registries(serializers=serializers, storages=storages)
+models = ModelRegistry.from_modules("lakery.common.models")
+
+registries = Registries(serializers=serializers, storages=storages, models=models)
 ```
 
 Save and load some data:
@@ -58,11 +60,12 @@ async def main():
     data = Singular({"hello": "world"})
 
     async with AsyncSession() as session:
-        async with data_saver(registries=registries, session=session) as saver:
+
+        async with data_saver(session=session, registries=registries) as saver:
             future_record = saver.save_soon(data)
         record = future_record.result()
 
-        with data_loader(registries=registries, session=session) as loader:
+        with data_loader(session=session, registries=registries) as loader:
             future_data = loader.load_soon(record)
         loaded_data = future_data.result()
 
