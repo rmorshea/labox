@@ -16,8 +16,8 @@ from uuid import UUID
 from uuid import uuid4
 from warnings import warn
 
-from lakery.common.json import dump_any_json_ext
-from lakery.common.json import load_json_ext
+from lakery.common.jsonext import dump_any_json_ext
+from lakery.common.jsonext import load_json_ext
 from lakery.core.model import BaseStorageModel
 from lakery.core.model import Manifest
 from lakery.core.model import ManifestMap
