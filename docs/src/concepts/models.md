@@ -1,7 +1,7 @@
 # Models
 
 Lakery relies on "models" to define where and how to store your data. There are a few
-built-in models for [singular][lakery.common.model.Streamed] and [streamed][lakery.common.model.Streamed]
+built-in models for [singular][lakery.common.models.Streamed] and [streamed][lakery.common.models.Streamed]
 data in addition to basic support for [dataclasses](#dataclass-model). These built-in
 models may be sufficient for simple use cases, but you'll pretty quickly reach for
 integrations with 3rd party libraries like [Pydantic](../integrations/pydantic.md),
@@ -11,14 +11,14 @@ or start thinking about creating your own [custom models](#custom-models).
 
 ### Singular
 
-The [`Singular`][lakery.common.model.Singular] model can be used to save any value you
+The [`Singular`][lakery.common.models.Singular] model can be used to save any value you
 already have in memory. For example, you might have a `pandas.DataFrame` that you want
 to save as a Parquet file. All you need to do is wrap it in a `Singular` instance:
 
 ```python
 import pandas as pd
 
-from lakery.common.model import Singular
+from lakery.common.models import Singular
 
 my_df = pd.DataFrame({"hello": ["world"]})
 singular_df = Singular(my_df)
@@ -48,7 +48,7 @@ singular_df = Singular(df, storage=file_storage)
 
 ### Streamed
 
-The [`Streamed`][lakery.common.model.Streamed] model can be used to save data that is
+The [`Streamed`][lakery.common.models.Streamed] model can be used to save data that is
 asynchronously generated. For example, you might have a function that generates data
 you want to save as a Parquet file. You can wrap that asynchronous generator in a
 `Streamed` instance:
@@ -56,7 +56,7 @@ you want to save as a Parquet file. You can wrap that asynchronous generator in 
 ```python
 import pyarrow as pa
 
-from lakery.common.model import Streamed
+from lakery.common.models import Streamed
 from lakery.extra.pyarrow import ParquetRecordBatchStreamSerializer
 
 
@@ -83,7 +83,7 @@ then declaring one here is required.
 ```python
 import pyarrow as pa
 
-from lakery.common.model import Streamed
+from lakery.common.models import Streamed
 from lakery.extra.os import FileStorage
 from lakery.extra.pyarrow import ParquetRecordBatchStreamSerializer
 

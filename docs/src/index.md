@@ -41,7 +41,7 @@ from lakery.extra.os import FileStorage
 
 serializers = SerializerRegistry([JsonSerializer()])
 storages = StorageRegistry(default=FileStorage("temp", mkdir=True))
-models = ModelRegistry.from_modules("lakery.common")  # include built-in models
+models = ModelRegistry.from_modules("lakery.common.models")  # include built-in models
 registries = Registries(serializers=serializers, storages=storages)
 ```
 
