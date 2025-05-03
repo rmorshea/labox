@@ -53,7 +53,9 @@ class Singular(Generic[T], BaseStorageModel):
     def storage_model_dump(self, registries: Registries) -> Mapping[str, Manifest]:
         """Dump the model to a series of storage manifests."""
         serializer = registries.serializers.infer_from_value_type(type(self.value))
-        return {"": {"value": self.value, "serializer": serializer, "storage": self.storage}}
+        return {
+            "": {"value": self.value, "serializer": serializer, "storage": self.storage}
+        }
 
     @classmethod
     def storage_model_load(
@@ -64,7 +66,9 @@ class Singular(Generic[T], BaseStorageModel):
         """Load the model from a series of storage manifests."""
         man = manifests[""]
         assert "value" in man, f"Missing value in manifest {man}"  # noqa: S101
-        return cls(value=man["value"], serializer=man["serializer"], storage=man["storage"])
+        return cls(
+            value=man["value"], serializer=man["serializer"], storage=man["storage"]
+        )
 
 
 @frozenclass(kw_only=False)
@@ -83,7 +87,9 @@ class Streamed(Generic[T], BaseStorageModel):
     storage: Storage | None = field(default=None, compare=False)
     """The storage for the stream."""
 
-    def storage_model_dump(self, _registries: Registries) -> Mapping[str, StreamManifest]:
+    def storage_model_dump(
+        self, _registries: Registries
+    ) -> Mapping[str, StreamManifest]:
         """Dump the model to a series of storage manifests."""
         return {
             "": {
@@ -102,7 +108,9 @@ class Streamed(Generic[T], BaseStorageModel):
         """Load the model from a series of storage manifests."""
         man = manifests[""]
         assert "stream" in man, f"Missing stream in manifest {man}"  # noqa: S101
-        return cls(stream=man["stream"], serializer=man["serializer"], storage=man["storage"])
+        return cls(
+            stream=man["stream"], serializer=man["serializer"], storage=man["storage"]
+        )
 
 
 _LOG = getLogger(__name__)

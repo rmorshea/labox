@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 
 __all__ = ("FileStorage",)
 
-_log = logging.getLogger(__name__)
+_LOG = logging.getLogger(__name__)
 
 
 class FileStorage(Storage[str]):
@@ -53,7 +53,7 @@ class FileStorage(Storage[str]):
     ) -> str:
         """Save the given data."""
         content_path = self.path.joinpath(*make_path_parts_from_digest(digest))
-        _log.debug("Saving data to %s", content_path)
+        _LOG.debug("Saving data to %s", content_path)
         if not content_path.exists():
             content_path.parent.mkdir(parents=True, exist_ok=True)
             content_path.write_bytes(data)
@@ -62,7 +62,7 @@ class FileStorage(Storage[str]):
     async def get_data(self, location: str) -> bytes:
         """Load data from the given location."""
         path = _str_to_path(location)
-        _log.debug("Loading data from %s", path)
+        _LOG.debug("Loading data from %s", path)
         return path.read_bytes()
 
     async def put_data_stream(
@@ -73,7 +73,7 @@ class FileStorage(Storage[str]):
     ) -> str:
         """Save the given data stream."""
         temp_path = self._get_temp_path()
-        _log.debug("Temporarily saving data to %s", temp_path)
+        _LOG.debug("Temporarily saving data to %s", temp_path)
         with temp_path.open("wb") as file:
             async for chunk in data_stream:
                 file.write(chunk)
@@ -82,19 +82,19 @@ class FileStorage(Storage[str]):
             content_path = self.path.joinpath(
                 *make_path_parts_from_digest(final_digest)
             )
-            _log.debug("Moving data to final location %s", content_path)
+            _LOG.debug("Moving data to final location %s", content_path)
             if not content_path.exists():
                 content_path.parent.mkdir(parents=True, exist_ok=True)
                 temp_path.rename(content_path)
         finally:
-            _log.debug("Deleting temporary file %s", temp_path)
+            _LOG.debug("Deleting temporary file %s", temp_path)
             temp_path.unlink(missing_ok=True)
         return _path_to_str(content_path)
 
     async def get_data_stream(self, location: str) -> AsyncGenerator[bytes]:
         """Load a stream of data from the given location."""
         path = _str_to_path(location)
-        _log.debug("Loading data stream from %s", path)
+        _LOG.debug("Loading data stream from %s", path)
         async with create_task_group() as tg:
             with start_as_async_iterator(
                 tg, _iter_file_chunks(path, self.chunk_size)

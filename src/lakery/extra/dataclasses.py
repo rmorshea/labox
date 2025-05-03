@@ -65,7 +65,11 @@ class DataclassModel(BaseStorageModel):
     def storage_model_dump(self, registries: Registries) -> Mapping[str, Manifest]:
         """Dump the model into a dictionary of values."""
         external: dict[str, Manifest] = {}
-        context: _DumpContext = {"path": "", "registries": registries, "external": external}
+        context: _DumpContext = {
+            "path": "",
+            "registries": registries,
+            "external": external,
+        }
         kwargs: dict[str, Any] = {}
         for f in fields(self):
             if not f.init:
@@ -91,7 +95,9 @@ class DataclassModel(BaseStorageModel):
         return {
             "data": {
                 "value": kwargs,
-                "serializer": self.storage_model_internal_serializer(registries.serializers),
+                "serializer": self.storage_model_internal_serializer(
+                    registries.serializers
+                ),
                 "storage": self.storage_model_internal_storage(registries.storages),
             },
             **external,
@@ -113,7 +119,9 @@ class DataclassModel(BaseStorageModel):
         """
         return storages.default
 
-    def storage_model_internal_serializer(self, serializers: SerializerRegistry) -> Serializer:
+    def storage_model_internal_serializer(
+        self, serializers: SerializerRegistry
+    ) -> Serializer:
         """Return the serializer for "internal data" friom this model.
 
         "Internal data" refers to the data that Pydantic was able to

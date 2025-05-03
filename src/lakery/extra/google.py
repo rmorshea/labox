@@ -41,7 +41,7 @@ __all__ = (
 P = ParamSpec("P")
 R = TypeVar("R")
 
-_log = logging.getLogger(__name__)
+_LOG = logging.getLogger(__name__)
 
 
 class WriterType(Protocol):
@@ -92,7 +92,7 @@ class BlobStorage(Storage[str]):
     ) -> str:
         """Save the given data."""
         location = make_path_from_digest("/", digest, prefix=self._object_name_prefix)
-        _log.debug("Saving data to %s", location)
+        _LOG.debug("Saving data to %s", location)
         blob = self._bucket.blob(location, chunk_size=self._object_chunk_size)
         blob.metadata = tags
         writer = self._writer_type(blob, content_type=digest["content_type"])
@@ -101,7 +101,7 @@ class BlobStorage(Storage[str]):
 
     async def get_data(self, location: str) -> bytes:
         """Load data from the given location."""
-        _log.debug("Loading data from %s", location)
+        _LOG.debug("Loading data from %s", location)
         reader = self._reader_type(
             self._bucket.blob(location, chunk_size=self._object_chunk_size)
         )
@@ -125,7 +125,7 @@ class BlobStorage(Storage[str]):
             make_temp_path("/", initial_digest, prefix=self._object_name_prefix),
             chunk_size=self._object_chunk_size,
         )
-        _log.debug("Temporarily saving data to %s", temp_blob.name)
+        _LOG.debug("Temporarily saving data to %s", temp_blob.name)
         temp_blob.metadata = tags
         writer = self._writer_type(
             temp_blob, content_type=initial_digest["content_type"]
@@ -145,7 +145,7 @@ class BlobStorage(Storage[str]):
                 get_digest(),
                 prefix=self._object_name_prefix,
             )
-            _log.debug("Moving data to final location %s", final_location)
+            _LOG.debug("Moving data to final location %s", final_location)
             await self._to_thread(
                 self._bucket.copy_blob,
                 temp_blob,
@@ -158,14 +158,14 @@ class BlobStorage(Storage[str]):
                 if_generation_match=0,
             )
         finally:
-            _log.debug("Deleting temporary data %s", temp_blob.name)
+            _LOG.debug("Deleting temporary data %s", temp_blob.name)
             await self._to_thread(temp_blob.delete)
 
         return final_location
 
     async def get_data_stream(self, location: str) -> AsyncGenerator[bytes]:
         """Load a data stream from the given location."""
-        _log.debug("Loading data stream from %s", location)
+        _LOG.debug("Loading data stream from %s", location)
         blob = self._bucket.blob(location, chunk_size=self._object_chunk_size)
         with closing(self._reader_type(blob)) as reader:
             try:

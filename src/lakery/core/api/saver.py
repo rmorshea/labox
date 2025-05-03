@@ -50,7 +50,6 @@ P = ParamSpec("P")
 D = TypeVar("D", bound=ManifestRecord)
 
 
-_COMMIT_RETRIES = 3
 _LOG = getLogger(__name__)
 
 
@@ -72,7 +71,9 @@ async def data_saver(
             if e := f.exception():
                 errors.append(e)
             else:
-                manifests.append(f.result())
+                m = f.result()
+                _LOG.debug("Saving manifest %s", m.id.hex)
+                manifests.append(m)
 
         async with session.begin():
             session.add_all(manifests)
@@ -131,17 +132,20 @@ async def _save_model(
     model_uuid = UUID(type(model).storage_model_id)
     model_manifests = model.storage_model_dump(registries)
 
-    record_id = uuid4()
+    manifest_id = uuid4()
     data_record_futures: list[FutureResult[ContentRecord]] = []
     async with create_task_group() as tg:
         for manifest_key, manifest in model_manifests.items():
+            _LOG.debug(
+                "Saving content %s in manifest %s", manifest_key, manifest_id.hex
+            )
             if "value" in manifest:
                 data_record_futures.append(
                     start_future(
                         tg,
-                        _save_storage_value_spec,
+                        _save_storage_value,
                         tags,
-                        record_id,
+                        manifest_id,
                         manifest_key,
                         manifest["value"],
                         manifest.get("serializer"),
@@ -153,9 +157,9 @@ async def _save_model(
                 data_record_futures.append(
                     start_future(
                         tg,
-                        _save_storage_stream_spec,
+                        _save_storage_stream,
                         tags,
-                        record_id,
+                        manifest_id,
                         manifest_key,
                         manifest["stream"],
                         manifest.get("serializer"),
@@ -170,19 +174,23 @@ async def _save_model(
     contents: list[ContentRecord] = []
     for k, f in zip(model_manifests, data_record_futures, strict=False):
         if exc := f.exception():
-            msg = f"Failed to save {k!r} data for {model}"
-            _LOG.error(msg, exc_info=(exc.__class__, exc, exc.__traceback__))
+            _LOG.error(
+                "Failed to save %s in manifest %s",
+                k,
+                manifest_id.hex,
+                exc_info=(exc.__class__, exc, exc.__traceback__),
+            )
         contents.append(f.result())
 
     return ManifestRecord(
-        id=record_id,
+        id=manifest_id,
         tags=tags,
         model_id=model_uuid,
         contents=contents,
     )
 
 
-async def _save_storage_value_spec(
+async def _save_storage_value(
     tags: TagMap,
     manifest_id: UUID,
     manifest_key: str,
@@ -211,7 +219,7 @@ async def _save_storage_value_spec(
     )
 
 
-async def _save_storage_stream_spec(
+async def _save_storage_stream(
     tags: TagMap,
     manifest_id: UUID,
     manifest_key: str,
@@ -228,7 +236,9 @@ async def _save_storage_stream_spec(
         if serializer is None:
             stream_iter = aiter(stream)
             first_value = await anext(stream_iter)
-            serializer = registries.serializers.infer_from_stream_type(type(first_value))
+            serializer = registries.serializers.infer_from_stream_type(
+                type(first_value)
+            )
             stream = _continue_stream(first_value, stream_iter)
 
         content = serializer.dump_stream(stream)
@@ -255,7 +265,9 @@ async def _save_storage_stream_spec(
     raise AssertionError  # nocov
 
 
-def _wrap_stream_dump(content: StreamContent) -> tuple[AsyncGenerator[bytes], GetStreamDigest]:
+def _wrap_stream_dump(
+    content: StreamContent,
+) -> tuple[AsyncGenerator[bytes], GetStreamDigest]:
     data_stream = content["data_stream"]
 
     content_hash = sha256()
@@ -326,7 +338,9 @@ class _SerializationHelper:
         return serializer.dump_stream(_continue_stream(first_value, stream_iter))
 
 
-async def _continue_stream(first_value: Any, stream: AsyncIterable[Any]) -> AsyncGenerator[Any]:
+async def _continue_stream(
+    first_value: Any, stream: AsyncIterable[Any]
+) -> AsyncGenerator[Any]:
     yield first_value
     async for cont_value in stream:
         yield cont_value
