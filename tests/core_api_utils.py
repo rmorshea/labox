@@ -22,7 +22,7 @@ async def assert_save_load_equivalence(
     model: M,
     registries: Registries,
     session: AsyncSession,
-    assertion: Callable[[M, M], Awaitable[None] | None] = _default_compare,
+    assertion: Callable[[M, M], None] = _default_compare,
 ) -> None:
     async with data_saver(session=session, registries=registries) as ms:
         future_record = ms.save_soon(model)
@@ -32,6 +32,24 @@ async def assert_save_load_equivalence(
         future_model = ml.load_soon(record, type(model))
     loaded_model = future_model.result()
 
-    asserted = assertion(loaded_model, model)
+    assertion(loaded_model, model)
+
+
+async def assert_save_load_stream_equivalence(
+    make_model: Callable[[], M],
+    registries: Registries,
+    session: AsyncSession,
+    assertion: Callable[[M, M], Awaitable[None] | None] = _default_compare,
+) -> None:
+    original_model = make_model()
+    async with data_saver(session=session, registries=registries) as ms:
+        future_record = ms.save_soon(original_model)
+    record = future_record.result()
+
+    async with data_loader(session=session, registries=registries) as ml:
+        future_model = ml.load_soon(record, type(original_model))
+    loaded_model = future_model.result()
+
+    asserted = assertion(loaded_model, make_model())
     if isawaitable(asserted):
         await asserted

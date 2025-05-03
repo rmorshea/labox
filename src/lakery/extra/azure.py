@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 from anyio import CapacityLimiter
@@ -23,6 +24,8 @@ if TYPE_CHECKING:
 
 
 __all__ = ("BlobStorage",)
+
+_log = logging.getLogger(__name__)
 
 
 class BlobStorage(Storage[str]):
@@ -50,6 +53,7 @@ class BlobStorage(Storage[str]):
     ) -> str:
         """Save the given value data."""
         location = make_path_from_digest("/", digest, prefix=self._path_prefix)
+        _log.debug("Saving data to %s", location)
         blob_client = self._container_client.get_blob_client(blob=location)
         await blob_client.upload_blob(
             data,
@@ -63,6 +67,7 @@ class BlobStorage(Storage[str]):
 
     async def get_data(self, location: str) -> bytes:
         """Load data from the given location."""
+        _log.debug("Loading data from %s", location)
         blob_client = self._container_client.get_blob_client(blob=location)
         try:
             blob_reader = await blob_client.download_blob()
@@ -80,6 +85,7 @@ class BlobStorage(Storage[str]):
         """Save the given data stream."""
         initial_digest = get_digest(allow_incomplete=True)
         temp_location = make_temp_path("/", initial_digest, prefix=self._path_prefix)
+        _log.debug("Temporarily saving data to %s", temp_location)
 
         temp_blob_client = self._container_client.get_blob_client(blob=temp_location)
         await temp_blob_client.upload_blob(
@@ -91,16 +97,25 @@ class BlobStorage(Storage[str]):
             tags=tags,
         )
         try:
-            final_location = make_path_from_digest("/", get_digest(), prefix=self._path_prefix)
-            final_blob_client = self._container_client.get_blob_client(blob=final_location)
-            await final_blob_client.start_copy_from_url(temp_blob_client.url, requires_sync=True)
+            final_location = make_path_from_digest(
+                "/", get_digest(), prefix=self._path_prefix
+            )
+            _log.debug("Moving data to final location %s", final_location)
+            final_blob_client = self._container_client.get_blob_client(
+                blob=final_location
+            )
+            await final_blob_client.start_copy_from_url(
+                temp_blob_client.url, requires_sync=True
+            )
         finally:
+            _log.debug("Deleting temporary data %s", temp_location)
             await temp_blob_client.delete_blob()
 
         return final_location
 
     async def get_data_stream(self, location: str) -> AsyncGenerator[bytes]:
         """Load a data stream from the given location."""
+        _log.debug("Loading data stream from %s", location)
         blob_client = self._container_client.get_blob_client(blob=location)
         try:
             blob_reader = await blob_client.download_blob()

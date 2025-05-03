@@ -8,7 +8,7 @@ from uuid import uuid4
 
 from anyio import create_task_group
 
-from lakery.common.anyio import start_async_iterator
+from lakery.common.anyio import start_as_async_iterator
 from lakery.core.storage import Storage
 from lakery.extra._utils import make_path_parts_from_digest
 
@@ -61,8 +61,9 @@ class FileStorage(Storage[str]):
 
     async def get_data(self, location: str) -> bytes:
         """Load data from the given location."""
-        _log.debug("Loading data from %s", location)
-        return _str_to_path(location).read_bytes()
+        path = _str_to_path(location)
+        _log.debug("Loading data from %s", path)
+        return path.read_bytes()
 
     async def put_data_stream(
         self,
@@ -86,14 +87,16 @@ class FileStorage(Storage[str]):
                 content_path.parent.mkdir(parents=True, exist_ok=True)
                 temp_path.rename(content_path)
         finally:
+            _log.debug("Deleting temporary file %s", temp_path)
             temp_path.unlink(missing_ok=True)
         return _path_to_str(content_path)
 
     async def get_data_stream(self, location: str) -> AsyncGenerator[bytes]:
         """Load a stream of data from the given location."""
         path = _str_to_path(location)
+        _log.debug("Loading data stream from %s", path)
         async with create_task_group() as tg:
-            with start_async_iterator(
+            with start_as_async_iterator(
                 tg, _iter_file_chunks(path, self.chunk_size)
             ) as chunks:
                 async for c in chunks:

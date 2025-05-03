@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio.session import AsyncSession
 from lakery.common.models import Singular
 from lakery.common.models import Streamed
 from tests.core_api_utils import assert_save_load_equivalence
+from tests.core_api_utils import assert_save_load_stream_equivalence
 from tests.core_context_utils import basic_registries
 
 SAMPLE_DATA = [{"message": "Hello, Alice!"}, {"message": "Goodbye, Alice!"}]
@@ -25,8 +26,8 @@ async def assert_streamed_equal(s1: Streamed, s2: Streamed) -> None:
 
 
 async def test_simple_stream_data_saver_and_loader_usage(session: AsyncSession):
-    await assert_save_load_equivalence(
-        make_stream_model(),
+    await assert_save_load_stream_equivalence(
+        make_stream_model,
         basic_registries,
         session,
         assert_streamed_equal,

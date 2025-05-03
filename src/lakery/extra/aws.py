@@ -15,7 +15,7 @@ from anyio import create_task_group
 from anyio.abc import CapacityLimiter
 from anyio.to_thread import run_sync
 
-from lakery.common.anyio import start_async_iterator
+from lakery.common.anyio import start_as_async_iterator
 from lakery.common.exceptions import NoStorageData
 from lakery.common.streaming import write_async_byte_stream_into
 from lakery.core.storage import Digest
@@ -61,7 +61,9 @@ class S3Storage(Storage[str]):
         object_key_prefix: str = "",
         max_concurrency: int | None = None,
         stream_writer_min_part_size: int = _5MB,
-        stream_writer_buffer_type: StreamBufferType = lambda: SpooledTemporaryFile(max_size=_5MB),  # noqa: SIM115
+        stream_writer_buffer_type: StreamBufferType = lambda: SpooledTemporaryFile(
+            max_size=_5MB
+        ),  # noqa: SIM115
         stream_reader_part_size: int = _5MB,
     ):
         if not (_5MB <= stream_writer_min_part_size <= _5GB):
@@ -126,7 +128,9 @@ class S3Storage(Storage[str]):
         hash.
         """
         initial_digest = get_digest(allow_incomplete=True)
-        temp_location = make_temp_path("/", initial_digest, prefix=self._object_key_prefix)
+        temp_location = make_temp_path(
+            "/", initial_digest, prefix=self._object_key_prefix
+        )
         tagging = urlencode(tags)
 
         create_multipart_upload: CreateMultipartUploadRequestRequestTypeDef = {
@@ -136,9 +140,13 @@ class S3Storage(Storage[str]):
             "Tagging": tagging,
         }
         if initial_digest["content_encoding"]:
-            create_multipart_upload["ContentEncoding"] = initial_digest["content_encoding"]
+            create_multipart_upload["ContentEncoding"] = initial_digest[
+                "content_encoding"
+            ]
         upload_id = (
-            await self._to_thread(self._client.create_multipart_upload, **create_multipart_upload)
+            await self._to_thread(
+                self._client.create_multipart_upload, **create_multipart_upload
+            )
         )["UploadId"]
 
         with self._stream_writer_buffer_type() as buffer:
@@ -170,7 +178,9 @@ class S3Storage(Storage[str]):
                     Key=temp_location,
                     UploadId=upload_id,
                     MultipartUpload={
-                        "Parts": [{"ETag": e, "PartNumber": i} for i, e in enumerate(etags, 1)]
+                        "Parts": [
+                            {"ETag": e, "PartNumber": i} for i, e in enumerate(etags, 1)
+                        ]
                     },
                 )
             except Exception:
@@ -217,7 +227,7 @@ class S3Storage(Storage[str]):
             raise NoStorageData(msg) from error
 
         async with create_task_group() as tg:
-            with start_async_iterator(
+            with start_as_async_iterator(
                 tg,
                 result["Body"].iter_chunks(self._stream_reader_part_size),
             ) as chunks:

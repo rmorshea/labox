@@ -30,7 +30,7 @@ R = TypeVar("R")
 D = TypeVar("D")
 
 
-def start_async_iterator(
+def start_as_async_iterator(
     task_group: TaskGroup, sync_iter: Iterator[R]
 ) -> AbstractContextManager[MemoryObjectReceiveStream[R]]:
     """Create an asynchronous iterator from a synchronous iterator."""
@@ -93,7 +93,9 @@ def set_future_success_forcefully(future: FutureResult[R], result: R) -> None:
     future._result = result  # noqa: SLF001
 
 
-def set_future_exception_forcefully(future: FutureResult[R], exception: BaseException) -> None:
+def set_future_exception_forcefully(
+    future: FutureResult[R], exception: BaseException
+) -> None:
     """Set the exception of a future forcefully."""
     future._exception = exception  # noqa: SLF001
 
