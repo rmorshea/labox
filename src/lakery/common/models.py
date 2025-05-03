@@ -3,9 +3,7 @@ from __future__ import annotations
 from dataclasses import field
 from logging import getLogger
 from typing import TYPE_CHECKING
-from typing import ClassVar
 from typing import Generic
-from typing import LiteralString
 from typing import Self
 from typing import TypeVar
 
@@ -35,10 +33,12 @@ T = TypeVar("T")
 
 
 @frozenclass(kw_only=False)
-class Singular(Generic[T], BaseStorageModel):
+class Singular(
+    Generic[T],
+    BaseStorageModel,
+    storage_model_id="63b297f66dbc44bb8552f6f490cf21cb",
+):
     """Models a single value."""
-
-    storage_model_id: ClassVar[LiteralString] = "63b297f66dbc44bb8552f6f490cf21cb"
 
     value: T
     """The value."""
@@ -53,9 +53,7 @@ class Singular(Generic[T], BaseStorageModel):
     def storage_model_dump(self, registries: Registries) -> Mapping[str, Manifest]:
         """Dump the model to a series of storage manifests."""
         serializer = registries.serializers.infer_from_value_type(type(self.value))
-        return {
-            "": {"value": self.value, "serializer": serializer, "storage": self.storage}
-        }
+        return {"": {"value": self.value, "serializer": serializer, "storage": self.storage}}
 
     @classmethod
     def storage_model_load(
@@ -66,16 +64,16 @@ class Singular(Generic[T], BaseStorageModel):
         """Load the model from a series of storage manifests."""
         man = manifests[""]
         assert "value" in man, f"Missing value in manifest {man}"  # noqa: S101
-        return cls(
-            value=man["value"], serializer=man["serializer"], storage=man["storage"]
-        )
+        return cls(value=man["value"], serializer=man["serializer"], storage=man["storage"])
 
 
 @frozenclass(kw_only=False)
-class Streamed(Generic[T], BaseStorageModel):
+class Streamed(
+    Generic[T],
+    BaseStorageModel,
+    storage_model_id="e80e8707ffdd4785b95b30247fa4398c",
+):
     """Models a stream of data."""
-
-    storage_model_id: ClassVar[LiteralString] = "e80e8707ffdd4785b95b30247fa4398c"
 
     stream: AsyncIterable[T] = field(compare=False)
     """The stream."""
@@ -87,9 +85,7 @@ class Streamed(Generic[T], BaseStorageModel):
     storage: Storage | None = field(default=None, compare=False)
     """The storage for the stream."""
 
-    def storage_model_dump(
-        self, _registries: Registries
-    ) -> Mapping[str, StreamManifest]:
+    def storage_model_dump(self, _registries: Registries) -> Mapping[str, StreamManifest]:
         """Dump the model to a series of storage manifests."""
         return {
             "": {
@@ -108,9 +104,7 @@ class Streamed(Generic[T], BaseStorageModel):
         """Load the model from a series of storage manifests."""
         man = manifests[""]
         assert "stream" in man, f"Missing stream in manifest {man}"  # noqa: S101
-        return cls(
-            stream=man["stream"], serializer=man["serializer"], storage=man["storage"]
-        )
+        return cls(stream=man["stream"], serializer=man["serializer"], storage=man["storage"])
 
 
 _LOG = getLogger(__name__)

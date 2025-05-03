@@ -102,9 +102,7 @@ class BlobStorage(Storage[str]):
     async def get_data(self, location: str) -> bytes:
         """Load data from the given location."""
         _LOG.debug("Loading data from %s", location)
-        reader = self._reader_type(
-            self._bucket.blob(location, chunk_size=self._object_chunk_size)
-        )
+        reader = self._reader_type(self._bucket.blob(location, chunk_size=self._object_chunk_size))
         with closing(reader) as reader:
             try:
                 return await self._to_thread(reader.read)
@@ -127,9 +125,7 @@ class BlobStorage(Storage[str]):
         )
         _LOG.debug("Temporarily saving data to %s", temp_blob.name)
         temp_blob.metadata = tags
-        writer = self._writer_type(
-            temp_blob, content_type=initial_digest["content_type"]
-        )
+        writer = self._writer_type(temp_blob, content_type=initial_digest["content_type"])
         try:
             async for chunk in data_stream:
                 await self._to_thread(writer.write, chunk)
@@ -150,9 +146,7 @@ class BlobStorage(Storage[str]):
                 self._bucket.copy_blob,
                 temp_blob,
                 self._bucket,
-                make_path_from_digest(
-                    "/", get_digest(), prefix=self._object_name_prefix
-                ),
+                make_path_from_digest("/", get_digest(), prefix=self._object_name_prefix),
                 # Avoid potential race conditions and data corruptions. Request is aborted
                 # if the object's generation number does not match this precondition.
                 if_generation_match=0,
@@ -169,9 +163,7 @@ class BlobStorage(Storage[str]):
         blob = self._bucket.blob(location, chunk_size=self._object_chunk_size)
         with closing(self._reader_type(blob)) as reader:
             try:
-                while chunk := await self._to_thread(
-                    reader.read, self._object_chunk_size
-                ):
+                while chunk := await self._to_thread(reader.read, self._object_chunk_size):
                     yield chunk
             except NotFound as error:
                 msg = f"Failed to load stream from {location!r}"

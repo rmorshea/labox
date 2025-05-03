@@ -1,11 +1,12 @@
 # Models
 
 Lakery relies on "models" to define where and how to store your data. There are a few
-built-in models for [singular][lakery.common.models.Streamed] and [streamed][lakery.common.models.Streamed]
-data in addition to basic support for [dataclasses](#dataclass-model). These built-in
-models may be sufficient for simple use cases, but you'll pretty quickly reach for
-integrations with 3rd party libraries like [Pydantic](../integrations/pydantic.md),
-or start thinking about creating your own [custom models](#custom-models).
+built-in models for [singular][lakery.common.models.Streamed] and
+[streamed][lakery.common.models.Streamed] data in addition to basic support for
+[dataclasses](#dataclass-model). These built-in models may be sufficient for simple use
+cases, but you'll pretty quickly reach for integrations with 3rd party libraries like
+[Pydantic](../integrations/pydantic.md), or start thinking about creating your own
+[custom models](#custom-models).
 
 ## Simple Models
 
@@ -25,8 +26,8 @@ singular_df = Singular(my_df)
 ```
 
 Lakery will do its best to infer what serializer to when you save. If you want to be
-explicit, you can pass a `serializer` argument to the `Singular` constructor. Doing
-so is generally recommended in order to avoid any ambiguity or unexpected behavior.
+explicit, you can pass a `serializer` argument to the `Singular` constructor. Doing so
+is generally recommended in order to avoid any ambiguity or unexpected behavior.
 
 ```python
 from lakery.extra.pandas import ParquetDataFrameSerializer
@@ -36,8 +37,7 @@ singular_df = Singular(df, serializer=parquet_df_serializer)
 ```
 
 The same is true of storages. If you're storage registry does not have a
-[default storage](registries.md#declaring-a-default-storage) then declaring one here
-is required.
+[default storage](registries.md#default-storage) then declaring one here is required.
 
 ```python
 from lakery.extra.os import FileStorage
@@ -49,9 +49,9 @@ singular_df = Singular(df, storage=file_storage)
 ### Streamed
 
 The [`Streamed`][lakery.common.models.Streamed] model can be used to save data that is
-asynchronously generated. For example, you might have a function that generates data
-you want to save as a Parquet file. You can wrap that asynchronous generator in a
-`Streamed` instance:
+asynchronously generated. For example, you might have a function that generates data you
+want to save as a Parquet file. You can wrap that asynchronous generator in a `Streamed`
+instance:
 
 ```python
 import pyarrow as pa
@@ -77,8 +77,9 @@ streamed_data = Streamed(generate_data(), serializer=parquet_stream_serializer)
     waiting for the first element of the stream to be generated. This means will
     not get an early error if a serializer cannot be found.
 
-As above, if you're storage registry does not have a [default storage](registries.md#declaring-a-default-storage)
-then declaring one here is required.
+As above, if you're storage registry does not have a
+[default storage](registries.md#declaring-a-default-storage) then declaring one here is
+required.
 
 ```python
 import pyarrow as pa
@@ -103,8 +104,12 @@ streamed_data = Streamed(
 
 ### Dataclasses
 
-The [`DataclassModel`][lakery.extra.dataclasses.DataclassModel] model can be used to save standard
-Python dataclasses. For example, you might have a dataclass that holds the results of a scientific
+The [`DataclassModel`][lakery.extra.dataclasses.DataclassModel] model can be used to
+save standard Python dataclasses with the restriction that they cannot be nested. If you
+need to nest dataclasses you should consider using the Lakery's
+[pydantic integration](../integrations/pydantic.md) instead.
+
+For example, you might have a dataclass that holds the results of a scientific
 experiment:
 
 ```python
@@ -121,7 +126,8 @@ class ExperimentResults:
 ```
 
 To turn this into a model that can be saved with Lakery, you need to inherit from
-`DataclassModel` and declare a `storage_id` as part of the class definition:
+`DataclassModel` and declare a [`storage_model_id`](#storage-model-ids) as part of the
+class definition:
 
 ```python
 from dataclasses import dataclass
@@ -136,20 +142,17 @@ df_serializer = DataFrameSerializer()
 
 
 @dataclass
-class ExperimentResultsModel(DataclassModel, storage_id="..."):
+class ExperimentResultsModel(DataclassModel, storage_model_id="..."):
     measurements: pd.DataFrame = field(metadata={"serializer": df_serializer})
     image: np.ndarray = field(metadata={"serializer": npy_serializer})
 ```
 
-!!! note
-
-    The `storage_id` is the same as the [storage_model_id](#storage-model-ids) of a model.
-
 Note how the serializer for each field was specified through the `metadata` argument of
 the `field` function. These could be infered automatically when serializing the model
-but this takes time and can be unreliable so, particularly in the case of dataclass
+but this takes time and can be unreliable. So, particularly in the case of dataclass
 models where the structure is known ahead of time, it's recommended to be explicit.
-Storages may also be specified in the same way under a `"storage"` key in the `metadata`.
+Storages may also be specified in the same way under a `"storage"` key in the
+`metadata`.
 
 ## Custom Models
 
@@ -177,7 +180,50 @@ This class holds
 
 ## Storage Model IDs
 
-The `storage_model_id` attribute of a model is used to uniquely identify it when saving
-and loading data. This is important because it's how Lakery knows which class to use
-when reconstituting data. That means you should **never copy or change this value**
-once it's been used to save data.
+Every model type has a `storage_model_id` attribute that is used to uniquely identify it
+when saving and loading data. This is important because it's how Lakery knows which
+class to use when reconstituting data. That means you should **never copy or change this
+value** once it's been used to save data. On the other hand you are free to rename the
+class or move it to a different module without any issues since the `storage_model_id`,
+rather than an "import path", is used to identify the model.
+
+### Generating IDs
+
+Whenever you inherit from [`BaseStorageModel`][lakery.core.model.BaseStorageModel] you
+must declare a `storage_model_id` as part of the class definition. However, since these
+IDs should be randomly generated, when you first define your model you can use a
+placeholder value like `"..."`:
+
+```python
+from lakery.core.model import BaseStorageModel
+
+
+class MyModel(BaseStorageModel, storage_model_id="..."):
+    pass
+```
+
+Later, when you run this code, Lakery will issue a `UserWarning`:
+
+```
+'...' is not a valid storage model ID for MyModel. Try adding <generated-id> to your class definition.
+```
+
+You can then use the `<generated-id>` value in place of `"..."` to make it unique.
+
+!!! note
+
+    In the future, Lakery come with a linter that automatically generates unique storage model IDs
+    for you as you work.
+
+### Abstract Models
+
+If your class is "abstract" (i.e. direct instances of that class will never be saved)
+then you can declare it as `None`:
+
+```python
+from lakery.core.model import BaseStorageModel
+
+
+class MyAbstractModel(BaseStorageModel, storage_model_id=None):
+    pass
+```

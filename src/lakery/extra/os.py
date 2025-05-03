@@ -79,9 +79,7 @@ class FileStorage(Storage[str]):
                 file.write(chunk)
         try:
             final_digest = get_digest()
-            content_path = self.path.joinpath(
-                *make_path_parts_from_digest(final_digest)
-            )
+            content_path = self.path.joinpath(*make_path_parts_from_digest(final_digest))
             _LOG.debug("Moving data to final location %s", content_path)
             if not content_path.exists():
                 content_path.parent.mkdir(parents=True, exist_ok=True)
@@ -96,9 +94,7 @@ class FileStorage(Storage[str]):
         path = _str_to_path(location)
         _LOG.debug("Loading data stream from %s", path)
         async with create_task_group() as tg:
-            with start_as_async_iterator(
-                tg, _iter_file_chunks(path, self.chunk_size)
-            ) as chunks:
+            with start_as_async_iterator(tg, _iter_file_chunks(path, self.chunk_size)) as chunks:
                 async for c in chunks:
                     yield c
 

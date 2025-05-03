@@ -178,7 +178,7 @@ def dump_json_model_ext(value: BaseStorageModel, context: JsonExtDumpContext) ->
     context["registries"].models.check_registered(cls)
     return {
         "__json_ext__": "model",
-        "storage_model_id": cls.storage_model_id,
+        "storage_model_id": cls.storage_model_id().hex,
         "content": {
             k: dump_any_json_ext(k, _check_is_not_stream_manifest(v), context)
             for k, v in value.storage_model_dump(context["registries"]).items()

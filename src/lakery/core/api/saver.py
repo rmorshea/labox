@@ -129,16 +129,14 @@ async def _save_model(
     registries: Registries,
 ) -> ManifestRecord:
     """Save the given data to the database."""
-    model_uuid = UUID(type(model).storage_model_id)
+    model_uuid = model.storage_model_id()
     model_manifests = model.storage_model_dump(registries)
 
     manifest_id = uuid4()
     data_record_futures: list[FutureResult[ContentRecord]] = []
     async with create_task_group() as tg:
         for manifest_key, manifest in model_manifests.items():
-            _LOG.debug(
-                "Saving content %s in manifest %s", manifest_key, manifest_id.hex
-            )
+            _LOG.debug("Saving %s in manifest %s", manifest_key, manifest_id.hex)
             if "value" in manifest:
                 data_record_futures.append(
                     start_future(
@@ -236,9 +234,7 @@ async def _save_storage_stream(
         if serializer is None:
             stream_iter = aiter(stream)
             first_value = await anext(stream_iter)
-            serializer = registries.serializers.infer_from_stream_type(
-                type(first_value)
-            )
+            serializer = registries.serializers.infer_from_stream_type(type(first_value))
             stream = _continue_stream(first_value, stream_iter)
 
         content = serializer.dump_stream(stream)
@@ -338,9 +334,7 @@ class _SerializationHelper:
         return serializer.dump_stream(_continue_stream(first_value, stream_iter))
 
 
-async def _continue_stream(
-    first_value: Any, stream: AsyncIterable[Any]
-) -> AsyncGenerator[Any]:
+async def _continue_stream(first_value: Any, stream: AsyncIterable[Any]) -> AsyncGenerator[Any]:
     yield first_value
     async for cont_value in stream:
         yield cont_value

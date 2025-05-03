@@ -7,16 +7,20 @@ from typing import TYPE_CHECKING
 from typing import Any
 from typing import ClassVar
 from typing import Generic
+from typing import Literal
 from typing import LiteralString
 from typing import Self
 from typing import TypeAlias
+from typing import overload
 from uuid import UUID
 from uuid import uuid4
+from warnings import warn
 
 from sqlalchemy.util.typing import TypedDict
 from typing_extensions import TypeIs
 from typing_extensions import TypeVar
 
+from lakery.common.utils import full_class_name
 from lakery.core._registry import Registry
 
 if TYPE_CHECKING:
@@ -32,13 +36,62 @@ T = TypeVar("T", default=Any)
 class BaseStorageModel(abc.ABC):
     """A base class for models that can be stored and serialized."""
 
-    storage_model_id: ClassVar[LiteralString]
-    """A UUID that uniquely identifies the model.
+    _storage_model_id: ClassVar[UUID | None]
 
-    This is used to later determine which class to reconstitute when loading data later.
-    That means you should **never copy or change this** value once it's been used to
-    save data.
-    """
+    def __init_subclass__(cls, *, storage_model_id: LiteralString | None, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+
+        if storage_model_id is None:
+            cls._storage_model_id = None
+            return
+
+        try:
+            cls._storage_model_id = UUID(storage_model_id)
+        except TypeError:
+            suggested_id = uuid4().hex
+            msg = (
+                f"{storage_model_id!r} is not a valid storage model ID for {full_class_name(cls)}. "
+                f"You may want to add {suggested_id!r} to your class definition instead."
+            )
+            warn(msg, UserWarning, stacklevel=2)
+
+    @overload
+    @classmethod
+    def storage_model_id(cls, *, allow_missing: bool) -> UUID | None: ...
+
+    @overload
+    @classmethod
+    def storage_model_id(
+        cls,
+        *,
+        allow_missing: Literal[False] = ...,
+    ) -> UUID: ...
+
+    @classmethod
+    def storage_model_id(cls, *, allow_missing: bool = False) -> UUID | None:
+        """Return a UUID that uniquely identifies this model type.
+
+        This is used to later determine which class to reconstitute when loading data later.
+        That means you should **never copy or change this** value once it's been used to
+        save data.
+        """
+        try:
+            s_id = cls._storage_model_id
+        except AttributeError:
+            suggested_id = uuid4().hex
+            msg = (
+                f"{full_class_name(cls)} is missing a valid 'storage_model_id'. "
+                f"Try adding {suggested_id!r} to your class definition."
+            )
+            raise ValueError(msg) from None
+
+        if s_id is None:
+            if not allow_missing:
+                msg = f"Abstract storage model {full_class_name(cls)} has no 'storage_model_id'."
+                raise ValueError(msg) from None
+            return None
+
+        return s_id
 
     @abc.abstractmethod
     def storage_model_dump(self, registries: Registries, /) -> ManifestMap:
@@ -88,18 +141,7 @@ class ModelRegistry(Registry[UUID, type[BaseStorageModel]]):
 
     def get_key(self, model: type[BaseStorageModel]) -> UUID:
         """Get the key for the given model."""
-        try:
-            uuid_str = model.__dict__["storage_model_id"]
-        except KeyError:
-            full_class_name = f"{model.__module__}.{model.__qualname__}"
-            suggested_id = uuid4().hex
-            msg = (
-                f"Class definition for {self.value_description.lower()} "
-                f"{full_class_name} is missing a 'storage_model_id' attribute. "
-                f"You may want to add {suggested_id!r} to your class definition."
-            )
-            raise ValueError(msg) from None
-        return UUID(uuid_str)
+        return model.storage_model_id()
 
     @classmethod
     def can_register(cls, value: Any) -> TypeIs[type[BaseStorageModel]]:
@@ -107,5 +149,5 @@ class ModelRegistry(Registry[UUID, type[BaseStorageModel]]):
         return (
             isinstance(value, type)
             and issubclass(value, BaseStorageModel)
-            and "storage_model_id" in value.__dict__
+            and value.storage_model_id(allow_missing=True) is not None
         )

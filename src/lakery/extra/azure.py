@@ -97,16 +97,10 @@ class BlobStorage(Storage[str]):
             tags=tags,
         )
         try:
-            final_location = make_path_from_digest(
-                "/", get_digest(), prefix=self._path_prefix
-            )
+            final_location = make_path_from_digest("/", get_digest(), prefix=self._path_prefix)
             _LOG.debug("Moving data to final location %s", final_location)
-            final_blob_client = self._container_client.get_blob_client(
-                blob=final_location
-            )
-            await final_blob_client.start_copy_from_url(
-                temp_blob_client.url, requires_sync=True
-            )
+            final_blob_client = self._container_client.get_blob_client(blob=final_location)
+            await final_blob_client.start_copy_from_url(temp_blob_client.url, requires_sync=True)
         finally:
             _LOG.debug("Deleting temporary data %s", temp_location)
             await temp_blob_client.delete_blob()

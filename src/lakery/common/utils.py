@@ -55,8 +55,14 @@ if TYPE_CHECKING:
     def frozenclass(*args: Any, **kwargs: Any) -> Any:
         """Create a dataclass that's frozen by default."""
         ...
+
 else:
 
     def frozenclass(*args, **kwargs):
         """Create a dataclass that's frozen by default."""
         return dataclass(*args, **kwargs)
+
+
+def full_class_name(cls: type) -> str:
+    """Return the fully qualified name of a class."""
+    return f"{cls.__module__}.{cls.__qualname__}"

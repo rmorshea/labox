@@ -6,4 +6,4 @@
 
 ## Storage Registry
 
-### Declaring a Default Storage
+### Default Storage

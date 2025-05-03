@@ -7,14 +7,10 @@ from dataclasses import fields
 from logging import getLogger
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import LiteralString
 from typing import Self
 from typing import TypedDict
 from typing import TypeVar
 from typing import cast
-from uuid import UUID
-from uuid import uuid4
-from warnings import warn
 
 from lakery.common.jsonext import dump_any_json_ext
 from lakery.common.jsonext import load_json_ext
@@ -37,30 +33,10 @@ T = TypeVar("T")
 
 
 @dataclass
-class DataclassModel(BaseStorageModel):
+class DataclassModel(BaseStorageModel, storage_model_id=None):
     """A dataclass model that can be stored by Lakery."""
 
     _: KW_ONLY
-
-    def __init_subclass__(
-        cls,
-        storage_id: LiteralString | None,
-    ) -> None:
-        if storage_id is None:  # nocov
-            _LOG.debug("Skipping storage model registration for %s.", cls)
-        else:
-            try:
-                UUID(storage_id)
-            except ValueError:
-                suggested_uuid = uuid4().hex
-                full_class_name = f"{cls.__module__}.{cls.__qualname__}"
-                msg = (
-                    f"Storage model {full_class_name!r} cannot be stored because {storage_id=!r} "
-                    f"is not a UUID - use {suggested_uuid!r} instead."
-                )
-                warn(msg, UserWarning, stacklevel=2)
-            else:
-                cls.storage_model_id = storage_id
 
     def storage_model_dump(self, registries: Registries) -> Mapping[str, Manifest]:
         """Dump the model into a dictionary of values."""
@@ -95,9 +71,7 @@ class DataclassModel(BaseStorageModel):
         return {
             "data": {
                 "value": kwargs,
-                "serializer": self.storage_model_internal_serializer(
-                    registries.serializers
-                ),
+                "serializer": self.storage_model_internal_serializer(registries.serializers),
                 "storage": self.storage_model_internal_storage(registries.storages),
             },
             **external,
@@ -119,9 +93,7 @@ class DataclassModel(BaseStorageModel):
         """
         return storages.default
 
-    def storage_model_internal_serializer(
-        self, serializers: SerializerRegistry
-    ) -> Serializer:
+    def storage_model_internal_serializer(self, serializers: SerializerRegistry) -> Serializer:
         """Return the serializer for "internal data" friom this model.
 
         "Internal data" refers to the data that Pydantic was able to

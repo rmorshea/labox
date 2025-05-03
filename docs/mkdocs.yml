@@ -7,14 +7,17 @@ repo_url: https://github.com/rmorshea/lakery
 nav:
   - Home: index.md
   - Usage:
-      - Overview: usage/overview.md
+      - Overview: usage/index.md
       - Patterns: usage/patterns.md
   - Concepts:
+      - Overview: concepts/index.md
       - Models: concepts/models.md
       - Serializers: concepts/serializers.md
       - Storages: concepts/storages.md
+      - Registries: concepts/registries.md
       - Schema: concepts/schema.md
   - Integrations:
+      - Overview: integrations/index.md
       - AWS: integrations/aws.md
       - Azure: integrations/azure.md
       - Dataclasses: integrations/dataclasses.md

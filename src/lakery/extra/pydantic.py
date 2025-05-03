@@ -15,9 +15,6 @@ from typing import TypedDict
 from typing import Unpack
 from typing import cast
 from typing import overload
-from uuid import UUID
-from uuid import uuid4
-from warnings import warn
 
 from pydantic import BaseModel
 from pydantic import ConfigDict
@@ -48,34 +45,22 @@ __all__ = (
 _LOG = getLogger(__name__)
 
 
-class StorageModel(BaseModel, BaseStorageModel, arbitrary_types_allowed=True):
+class StorageModel(
+    BaseStorageModel,
+    BaseModel,
+    storage_model_id=None,
+    arbitrary_types_allowed=True,
+):
     """A Pydantic model that can be stored by Lakery."""
 
-    def __init_subclass__(
-        cls,
-        storage_id: LiteralString | None,
-        **kwargs: Unpack[ConfigDict],
-    ) -> None:
-        if (
-            super_init_subclass := super().__init_subclass__
-        ) is not object.__init_subclass__:
-            super_init_subclass(**kwargs)
+    if TYPE_CHECKING:
 
-        if storage_id is None:  # nocov
-            _LOG.debug("Skipping storage model registration for %s.", cls)
-        else:
-            try:
-                UUID(storage_id)
-            except ValueError:
-                suggested_uuid = uuid4().hex
-                full_class_name = f"{cls.__module__}.{cls.__qualname__}"
-                msg = (
-                    f"Storage model {full_class_name!r} cannot be stored because {storage_id=!r} "
-                    f"is not a UUID - use {suggested_uuid!r} instead."
-                )
-                warn(msg, UserWarning, stacklevel=2)
-            else:
-                cls.storage_model_id = storage_id
+        def __init_subclass__(
+            cls,
+            *,
+            storage_model_id: LiteralString | None,
+            **kwargs: Unpack[ConfigDict],
+        ) -> None: ...
 
     @classmethod
     def __get_pydantic_core_schema__(
@@ -117,9 +102,7 @@ class StorageModel(BaseModel, BaseStorageModel, arbitrary_types_allowed=True):
         return {
             "data": {
                 "value": data,
-                "serializer": self.storage_model_internal_serializer(
-                    registries.serializers
-                ),
+                "serializer": self.storage_model_internal_serializer(registries.serializers),
                 "storage": self.storage_model_internal_storage(registries.storages),
             },
             **external,
@@ -145,9 +128,7 @@ class StorageModel(BaseModel, BaseStorageModel, arbitrary_types_allowed=True):
         """
         return storages.default
 
-    def storage_model_internal_serializer(
-        self, serializers: SerializerRegistry
-    ) -> Serializer:
+    def storage_model_internal_serializer(self, serializers: SerializerRegistry) -> Serializer:
         """Return the serializer for "internal data" friom this model.
 
         "Internal data" refers to the data that Pydantic was able to
@@ -224,9 +205,7 @@ else:
     StorageSpec = StorageSpecMetadata
 
 
-def _adapt_third_party_types(
-    schema: cs.CoreSchema, handler: GetCoreSchemaHandler
-) -> cs.CoreSchema:
+def _adapt_third_party_types(schema: cs.CoreSchema, handler: GetCoreSchemaHandler) -> cs.CoreSchema:
     def visit_is_instance_schema(schema: cs.CoreSchema, recurse):
         if schema["type"] == "definition-ref":
             return recurse(handler.resolve_ref_schema(schema), visit_is_instance_schema)
@@ -307,17 +286,13 @@ def _make_serializer_func(schema: cs.CoreSchema) -> cs.FieldPlainInfoSerializerF
     serializer_from_schema = metadata.get("serializer")
     storage_from_schema = metadata.get("storage")
 
-    def serialize(
-        model: BaseModel, value: Any, info: cs.FieldSerializationInfo, /
-    ) -> Any:
+    def serialize(model: BaseModel, value: Any, info: cs.FieldSerializationInfo, /) -> Any:
         context = _get_info_context(info)
         external = context["external"]
         registries = context["registries"]
 
         cls = type(value)
-        serializer = (
-            serializer_from_schema or registries.serializers.infer_from_value_type(cls)
-        )
+        serializer = serializer_from_schema or registries.serializers.infer_from_value_type(cls)
 
         if storage_from_schema is not None:
             ref_str = _make_ref_str(type(model), info, context)
