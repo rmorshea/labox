@@ -71,9 +71,9 @@ class FileStorage(Storage[str]):
         _tags: TagMap,
     ) -> str:
         """Save the given data stream."""
-        scratch_path = self._get_temp_path()
-        _log.debug("Temporarily saving data to %s", scratch_path)
-        with scratch_path.open("wb") as file:
+        temp_path = self._get_temp_path()
+        _log.debug("Temporarily saving data to %s", temp_path)
+        with temp_path.open("wb") as file:
             async for chunk in data_stream:
                 file.write(chunk)
         try:
@@ -84,9 +84,9 @@ class FileStorage(Storage[str]):
             _log.debug("Moving data to final location %s", content_path)
             if not content_path.exists():
                 content_path.parent.mkdir(parents=True, exist_ok=True)
-                scratch_path.rename(content_path)
+                temp_path.rename(content_path)
         finally:
-            scratch_path.unlink(missing_ok=True)
+            temp_path.unlink(missing_ok=True)
         return _path_to_str(content_path)
 
     async def get_data_stream(self, location: str) -> AsyncGenerator[bytes]:
