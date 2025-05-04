@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterable
     from collections.abc import Mapping
 
-    from lakery.core.context import Registries
+    from lakery.core.registries import Registries
     from lakery.core.serializer import Serializer
     from lakery.core.serializer import StreamSerializer
     from lakery.core.storage import Storage

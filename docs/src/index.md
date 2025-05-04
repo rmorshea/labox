@@ -24,22 +24,29 @@ There's a [complete list of extras](./integrations) in the Integrations section.
 
 ## Basic Setup
 
-Create an async SQLAlchemy engine (in this case using
-[`aiosqlite`](https://pypi.org/project/aiosqlite/)) and Lakery's tables:
+Initialize an async SQLAlchemy engine (in this case using
+[`aiosqlite`](https://pypi.org/project/aiosqlite/)):
 
 ```python
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio import create_async_engine
-
-from lakery.core.schema import BaseRecord
 
 engine = create_async_engine("sqlite+aiosqlite:///temp.db")
 new_async_session = async_sessionmaker(engine, expire_on_commit=True)
 BaseRecord.create_all(engine).run()
 ```
 
-Create a registry with the [serializers](./concepts/serializers.md),
-[storages](.concepts/storages.md), and [models](./concepts/models.md) you need.
+Then use the engine to create Lakery's tables:
+
+```python
+from lakery.core import BaseRecord
+
+BaseRecord.create_all(engine).run()
+```
+
+Establish [registries](./concepts/registries.md) for your
+[serializers](./concepts/serializers.md), [storages](.concepts/storages.md), and
+[models](./concepts/models.md).
 
 ```python
 from lakery.core import ModelRegistry
@@ -91,7 +98,7 @@ async def save():
 record = asyncio.run(main())
 ```
 
-Look and load the data using the record:
+Load the data later using the record:
 
 ```python
 import asyncio

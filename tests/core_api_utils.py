@@ -8,8 +8,8 @@ from sqlalchemy.ext.asyncio.session import AsyncSession
 
 from lakery.core.api.loader import data_loader
 from lakery.core.api.saver import data_saver
-from lakery.core.context import Registries
 from lakery.core.model import BaseStorageModel
+from lakery.core.registries import Registries
 
 M = TypeVar("M", bound=BaseStorageModel)
 

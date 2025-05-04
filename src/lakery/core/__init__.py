@@ -2,11 +2,11 @@ from lakery.core.api.loader import DataLoader
 from lakery.core.api.loader import data_loader
 from lakery.core.api.saver import DataSaver
 from lakery.core.api.saver import data_saver
-from lakery.core.context import Registries
 from lakery.core.model import BaseStorageModel
 from lakery.core.model import Manifest
 from lakery.core.model import ModelRegistry
 from lakery.core.model import StreamManifest
+from lakery.core.registries import Registries
 from lakery.core.schema import BaseRecord
 from lakery.core.schema import ContentRecord
 from lakery.core.schema import ManifestRecord

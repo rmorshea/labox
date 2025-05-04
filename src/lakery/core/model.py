@@ -24,7 +24,7 @@ from lakery.common.utils import full_class_name
 from lakery.core._registry import Registry
 
 if TYPE_CHECKING:
-    from lakery.core.context import Registries
+    from lakery.core.registries import Registries
     from lakery.core.serializer import Serializer
     from lakery.core.serializer import StreamSerializer
     from lakery.core.storage import Storage

@@ -32,8 +32,8 @@ if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
     from lakery.common.utils import TagMap
-    from lakery.core.context import Registries
     from lakery.core.model import BaseStorageModel
+    from lakery.core.registries import Registries
     from lakery.core.serializer import Content
     from lakery.core.serializer import Serializer
     from lakery.core.serializer import SerializerRegistry

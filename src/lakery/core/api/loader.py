@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
-    from lakery.core.context import Registries
+    from lakery.core.registries import Registries
     from lakery.core.storage import StorageRegistry
 
 

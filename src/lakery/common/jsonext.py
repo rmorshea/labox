@@ -17,8 +17,8 @@ from lakery.core.model import AnyManifest
 from lakery.core.model import BaseStorageModel
 
 if TYPE_CHECKING:
-    from lakery.core.context import Registries
     from lakery.core.model import Manifest
+    from lakery.core.registries import Registries
     from lakery.core.serializer import Serializer
     from lakery.core.storage import Storage
 

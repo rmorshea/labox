@@ -2,8 +2,8 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio.session import AsyncSession
 
-from lakery.core.context import Registries
 from lakery.core.model import ModelRegistry
+from lakery.core.registries import Registries
 from lakery.extra.json import JsonSerializer
 from lakery.extra.msgpack import MsgPackSerializer
 from lakery.extra.os import FileStorage

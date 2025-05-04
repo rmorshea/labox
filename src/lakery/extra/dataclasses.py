@@ -25,7 +25,7 @@ from lakery.core.storage import StorageRegistry
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-    from lakery.core.context import Registries
+    from lakery.core.registries import Registries
 
 __all__ = ("DataclassModel",)
 
