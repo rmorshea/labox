@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
-    from lakery.core.registries import Registries
+    from lakery.core.registries import RegistryCollection
     from lakery.core.storage import StorageRegistry
 
 
@@ -45,7 +45,7 @@ _RecordGroup = tuple[ManifestRecord, Sequence[ContentRecord]]
 @contextmanager
 async def data_loader(
     *,
-    registries: Registries,
+    registries: RegistryCollection,
     session: AsyncSession,
 ) -> AsyncIterator[DataLoader]:
     """Create a context manager for saving data."""
@@ -120,7 +120,7 @@ async def load_model_from_record_group(
     contents: Sequence[ContentRecord],
     /,
     *,
-    registries: Registries,
+    registries: RegistryCollection,
 ) -> BaseStorageModel:
     """Load the given model from the given record."""
     model_type = registries.models[manifest.model_id]

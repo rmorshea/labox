@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterable
     from collections.abc import Mapping
 
-    from lakery.core.registries import Registries
+    from lakery.core.registries import RegistryCollection
     from lakery.core.serializer import Serializer
     from lakery.core.serializer import StreamSerializer
     from lakery.core.storage import Storage
@@ -50,7 +50,7 @@ class Singular(
     storage: Storage | None = field(default=None, compare=False)
     """The storage for the value."""
 
-    def storage_model_dump(self, registries: Registries) -> Mapping[str, Manifest]:
+    def storage_model_dump(self, registries: RegistryCollection) -> Mapping[str, Manifest]:
         """Dump the model to a series of storage manifests."""
         serializer = registries.serializers.infer_from_value_type(type(self.value))
         return {"": {"value": self.value, "serializer": serializer, "storage": self.storage}}
@@ -59,7 +59,7 @@ class Singular(
     def storage_model_load(
         cls,
         manifests: ManifestMap,
-        _registries: Registries,
+        _registries: RegistryCollection,
     ) -> Self:
         """Load the model from a series of storage manifests."""
         man = manifests[""]
@@ -85,7 +85,7 @@ class Streamed(
     storage: Storage | None = field(default=None, compare=False)
     """The storage for the stream."""
 
-    def storage_model_dump(self, _registries: Registries) -> Mapping[str, StreamManifest]:
+    def storage_model_dump(self, _registries: RegistryCollection) -> Mapping[str, StreamManifest]:
         """Dump the model to a series of storage manifests."""
         return {
             "": {
@@ -99,7 +99,7 @@ class Streamed(
     def storage_model_load(
         cls,
         manifests: ManifestMap,
-        _registries: Registries,
+        _registries: RegistryCollection,
     ) -> Self:
         """Load the model from a series of storage manifests."""
         man = manifests[""]

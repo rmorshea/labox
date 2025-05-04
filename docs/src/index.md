@@ -44,13 +44,13 @@ from lakery.core import BaseRecord
 BaseRecord.create_all(engine).run()
 ```
 
-Establish [registries](./concepts/registries.md) for your
+Establish [registries](./concepts/registries.md) with the
 [serializers](./concepts/serializers.md), [storages](.concepts/storages.md), and
-[models](./concepts/models.md).
+[models](./concepts/models.md) you want to use.
 
 ```python
 from lakery.core import ModelRegistry
-from lakery.core import Registries
+from lakery.core import RegistryCollection
 from lakery.core import SerializerRegistry
 from lakery.core import StorageRegistry
 from lakery.extra.json import JsonSerializer
@@ -60,12 +60,12 @@ serializers = SerializerRegistry([JsonSerializer()])
 storages = StorageRegistry(default=FileStorage("temp", mkdir=True))
 models = ModelRegistry.from_modules("lakery.common.models")
 
-registries = Registries(serializers=serializers, storages=storages, models=models)
+registries = RegistryCollection(serializers=serializers, storages=storages, models=models)
 ```
 
 ## Basic Usage
 
-Find some data you want to save:
+with setup completed, find some data you want to save:
 
 ```python
 data = {"hello": "world"}
@@ -79,8 +79,7 @@ from lakery.common.models import Singular
 model = Singular(data)
 ```
 
-Save the data to a storage (by default the `FileStorage` in the storage registry) and
-return a record of it:
+Save the data and return a record of it:
 
 ```python
 import asyncio
@@ -117,3 +116,6 @@ loaded_model = asyncio.run(load())
 
 assert loaded_model == model
 ```
+
+Behind the scenes Lakery has automatically inferred an appropriate serializer and used
+the default storage to save the data.

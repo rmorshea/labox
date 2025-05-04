@@ -20,7 +20,7 @@ my_df = pd.DataFrame({"hello": ["world"]})
 singular_df = Singular(my_df)
 ```
 
-You can explicitly declare a serializer to use when saving the data.
+While not required, it's recommended to explicitly declare a serializer as well.
 
 ```python
 from lakery.extra.pandas import ParquetDataFrameSerializer
@@ -31,9 +31,10 @@ singular_df = Singular(df, serializer=parquet_df_serializer)
 
 If you don't declare a serializer as part of the `Singular` model, Lakery will search
 for on in the [serializer registry](./registries.md#serializer-registry) passed to
-[`data_saver`](../usage/index.md#saving) later on. The same is true of storages though,
-if you're [storage registry](./registries.md#storage-registry), does not have a
-[default storage](registries.md#default-storage) then declaring one here is required.
+[`data_saver`](../usage/index.md#saving) later on. Similarly, if a storage has not been
+explicitely declared, the [default storage](registries.md#default-storage) will be used.
+If your [storage registry](./registries.md#storage-registry) does not have a default,
+declaring an explicit storage is required.
 
 ```python
 from lakery.extra.os import FileStorage
@@ -102,10 +103,11 @@ streamed_data = Streamed(
 
 ## Custom Models
 
-Implementing your own model involved inheriting from the
-[`BaseStorageModel`][lakery.core.model.BaseStorageModel] class.
+To save more complicated objects you can define your own custom models by implementing
+the [`BaseStorageModel`][lakery.core.model.BaseStorageModel] interface.
 
-Assume you have a already have a class that holds data from a scientific experiment:
+To explain how this is done, consider the case of class that holds heterogeneous data
+from a scientific experiment:
 
 ```python
 from datetime import datetime

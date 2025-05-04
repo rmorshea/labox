@@ -25,7 +25,8 @@ from lakery.core.storage import StorageRegistry
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-    from lakery.core.registries import Registries
+    from lakery.core.registries import RegistryCollection
+
 
 __all__ = ("DataclassModel",)
 
@@ -38,7 +39,7 @@ class DataclassModel(BaseStorageModel, storage_model_id=None):
 
     _: KW_ONLY
 
-    def storage_model_dump(self, registries: Registries) -> Mapping[str, Manifest]:
+    def storage_model_dump(self, registries: RegistryCollection) -> Mapping[str, Manifest]:
         """Dump the model into a dictionary of values."""
         external: dict[str, Manifest] = {}
         context: _DumpContext = {
@@ -78,7 +79,7 @@ class DataclassModel(BaseStorageModel, storage_model_id=None):
         }
 
     @classmethod
-    def storage_model_load(cls, manifests: ManifestMap, registries: Registries) -> Self:
+    def storage_model_load(cls, manifests: ManifestMap, registries: RegistryCollection) -> Self:
         """Load the model from a dictionary a series of manifests."""
         external = cast("dict[str, Manifest]", dict(manifests))
         data = external.pop("data")["value"]
@@ -113,12 +114,12 @@ def _get_field_storage(field: Field) -> Storage | None:
 
 class _DumpContext(TypedDict):
     path: str
-    registries: Registries
+    registries: RegistryCollection
     external: dict[str, Manifest]
 
 
 class _LoadContext(TypedDict):
-    registries: Registries
+    registries: RegistryCollection
     external: dict[str, Manifest]
 
 

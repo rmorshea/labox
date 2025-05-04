@@ -5,7 +5,7 @@ from typing import Any
 from sqlalchemy.ext.asyncio.session import AsyncSession
 
 from lakery.core.model import ModelRegistry
-from lakery.core.registries import Registries
+from lakery.core.registries import RegistryCollection
 from lakery.extra.dataclasses import DataclassModel
 from lakery.extra.json import JsonSerializer
 from lakery.extra.msgpack import MsgPackSerializer
@@ -32,7 +32,7 @@ class SampleModel(DataclassModel, storage_model_id="d1d3cd96964a45bbb718de26f267
     )
 
 
-registries = Registries.merge(
+registries = RegistryCollection.merge(
     basic_registries,
     models=ModelRegistry([SampleModel]),
 )

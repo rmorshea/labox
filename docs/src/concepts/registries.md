@@ -1,5 +1,7 @@
 # Registries
 
+## Registry Collection
+
 ## Model Registry
 
 ## Serializer Registry

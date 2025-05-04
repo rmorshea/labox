@@ -16,7 +16,7 @@ EMPTY_STORAGE_REGISTRY = StorageRegistry()
 
 
 @frozenclass
-class Registries:
+class RegistryCollection:
     """A collection of registries."""
 
     models: ModelRegistry = EMPTY_MODEL_REGISTRY
@@ -29,7 +29,7 @@ class Registries:
     @classmethod
     def merge(
         cls,
-        *others: Registries,
+        *others: RegistryCollection,
         models: ModelRegistry = EMPTY_MODEL_REGISTRY,
         serializers: SerializerRegistry = EMPTY_SERIALIZER_REGISTRY,
         storages: StorageRegistry = EMPTY_STORAGE_REGISTRY,

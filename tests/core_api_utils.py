@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio.session import AsyncSession
 from lakery.core.api.loader import data_loader
 from lakery.core.api.saver import data_saver
 from lakery.core.model import BaseStorageModel
-from lakery.core.registries import Registries
+from lakery.core.registries import RegistryCollection
 
 M = TypeVar("M", bound=BaseStorageModel)
 
@@ -20,7 +20,7 @@ def _default_compare(x: Any, y: Any) -> None:
 
 async def assert_save_load_equivalence(
     model: M,
-    registries: Registries,
+    registries: RegistryCollection,
     session: AsyncSession,
     assertion: Callable[[M, M], None] = _default_compare,
 ) -> None:
@@ -37,7 +37,7 @@ async def assert_save_load_equivalence(
 
 async def assert_save_load_stream_equivalence(
     make_model: Callable[[], M],
-    registries: Registries,
+    registries: RegistryCollection,
     session: AsyncSession,
     assertion: Callable[[M, M], Awaitable[None] | None] = _default_compare,
 ) -> None:

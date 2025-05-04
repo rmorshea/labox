@@ -6,7 +6,7 @@ from lakery.core.model import BaseStorageModel
 from lakery.core.model import Manifest
 from lakery.core.model import ModelRegistry
 from lakery.core.model import StreamManifest
-from lakery.core.registries import Registries
+from lakery.core.registries import RegistryCollection
 from lakery.core.schema import BaseRecord
 from lakery.core.schema import ContentRecord
 from lakery.core.schema import ManifestRecord
@@ -34,7 +34,8 @@ __all__ = (
     "Manifest",
     "ManifestRecord",
     "ModelRegistry",
-    "Registries",
+    "RegistryCollection",
+    "RegistryCollection",
     "Serializer",
     "SerializerRegistry",
     "Storage",

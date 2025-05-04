@@ -33,7 +33,7 @@ if TYPE_CHECKING:
 
     from lakery.common.utils import TagMap
     from lakery.core.model import BaseStorageModel
-    from lakery.core.registries import Registries
+    from lakery.core.registries import RegistryCollection
     from lakery.core.serializer import Content
     from lakery.core.serializer import Serializer
     from lakery.core.serializer import SerializerRegistry
@@ -56,7 +56,7 @@ _LOG = getLogger(__name__)
 @contextmanager
 async def data_saver(
     *,
-    registries: Registries,
+    registries: RegistryCollection,
     session: AsyncSession,
 ) -> AsyncIterator[DataSaver]:
     """Create a context manager for saving data."""
@@ -92,7 +92,7 @@ class _DataSaver:
         self,
         task_group: TaskGroup,
         futures: list[FutureResult[ManifestRecord]],
-        registries: Registries,
+        registries: RegistryCollection,
     ):
         self._futures = futures
         self._task_group = task_group
@@ -126,7 +126,7 @@ DataSaver: TypeAlias = _DataSaver
 async def _save_model(
     model: BaseStorageModel,
     tags: TagMap,
-    registries: Registries,
+    registries: RegistryCollection,
 ) -> ManifestRecord:
     """Save the given data to the database."""
     model_uuid = model.storage_model_id()
@@ -195,7 +195,7 @@ async def _save_storage_value(
     value: Any,
     serializer: Serializer | None,
     storage: Storage | None,
-    registries: Registries,
+    registries: RegistryCollection,
 ) -> ContentRecord:
     storage = storage or registries.storages.default
     serializer = serializer or registries.serializers.infer_from_value_type(type(value))
@@ -224,7 +224,7 @@ async def _save_storage_stream(
     stream: AsyncIterable[Any],
     serializer: StreamSerializer | None,
     storage: Storage | None,
-    registries: Registries,
+    registries: RegistryCollection,
 ) -> ContentRecord:
     storage = storage or registries.storages.default
     async with AsyncExitStack() as stack:

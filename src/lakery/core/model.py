@@ -24,7 +24,7 @@ from lakery.common.utils import full_class_name
 from lakery.core._registry import Registry
 
 if TYPE_CHECKING:
-    from lakery.core.registries import Registries
+    from lakery.core.registries import RegistryCollection
     from lakery.core.serializer import Serializer
     from lakery.core.serializer import StreamSerializer
     from lakery.core.storage import Storage
@@ -94,13 +94,13 @@ class BaseStorageModel(abc.ABC):
         return s_id
 
     @abc.abstractmethod
-    def storage_model_dump(self, registries: Registries, /) -> ManifestMap:
+    def storage_model_dump(self, registries: RegistryCollection, /) -> ManifestMap:
         """Return a mapping of manifests that describe where and how to store the model."""
         raise NotImplementedError
 
     @classmethod
     @abc.abstractmethod
-    def storage_model_load(cls, manifests: ManifestMap, registries: Registries, /) -> Self:
+    def storage_model_load(cls, manifests: ManifestMap, registries: RegistryCollection, /) -> Self:
         """Reconstitute the model from a mapping of manifests."""
         raise NotImplementedError
 

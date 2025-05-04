@@ -18,7 +18,7 @@ from lakery.core.model import BaseStorageModel
 
 if TYPE_CHECKING:
     from lakery.core.model import Manifest
-    from lakery.core.registries import Registries
+    from lakery.core.registries import RegistryCollection
     from lakery.core.serializer import Serializer
     from lakery.core.storage import Storage
 
@@ -80,14 +80,14 @@ class JsonExtDumpContext(TypedDict):
     """The context for dumping extended JSON data."""
 
     path: str
-    registries: Registries
+    registries: RegistryCollection
     external: dict[str, Manifest]
 
 
 class JsonExtLoadContext(TypedDict):
     """The context for loading extended JSON data."""
 
-    registries: Registries
+    registries: RegistryCollection
     external: dict[str, Manifest]
 
 

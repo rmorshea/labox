@@ -32,7 +32,7 @@ from lakery.core.storage import Storage
 
 if TYPE_CHECKING:
     from lakery.common.jsonext import AnyJsonExt
-    from lakery.core.registries import Registries
+    from lakery.core.registries import RegistryCollection
     from lakery.core.serializer import SerializerRegistry
     from lakery.core.storage import StorageRegistry
 
@@ -77,7 +77,7 @@ class StorageModel(
             # we're defining the schema for a subclass
             return _adapt_third_party_types(handler(source), handler)
 
-    def storage_model_dump(self, registries: Registries) -> ManifestMap:
+    def storage_model_dump(self, registries: RegistryCollection) -> ManifestMap:
         """Turn the given model into its serialized components."""
         external: dict[str, AnyManifest] = {}
 
@@ -109,7 +109,7 @@ class StorageModel(
         }
 
     @classmethod
-    def storage_model_load(cls, manifests: ManifestMap, registries: Registries) -> Self:
+    def storage_model_load(cls, manifests: ManifestMap, registries: RegistryCollection) -> Self:
         """Turn the given serialized components back into a model."""
         manifests = dict(manifests)
         data = cast("Manifest", manifests.pop("data"))["value"]
@@ -386,9 +386,9 @@ def _get_info_context(
 class _LakerySerializationContext(TypedDict):
     external: dict[str, AnyManifest]
     get_external_id: Callable[[], int]
-    registries: Registries
+    registries: RegistryCollection
 
 
 class _LakeryValidationContext(TypedDict):
     external: dict[str, AnyManifest]
-    registries: Registries
+    registries: RegistryCollection
