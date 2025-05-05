@@ -17,11 +17,9 @@ from uuid import uuid4
 from warnings import warn
 
 from sqlalchemy.util.typing import TypedDict
-from typing_extensions import TypeIs
 from typing_extensions import TypeVar
 
 from lakery.common.utils import full_class_name
-from lakery.core._registry import Registry
 
 if TYPE_CHECKING:
     from lakery.core.registries import RegistryCollection
@@ -132,22 +130,3 @@ AnyManifest: TypeAlias = Manifest | StreamManifest
 
 ManifestMap: TypeAlias = Mapping[str, AnyManifest]
 """A type alias for a mapping of manifests."""
-
-
-class ModelRegistry(Registry[UUID, type[BaseStorageModel]]):
-    """A registry of storage model types."""
-
-    value_description = "Storage model type"
-
-    def get_key(self, model: type[BaseStorageModel]) -> UUID:
-        """Get the key for the given model."""
-        return model.storage_model_id()
-
-    @classmethod
-    def can_register(cls, value: Any) -> TypeIs[type[BaseStorageModel]]:
-        """Return whether the given value is a valid serializer."""
-        return (
-            isinstance(value, type)
-            and issubclass(value, BaseStorageModel)
-            and value.storage_model_id(allow_missing=True) is not None
-        )

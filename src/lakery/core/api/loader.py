@@ -23,7 +23,6 @@ from lakery.core.model import BaseStorageModel
 from lakery.core.schema import ContentRecord
 from lakery.core.schema import ManifestRecord
 from lakery.core.schema import SerializerTypeEnum
-from lakery.core.serializer import SerializerRegistry
 from lakery.core.serializer import StreamSerializer
 
 if TYPE_CHECKING:
@@ -33,7 +32,8 @@ if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
     from lakery.core.registries import RegistryCollection
-    from lakery.core.storage import StorageRegistry
+    from lakery.core.registries import SerializerRegistry
+    from lakery.core.registries import StorageRegistry
 
 
 M = TypeVar("M", bound=BaseStorageModel)

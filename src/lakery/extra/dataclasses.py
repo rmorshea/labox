@@ -18,14 +18,14 @@ from lakery.core.model import BaseStorageModel
 from lakery.core.model import Manifest
 from lakery.core.model import ManifestMap
 from lakery.core.serializer import Serializer
-from lakery.core.serializer import SerializerRegistry
 from lakery.core.storage import Storage
-from lakery.core.storage import StorageRegistry
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
     from lakery.core.registries import RegistryCollection
+    from lakery.core.registries import SerializerRegistry
+    from lakery.core.registries import StorageRegistry
 
 
 __all__ = ("DataclassModel",)

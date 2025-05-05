@@ -126,14 +126,18 @@ class ExperimentResults:
 
 This class holds
 
-## Storage Model IDs
+## Storage Model Config
 
-Every model type has a `storage_model_id` attribute that is used to uniquely identify it
-when saving and loading data. This is important because it's how Lakery knows which
-class to use when reconstituting data. That means you should **never copy or change this
-value** once it's been used to save data. On the other hand you are free to rename the
-class or move it to a different module without any issues since the `storage_model_id`,
-rather than an "import path", is used to identify the model.
+Every model type has a `storage_model_config` attribute which holds
+
+### Storage Model ID
+
+The `id` within the config for a storage model uniquely identify it when saving and
+loading data. This is important because it's how Lakery knows which class to use when
+reconstituting data. That means you should **never copy or change this value** once it's
+been used to save data. On the other hand you are free to rename the class or move it to
+a different module without any issues since the `id`, rather than an "import path", is
+used to identify the model.
 
 ### Generating IDs
 
@@ -146,7 +150,7 @@ placeholder value like `"..."`:
 from lakery.core.model import BaseStorageModel
 
 
-class MyModel(BaseStorageModel, storage_model_id="..."):
+class MyModel(BaseStorageModel, storage_model_config={"id": "..."}):
     pass
 ```
 

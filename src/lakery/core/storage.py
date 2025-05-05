@@ -1,24 +1,16 @@
 from __future__ import annotations
 
 import abc
-from importlib import import_module
 from typing import TYPE_CHECKING
-from typing import Any
 from typing import Generic
 from typing import LiteralString
 from typing import Protocol
-from typing import Self
 from typing import TypedDict
-from typing import TypeIs
 from typing import TypeVar
-
-from lakery.core._registry import Registry
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
     from collections.abc import AsyncIterable
-    from collections.abc import Sequence
-    from types import ModuleType
 
     from lakery.common.utils import TagMap
 
@@ -104,89 +96,3 @@ class GetStreamDigest(Protocol):
             ValueError: If the digest is incomplete and `allow_incomplete` is False.
         """
         ...
-
-
-class StorageRegistry(Registry[str, Storage]):
-    """A registry of storages."""
-
-    value_description = "Storage"
-
-    def __init__(
-        self,
-        storages: Sequence[Storage] = (),
-        *,
-        default: Storage | None = None,
-        ignore_conflicts: bool = False,
-    ) -> None:
-        super().__init__(
-            (default, *storages) if default else storages,
-            ignore_conflicts=ignore_conflicts,
-        )
-        self._default = default
-
-    @property
-    def default(self) -> Storage:
-        """Get the default storage."""
-        if not self._default:
-            msg = f"No default {self.value_description.lower()} is set."
-            raise ValueError(msg)
-        return self._default
-
-    def has_default(self) -> bool:
-        """Return whether a default storage is set."""
-        return self._default is not None
-
-    def get_key(self, storage: Storage) -> str:
-        """Get the key for the given storage."""
-        return storage.name
-
-    @classmethod
-    def can_register(cls, value: Any) -> TypeIs[Storage]:
-        """Return whether the given value is a valid serializer."""
-        return isinstance(value, Storage)
-
-    @classmethod
-    def merge(cls, *registries: Self, ignore_conflicts: bool = False) -> Self:
-        """Merge the given registries into a new registry."""
-        new_storages: list[Storage] = []
-
-        default = None
-        for r in registries:
-            storages = list(r.values())
-            if r.has_default():
-                if default and not ignore_conflicts:
-                    msg = f"Conflicting default storages: {default!r} and {r.default!r}"
-                    raise ValueError(msg)
-                default = r.default
-                new_storages.extend(storages[1:])
-            else:
-                new_storages.extend(storages)
-
-        return cls(new_storages, ignore_conflicts=ignore_conflicts, default=default)
-
-    @classmethod
-    def from_modules(
-        cls,
-        *modules: ModuleType | str,
-        ignore_conflicts: bool = False,
-        default: str | Storage | None = None,
-        **kwargs: Any,
-    ) -> Self:
-        """Create a registry from a module."""
-        if isinstance(default, str):
-            default = _get_module_attr(default)
-            if not cls.can_register(default):
-                msg = f"Declared default storage {default!r} is not a valid storage."
-                raise ValueError(msg)
-        return super().from_modules(
-            *modules,
-            ignore_conflicts=ignore_conflicts,
-            default=default,
-            **kwargs,
-        )
-
-
-def _get_module_attr(name: str) -> Any:
-    module_name, attr_name = name.rsplit(".", 1)
-    module = import_module(module_name)
-    return getattr(module, attr_name)

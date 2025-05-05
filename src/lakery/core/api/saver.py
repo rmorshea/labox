@@ -34,9 +34,9 @@ if TYPE_CHECKING:
     from lakery.common.utils import TagMap
     from lakery.core.model import BaseStorageModel
     from lakery.core.registries import RegistryCollection
+    from lakery.core.registries import SerializerRegistry
     from lakery.core.serializer import Content
     from lakery.core.serializer import Serializer
-    from lakery.core.serializer import SerializerRegistry
     from lakery.core.serializer import StreamContent
     from lakery.core.serializer import StreamSerializer
     from lakery.core.storage import Digest

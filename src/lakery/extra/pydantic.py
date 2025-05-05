@@ -33,8 +33,8 @@ from lakery.core.storage import Storage
 if TYPE_CHECKING:
     from lakery.common.jsonext import AnyJsonExt
     from lakery.core.registries import RegistryCollection
-    from lakery.core.serializer import SerializerRegistry
-    from lakery.core.storage import StorageRegistry
+    from lakery.core.registries import SerializerRegistry
+    from lakery.core.registries import StorageRegistry
 
 
 __all__ = (
