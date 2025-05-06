@@ -19,6 +19,7 @@ from warnings import warn
 from sqlalchemy.util.typing import TypedDict
 from typing_extensions import TypeVar
 
+from lakery.common.utils import frozenclass
 from lakery.common.utils import full_class_name
 
 if TYPE_CHECKING:
@@ -31,65 +32,47 @@ if TYPE_CHECKING:
 T = TypeVar("T", default=Any)
 
 
+class Config(TypedDict, total=False):
+    """Configuration for a storage model."""
+
+    id: LiteralString
+    """The ID of the storage model type."""
+
+
+@frozenclass
+class FrozenConfig:
+    """A frozen configuration for a storage model."""
+
+    id: UUID
+    """The ID of the storage model type."""
+
+
 class BaseStorageModel(abc.ABC):
     """A base class for models that can be stored and serialized."""
 
-    _storage_model_id: ClassVar[UUID | None]
+    _storage_model_config: ClassVar[FrozenConfig | None] = None
 
-    def __init_subclass__(cls, *, storage_model_id: LiteralString | None, **kwargs: Any) -> None:
+    def __init_subclass__(cls, *, storage_model_config: Config | None, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
-
-        if storage_model_id is None:
-            cls._storage_model_id = None
-            return
-
-        try:
-            cls._storage_model_id = UUID(storage_model_id)
-        except TypeError:
-            suggested_id = uuid4().hex
-            msg = (
-                f"{storage_model_id!r} is not a valid storage model ID for {full_class_name(cls)}. "
-                f"You may want to add {suggested_id!r} to your class definition instead."
-            )
-            warn(msg, UserWarning, stacklevel=2)
+        cls._storage_model_config = _make_frozen_conig(cls, storage_model_config)
 
     @overload
     @classmethod
-    def storage_model_id(cls, *, allow_missing: bool) -> UUID | None: ...
+    def storage_model_config(cls, *, allow_missing: bool) -> FrozenConfig | None: ...
 
     @overload
     @classmethod
-    def storage_model_id(
-        cls,
-        *,
-        allow_missing: Literal[False] = ...,
-    ) -> UUID: ...
+    def storage_model_config(cls, *, allow_missing: Literal[False] = ...) -> FrozenConfig: ...
 
     @classmethod
-    def storage_model_id(cls, *, allow_missing: bool = False) -> UUID | None:
-        """Return a UUID that uniquely identifies this model type.
-
-        This is used to later determine which class to reconstitute when loading data later.
-        That means you should **never copy or change this** value once it's been used to
-        save data.
-        """
-        try:
-            s_id = cls._storage_model_id
-        except AttributeError:
-            suggested_id = uuid4().hex
-            msg = (
-                f"{full_class_name(cls)} is missing a valid 'storage_model_id'. "
-                f"Try adding {suggested_id!r} to your class definition."
-            )
-            raise ValueError(msg) from None
-
-        if s_id is None:
+    def storage_model_config(cls, *, allow_missing: bool = False) -> FrozenConfig | None:
+        """Return the storage model config for this class."""
+        if cls._storage_model_config is None:
             if not allow_missing:
-                msg = f"Abstract storage model {full_class_name(cls)} has no 'storage_model_id'."
+                msg = f"{full_class_name(cls)} has no storage model config."
                 raise ValueError(msg) from None
             return None
-
-        return s_id
+        return cls._storage_model_config
 
     @abc.abstractmethod
     def storage_model_dump(self, registries: RegistryCollection, /) -> ManifestMap:
@@ -130,3 +113,25 @@ AnyManifest: TypeAlias = Manifest | StreamManifest
 
 ManifestMap: TypeAlias = Mapping[str, AnyManifest]
 """A type alias for a mapping of manifests."""
+
+
+def _make_frozen_conig(
+    cls: type[BaseStorageModel],
+    cfg: Config | None,
+) -> FrozenConfig | None:
+    if cfg is None:
+        cls._storage_model_config = None
+        return None
+    elif "id" not in cfg:
+        suggested_id = uuid4().hex
+        msg = (
+            f"No storage model ID declared for {full_class_name(cls)}. You may "
+            f"want to add {suggested_id!r} to your class definition instead."
+        )
+        warn(msg, UserWarning, stacklevel=2)
+        cls._storage_model_config = None
+        return None
+
+    storage_model_id = UUID(cfg["id"])
+
+    return FrozenConfig(id=storage_model_id)

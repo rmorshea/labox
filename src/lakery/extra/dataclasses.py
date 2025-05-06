@@ -34,7 +34,7 @@ T = TypeVar("T")
 
 
 @dataclass
-class DataclassModel(BaseStorageModel, storage_model_id=None):
+class DataclassModel(BaseStorageModel, storage_model_config=None):
     """A dataclass model that can be stored by Lakery."""
 
     _: KW_ONLY

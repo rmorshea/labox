@@ -19,7 +19,7 @@ json_serializer = basic_registries.serializers[JsonSerializer.name]
 
 
 @dataclass
-class SampleModel(DataclassModel, storage_model_id="d1d3cd96964a45bbb718de26f2671b87"):
+class SampleModel(DataclassModel, storage_model_config={"id": "d1d3cd96964a45bbb718de26f2671b87"}):
     field_with_no_meta: Any
     field_with_serializer: Any = field(
         metadata={"serializer": msgpack_serializer},

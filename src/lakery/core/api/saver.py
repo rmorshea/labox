@@ -129,7 +129,7 @@ async def _save_model(
     registries: RegistryCollection,
 ) -> ManifestRecord:
     """Save the given data to the database."""
-    model_uuid = model.storage_model_id()
+    model_uuid = model.storage_model_config().id
     model_manifests = model.storage_model_dump(registries)
 
     manifest_id = uuid4()

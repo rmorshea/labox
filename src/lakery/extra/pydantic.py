@@ -46,9 +46,9 @@ _LOG = getLogger(__name__)
 
 
 class StorageModel(
-    BaseStorageModel,
     BaseModel,
-    storage_model_id=None,
+    BaseStorageModel,
+    storage_model_config=None,
     arbitrary_types_allowed=True,
 ):
     """A Pydantic model that can be stored by Lakery."""

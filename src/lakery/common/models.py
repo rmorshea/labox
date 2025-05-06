@@ -36,7 +36,7 @@ T = TypeVar("T")
 class Singular(
     Generic[T],
     BaseStorageModel,
-    storage_model_id="63b297f66dbc44bb8552f6f490cf21cb",
+    storage_model_config={"id": "63b297f66dbc44bb8552f6f490cf21cb"},
 ):
     """Models a single value."""
 
@@ -71,7 +71,7 @@ class Singular(
 class Streamed(
     Generic[T],
     BaseStorageModel,
-    storage_model_id="e80e8707ffdd4785b95b30247fa4398c",
+    storage_model_config={"id": "e80e8707ffdd4785b95b30247fa4398c"},
 ):
     """Models a stream of data."""
 

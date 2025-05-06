@@ -127,7 +127,7 @@ class ModelRegistry(_BaseRegistry[UUID, type[BaseStorageModel]]):
 
     def get_key(self, model: type[BaseStorageModel]) -> UUID:
         """Get the key for the given model."""
-        return model.storage_model_id()
+        return model.storage_model_config().id
 
     @classmethod
     def can_register(cls, value: Any) -> TypeIs[type[BaseStorageModel]]:
@@ -135,7 +135,7 @@ class ModelRegistry(_BaseRegistry[UUID, type[BaseStorageModel]]):
         return (
             isinstance(value, type)
             and issubclass(value, BaseStorageModel)
-            and value.storage_model_id(allow_missing=True) is not None
+            and value.storage_model_config(allow_missing=True) is not None
         )
 
 
