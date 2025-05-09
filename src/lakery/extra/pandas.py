@@ -3,7 +3,7 @@ from __future__ import annotations
 import pandas as pd
 import pyarrow as pa
 
-from lakery.core.serializer import Content
+from lakery.core.serializer import Archive
 from lakery.core.serializer import Serializer
 from lakery.extra.pyarrow import ArrowTableSerializer
 from lakery.extra.pyarrow import ParquetReadOptions
@@ -35,12 +35,12 @@ class ArrowDataFrameSerializer(Serializer[pd.DataFrame]):
             read_options=read_options,
         )
 
-    def dump(self, value: pd.DataFrame, /) -> Content:
+    def dump(self, value: pd.DataFrame, /) -> Archive:
         """Serialize the given DataFrame."""
         table = pa.Table.from_pandas(value)
         return self._arrow_serializer.dump(table)
 
-    def load(self, content: Content, /) -> pd.DataFrame:
+    def load(self, content: Archive, /) -> pd.DataFrame:
         """Deserialize the given DataFrame."""
         table = self._arrow_serializer.load(content)
         return table.to_pandas()
@@ -64,12 +64,12 @@ class ParquetDataFrameSerializer(Serializer[pd.DataFrame]):
             read_options=read_options,
         )
 
-    def dump(self, value: pd.DataFrame, /) -> Content:
+    def dump(self, value: pd.DataFrame, /) -> Archive:
         """Serialize the given DataFrame."""
         table = pa.Table.from_pandas(value)
         return self._parquet_serializer.dump(table)
 
-    def load(self, content: Content, /) -> pd.DataFrame:
+    def load(self, content: Archive, /) -> pd.DataFrame:
         """Deserialize the given DataFrame."""
         table = self._parquet_serializer.load(content)
         return table.to_pandas()

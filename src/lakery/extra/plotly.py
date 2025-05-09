@@ -7,7 +7,7 @@ from plotly import graph_objects as go
 from plotly.io import from_json
 from plotly.io import to_json
 
-from lakery.core.serializer import Content
+from lakery.core.serializer import Archive
 from lakery.core.serializer import Serializer
 
 __all__ = (
@@ -50,7 +50,7 @@ class FigureSerializer(Serializer[go.Figure]):
         self._dump_args = dump_args or {}
         self._load_args = load_args or {}
 
-    def dump(self, value: go.Figure, /) -> Content:
+    def dump(self, value: go.Figure, /) -> Archive:
         """Serialize the given figure."""
         data = cast("str", to_json(value, **self._dump_args))
         return {
@@ -59,7 +59,7 @@ class FigureSerializer(Serializer[go.Figure]):
             "data": data.encode("utf-8"),
         }
 
-    def load(self, content: Content, /) -> go.Figure:
+    def load(self, content: Archive, /) -> go.Figure:
         """Deserialize the given figure."""
         data = content["data"].decode("utf-8")
         return from_json(data, **self._load_args)

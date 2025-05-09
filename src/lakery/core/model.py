@@ -75,18 +75,18 @@ class BaseStorageModel(abc.ABC):
         return cls._storage_model_config
 
     @abc.abstractmethod
-    def storage_model_dump(self, registries: RegistryCollection, /) -> ManifestMap:
-        """Return a mapping of manifests that describe where and how to store the model."""
+    def storage_model_dump(self, registries: RegistryCollection, /) -> ContentMap:
+        """Return a mapping of contents that describe where and how to store the model."""
         raise NotImplementedError
 
     @classmethod
     @abc.abstractmethod
-    def storage_model_load(cls, manifests: ManifestMap, registries: RegistryCollection, /) -> Self:
-        """Reconstitute the model from a mapping of manifests."""
+    def storage_model_load(cls, contents: ContentMap, registries: RegistryCollection, /) -> Self:
+        """Reconstitute the model from a mapping of contents."""
         raise NotImplementedError
 
 
-class Manifest(Generic[T], TypedDict):
+class Content(Generic[T], TypedDict):
     """Describes where and how to store a value."""
 
     value: T
@@ -97,10 +97,10 @@ class Manifest(Generic[T], TypedDict):
     """The storage to send the serialized value to."""
 
 
-class StreamManifest(Generic[T], TypedDict):
+class StreamContent(Generic[T], TypedDict):
     """Describes where and how to store a stream."""
 
-    stream: AsyncIterable[T]
+    value_stream: AsyncIterable[T]
     """The stream of data to store."""
     serializer: StreamSerializer[T] | None
     """The serializer to apply to the stream."""
@@ -108,11 +108,11 @@ class StreamManifest(Generic[T], TypedDict):
     """The storage to send the serialized stream to."""
 
 
-AnyManifest: TypeAlias = Manifest | StreamManifest
-"""A type alias for any manifest."""
+AnyContent: TypeAlias = Content | StreamContent
+"""A type alias for any content."""
 
-ManifestMap: TypeAlias = Mapping[str, AnyManifest]
-"""A type alias for a mapping of manifests."""
+ContentMap: TypeAlias = Mapping[str, AnyContent]
+"""A type alias for a mapping of contents."""
 
 
 def _make_frozen_conig(

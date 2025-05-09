@@ -111,7 +111,7 @@ class ContentRecord(_StrMixin, BaseRecord, kw_only=True):
     """The ID of the content."""
     manifest_id: Mapped[UUID] = mapped_column(ForeignKey(ManifestRecord.id))
     """The ID of the manifest that the content belongs to."""
-    manifest_key: Mapped[str] = mapped_column()
+    content_key: Mapped[str] = mapped_column()
     """A key that uniquely identifies the content within the manifest."""
     content_type: Mapped[str] = mapped_column()
     """The MIME type of the data."""
@@ -137,5 +137,5 @@ class ContentRecord(_StrMixin, BaseRecord, kw_only=True):
 
 UniqueConstraint(
     ContentRecord.manifest_id,
-    ContentRecord.manifest_key,
+    ContentRecord.content_key,
 )

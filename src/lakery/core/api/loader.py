@@ -18,7 +18,7 @@ from lakery.common.anyio import set_future_exception_forcefully
 from lakery.common.anyio import start_future
 from lakery.common.anyio import start_with_future
 from lakery.common.exceptions import NotRegistered
-from lakery.core.model import AnyManifest
+from lakery.core.model import AnyContent
 from lakery.core.model import BaseStorageModel
 from lakery.core.schema import ContentRecord
 from lakery.core.schema import ManifestRecord
@@ -125,10 +125,10 @@ async def load_model_from_record_group(
     """Load the given model from the given record."""
     model_type = registries.models[manifest.model_id]
 
-    manifest_futures: dict[str, FutureResult[AnyManifest]] = {}
+    manifest_futures: dict[str, FutureResult[AnyContent]] = {}
     async with create_task_group() as tg:
         for c in contents:
-            manifest_futures[c.manifest_key] = start_future(
+            manifest_futures[c.content_key] = start_future(
                 tg,
                 load_manifest_from_record,
                 c,
@@ -145,7 +145,7 @@ async def load_manifest_from_record(
     *,
     serializers: SerializerRegistry,
     storages: StorageRegistry,
-) -> AnyManifest:
+) -> AnyContent:
     """Load the given content from the given record."""
     serializer = serializers[record.serializer_name]
     storage = storages[record.storage_name]
@@ -170,7 +170,11 @@ async def load_manifest_from_record(
                     "data_stream": storage.get_data_stream(record.storage_data),
                 }
             )
-            return {"stream": stream, "serializer": serializer, "storage": storage}
+            return {
+                "value_stream": stream,
+                "serializer": serializer,
+                "storage": storage,
+            }
         case _:  # nocov
             msg = f"Unknown serializer type: {record.serializer_type}"
             raise ValueError(msg)

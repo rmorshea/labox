@@ -23,10 +23,10 @@ from pydantic_core import core_schema as cs
 from pydantic_walk_core_schema import walk_core_schema
 
 from lakery.common.utils import frozenclass
-from lakery.core.model import AnyManifest
+from lakery.core.model import AnyContent
 from lakery.core.model import BaseStorageModel
-from lakery.core.model import Manifest
-from lakery.core.model import ManifestMap
+from lakery.core.model import Content
+from lakery.core.model import ContentMap
 from lakery.core.serializer import Serializer
 from lakery.core.storage import Storage
 
@@ -77,9 +77,9 @@ class StorageModel(
             # we're defining the schema for a subclass
             return _adapt_third_party_types(handler(source), handler)
 
-    def storage_model_dump(self, registries: RegistryCollection) -> ManifestMap:
-        """Turn the given model into its serialized components."""
-        external: dict[str, AnyManifest] = {}
+    def storage_model_dump(self, registries: RegistryCollection) -> ContentMap:
+        """Dump the model to storage content."""
+        external: dict[str, AnyContent] = {}
 
         next_external_id = 0
 
@@ -109,14 +109,14 @@ class StorageModel(
         }
 
     @classmethod
-    def storage_model_load(cls, manifests: ManifestMap, registries: RegistryCollection) -> Self:
-        """Turn the given serialized components back into a model."""
-        manifests = dict(manifests)
-        data = cast("Manifest", manifests.pop("data"))["value"]
+    def storage_model_load(cls, contents: ContentMap, registries: RegistryCollection) -> Self:
+        """Load the model from storage content."""
+        contents = dict(contents)
+        data = cast("Content", contents.pop("data"))["value"]
         return cls.model_validate(
             data,
             context=_make_validation_context(
-                _LakeryValidationContext(external=manifests, registries=registries)
+                _LakeryValidationContext(external=contents, registries=registries)
             ),
         )
 
@@ -260,8 +260,8 @@ def _make_validator_func() -> cs.WithInfoValidatorFunction:
             spec = context["external"][ref_str]
             if "value" in spec:
                 return spec["value"]
-            elif "stream" in spec:
-                return spec["stream"]
+            elif "value_stream" in spec:
+                return spec["value_stream"]
             else:  # nocov
                 msg = f"Invalid external content reference: {ref_str}."
                 raise ValueError(msg)
@@ -296,7 +296,7 @@ def _make_serializer_func(schema: cs.CoreSchema) -> cs.FieldPlainInfoSerializerF
 
         if storage_from_schema is not None:
             ref_str = _make_ref_str(type(model), info, context)
-            external[ref_str] = Manifest(
+            external[ref_str] = Content(
                 value=value,
                 serializer=serializer,
                 storage=storage_from_schema,
@@ -384,11 +384,11 @@ def _get_info_context(
 
 
 class _LakerySerializationContext(TypedDict):
-    external: dict[str, AnyManifest]
+    external: dict[str, AnyContent]
     get_external_id: Callable[[], int]
     registries: RegistryCollection
 
 
 class _LakeryValidationContext(TypedDict):
-    external: dict[str, AnyManifest]
+    external: dict[str, AnyContent]
     registries: RegistryCollection

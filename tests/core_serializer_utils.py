@@ -10,9 +10,9 @@ from typing import TypeVar
 
 import pytest
 
-from lakery.core.serializer import Content
+from lakery.core.serializer import Archive
 from lakery.core.serializer import Serializer
-from lakery.core.serializer import StreamContent
+from lakery.core.serializer import StreamArchive
 from lakery.core.serializer import StreamSerializer
 
 T = TypeVar("T")
@@ -105,7 +105,7 @@ async def _check_dump_value_load_stream(
     value: Any,
 ) -> None:
     content = serializer.dump(value)
-    stream_content: StreamContent = {
+    stream_content: StreamArchive = {
         "content_encoding": content["content_encoding"],
         "content_type": content["content_type"],
         "data_stream": restream(content["data"]),
@@ -125,7 +125,7 @@ async def _check_dump_stream_load_value(
 ) -> None:
     stream_content = serializer.dump_stream(_to_async_iterable(values))
     data = b"".join([chunk async for chunk in stream_content["data_stream"]])
-    value_dump: Content = {
+    value_dump: Archive = {
         "content_encoding": stream_content["content_encoding"],
         "content_type": stream_content["content_type"],
         "data": data,

@@ -48,9 +48,9 @@ def test_dump_load_storage_model():
         field_with_serializer_and_storage=sample,
     )
 
-    manifests = model.storage_model_dump(registries)
+    contents = model.storage_model_dump(registries)
 
-    assert manifests == {
+    assert contents == {
         "data": {
             "value": {
                 "field_with_no_meta": {
@@ -97,7 +97,7 @@ def test_dump_load_storage_model():
         },
     }
 
-    loaded_model = SampleModel.storage_model_load(manifests, registries)
+    loaded_model = SampleModel.storage_model_load(contents, registries)
     assert loaded_model == model
 
 

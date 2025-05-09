@@ -35,9 +35,9 @@ if TYPE_CHECKING:
     from lakery.core.model import BaseStorageModel
     from lakery.core.registries import RegistryCollection
     from lakery.core.registries import SerializerRegistry
-    from lakery.core.serializer import Content
+    from lakery.core.serializer import Archive
     from lakery.core.serializer import Serializer
-    from lakery.core.serializer import StreamContent
+    from lakery.core.serializer import StreamArchive
     from lakery.core.serializer import StreamSerializer
     from lakery.core.storage import Digest
     from lakery.core.storage import GetStreamDigest
@@ -130,47 +130,47 @@ async def _save_model(
 ) -> ManifestRecord:
     """Save the given data to the database."""
     model_uuid = model.storage_model_config().id
-    model_manifests = model.storage_model_dump(registries)
+    model_contents = model.storage_model_dump(registries)
 
     manifest_id = uuid4()
     data_record_futures: list[FutureResult[ContentRecord]] = []
     async with create_task_group() as tg:
-        for manifest_key, manifest in model_manifests.items():
-            _LOG.debug("Saving %s in manifest %s", manifest_key, manifest_id.hex)
-            if "value" in manifest:
+        for content_key, content in model_contents.items():
+            _LOG.debug("Saving %s in manifest %s", content_key, manifest_id.hex)
+            if "value" in content:
                 data_record_futures.append(
                     start_future(
                         tg,
                         _save_storage_value,
                         tags,
                         manifest_id,
-                        manifest_key,
-                        manifest["value"],
-                        manifest.get("serializer"),
-                        manifest.get("storage"),
+                        content_key,
+                        content["value"],
+                        content.get("serializer"),
+                        content.get("storage"),
                         registries,
                     )
                 )
-            elif "stream" in manifest:
+            elif "value_stream" in content:
                 data_record_futures.append(
                     start_future(
                         tg,
                         _save_storage_stream,
                         tags,
                         manifest_id,
-                        manifest_key,
-                        manifest["stream"],
-                        manifest.get("serializer"),
-                        manifest.get("storage"),
+                        content_key,
+                        content["value_stream"],
+                        content.get("serializer"),
+                        content.get("storage"),
                         registries,
                     )
                 )
             else:
-                msg = f"Invalid manifest {manifest_key!r} in {model!r} - {manifest}"
+                msg = f"Invalid manifest {content_key!r} in {model!r} - {content}"
                 raise AssertionError(msg)
 
     contents: list[ContentRecord] = []
-    for k, f in zip(model_manifests, data_record_futures, strict=False):
+    for k, f in zip(model_contents, data_record_futures, strict=False):
         if exc := f.exception():
             _LOG.error(
                 "Failed to save %s in manifest %s",
@@ -191,7 +191,7 @@ async def _save_model(
 async def _save_storage_value(
     tags: TagMap,
     manifest_id: UUID,
-    manifest_key: str,
+    content_key: str,
     value: Any,
     serializer: Serializer | None,
     storage: Storage | None,
@@ -204,12 +204,12 @@ async def _save_storage_value(
     storage_data = await storage.put_data(content["data"], digest, tags)
     return ContentRecord(
         content_encoding=content["content_encoding"],
-        content_hash=digest["content_hash"],
         content_hash_algorithm=digest["content_hash_algorithm"],
+        content_hash=digest["content_hash"],
+        content_key=content_key,
         content_size=digest["content_size"],
         content_type=content["content_type"],
         manifest_id=manifest_id,
-        manifest_key=manifest_key,
         serializer_name=serializer.name,
         serializer_type=SerializerTypeEnum.Content,
         storage_data=storage_data,
@@ -220,7 +220,7 @@ async def _save_storage_value(
 async def _save_storage_stream(
     tags: TagMap,
     manifest_id: UUID,
-    manifest_key: str,
+    content_key: str,
     stream: AsyncIterable[Any],
     serializer: StreamSerializer | None,
     storage: Storage | None,
@@ -247,12 +247,12 @@ async def _save_storage_stream(
             raise RuntimeError(msg) from None
         return ContentRecord(
             content_encoding=content["content_encoding"],
-            content_hash=digest["content_hash"],
             content_hash_algorithm=digest["content_hash_algorithm"],
+            content_hash=digest["content_hash"],
+            content_key=content_key,
             content_size=digest["content_size"],
             content_type=content["content_type"],
             manifest_id=manifest_id,
-            manifest_key=manifest_key,
             serializer_name=serializer.name,
             serializer_type=SerializerTypeEnum.ContentStream,
             storage_data=storage_data,
@@ -262,9 +262,9 @@ async def _save_storage_stream(
 
 
 def _wrap_stream_dump(
-    content: StreamContent,
+    archive: StreamArchive,
 ) -> tuple[AsyncGenerator[bytes], GetStreamDigest]:
-    data_stream = content["data_stream"]
+    data_stream = archive["data_stream"]
 
     content_hash = sha256()
     content_size = 0
@@ -284,26 +284,26 @@ def _wrap_stream_dump(
             msg = "The stream has not been fully read."
             raise ValueError(msg)
         return {
-            "content_encoding": content.get("content_encoding"),
+            "content_encoding": archive.get("content_encoding"),
             "content_hash": content_hash.hexdigest(),
             "content_hash_algorithm": content_hash.name,
             "content_size": content_size,
-            "content_type": content["content_type"],
+            "content_type": archive["content_type"],
             "is_complete": is_complete,
         }
 
     return wrapper(), get_digest
 
 
-def _make_value_dump_digest(content: Content) -> Digest:
-    data = content["data"]
+def _make_value_dump_digest(archive: Archive) -> Digest:
+    data = archive["data"]
     content_hash = sha256(data)
     return {
-        "content_encoding": content.get("content_encoding"),
+        "content_encoding": archive.get("content_encoding"),
         "content_hash": content_hash.hexdigest(),
         "content_hash_algorithm": content_hash.name,
         "content_size": len(data),
-        "content_type": content["content_type"],
+        "content_type": archive["content_type"],
     }
 
 
@@ -315,7 +315,7 @@ class _SerializationHelper:
         self,
         value: Any,
         serializer: Serializer | None,
-    ) -> Content:
+    ) -> Archive:
         if serializer is None:
             serializer = self._serializers.infer_from_value_type(type(value))
         return serializer.dump(value)
@@ -324,7 +324,7 @@ class _SerializationHelper:
         self,
         stream: AsyncIterable,
         serializer: StreamSerializer | None,
-    ) -> StreamContent:
+    ) -> StreamArchive:
         if serializer is not None:
             return serializer.dump_stream(stream)
 

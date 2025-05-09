@@ -6,7 +6,7 @@ from typing import TypedDict
 
 import numpy as np
 
-from lakery.core.serializer import Content
+from lakery.core.serializer import Archive
 from lakery.core.serializer import Serializer
 
 __all__ = (
@@ -32,7 +32,7 @@ class NpySerializer(Serializer[np.ndarray]):
         self._dump_args = dump_args or {}
         self._load_args = load_args or {}
 
-    def dump(self, value: np.ndarray, /) -> Content:
+    def dump(self, value: np.ndarray, /) -> Archive:
         """Serialize the given DataFrame."""
         buffer = BytesIO()
         np.save(buffer, value, **self._dump_args)
@@ -42,7 +42,7 @@ class NpySerializer(Serializer[np.ndarray]):
             "data": buffer.getvalue(),
         }
 
-    def load(self, content: Content, /) -> np.ndarray:
+    def load(self, content: Archive, /) -> np.ndarray:
         """Deserialize the given DataFrame."""
         return np.load(BytesIO(content["data"]), **self._load_args)
 

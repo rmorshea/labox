@@ -11,9 +11,9 @@ from annotated_types import KW_ONLY
 
 from lakery.common.utils import frozenclass
 from lakery.core.model import BaseStorageModel
-from lakery.core.model import Manifest
-from lakery.core.model import ManifestMap
-from lakery.core.model import StreamManifest
+from lakery.core.model import Content
+from lakery.core.model import ContentMap
+from lakery.core.model import StreamContent
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable
@@ -50,21 +50,21 @@ class Singular(
     storage: Storage | None = field(default=None, compare=False)
     """The storage for the value."""
 
-    def storage_model_dump(self, registries: RegistryCollection) -> Mapping[str, Manifest]:
-        """Dump the model to a series of storage manifests."""
+    def storage_model_dump(self, registries: RegistryCollection) -> Mapping[str, Content]:
+        """Dump the model to storage content."""
         serializer = registries.serializers.infer_from_value_type(type(self.value))
         return {"": {"value": self.value, "serializer": serializer, "storage": self.storage}}
 
     @classmethod
     def storage_model_load(
         cls,
-        manifests: ManifestMap,
+        contents: ContentMap,
         _registries: RegistryCollection,
     ) -> Self:
-        """Load the model from a series of storage manifests."""
-        man = manifests[""]
-        assert "value" in man, f"Missing value in manifest {man}"  # noqa: S101
-        return cls(value=man["value"], serializer=man["serializer"], storage=man["storage"])
+        """Load the model from storage content."""
+        cont = contents[""]
+        assert "value" in cont, f"Missing value in content {cont}"  # noqa: S101
+        return cls(value=cont["value"], serializer=cont["serializer"], storage=cont["storage"])
 
 
 @frozenclass(kw_only=False)
@@ -85,11 +85,11 @@ class Streamed(
     storage: Storage | None = field(default=None, compare=False)
     """The storage for the stream."""
 
-    def storage_model_dump(self, _registries: RegistryCollection) -> Mapping[str, StreamManifest]:
-        """Dump the model to a series of storage manifests."""
+    def storage_model_dump(self, _registries: RegistryCollection) -> Mapping[str, StreamContent]:
+        """Dump the model to storage content."""
         return {
             "": {
-                "stream": self.stream,
+                "value_stream": self.stream,
                 "serializer": self.serializer,
                 "storage": self.storage,
             }
@@ -98,13 +98,17 @@ class Streamed(
     @classmethod
     def storage_model_load(
         cls,
-        manifests: ManifestMap,
+        contents: ContentMap,
         _registries: RegistryCollection,
     ) -> Self:
-        """Load the model from a series of storage manifests."""
-        man = manifests[""]
-        assert "stream" in man, f"Missing stream in manifest {man}"  # noqa: S101
-        return cls(stream=man["stream"], serializer=man["serializer"], storage=man["storage"])
+        """Load the model from storage content."""
+        cont = contents[""]
+        assert "value_stream" in cont, f"Missing stream in content {cont}"  # noqa: S101
+        return cls(
+            stream=cont["value_stream"],
+            serializer=cont["serializer"],
+            storage=cont["storage"],
+        )
 
 
 _LOG = getLogger(__name__)
