@@ -128,7 +128,7 @@ This class holds
 
 ## Storage Model Config
 
-Every model type has a `storage_model_config` attribute which holds
+Every model type must declare a `storage_model_config` when it's defined.
 
 ### Storage Model ID
 
@@ -150,7 +150,7 @@ placeholder value like `"..."`:
 from lakery.core.model import BaseStorageModel
 
 
-class MyModel(BaseStorageModel, storage_model_config={"id": "..."}):
+class MyModel(BaseStorageModel, config={"id": "..."}):
     pass
 ```
 
@@ -176,6 +176,6 @@ then you can declare it as `None`:
 from lakery.core.model import BaseStorageModel
 
 
-class MyAbstractModel(BaseStorageModel, storage_model_id=None):
+class MyAbstractModel(BaseStorageModel, storage_model_config=None):
     pass
 ```

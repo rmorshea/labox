@@ -19,7 +19,7 @@ json_serializer = basic_registries.serializers[JsonSerializer.name]
 
 
 @dataclass
-class SampleModel(DataclassModel, storage_model_config={"id": "d1d3cd96964a45bbb718de26f2671b87"}):
+class SampleModel(DataclassModel, storage_model_config={"id": "1d3cd969", "version": 1}):
     field_with_no_meta: Any
     field_with_serializer: Any = field(
         metadata={"serializer": msgpack_serializer},
@@ -97,7 +97,7 @@ def test_dump_load_storage_model():
         },
     }
 
-    loaded_model = SampleModel.storage_model_load(contents, registries)
+    loaded_model = SampleModel.storage_model_load(contents, 1, registries)
     assert loaded_model == model
 
 

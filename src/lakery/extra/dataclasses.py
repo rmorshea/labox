@@ -79,7 +79,9 @@ class DataclassModel(BaseStorageModel, storage_model_config=None):
         }
 
     @classmethod
-    def storage_model_load(cls, contents: ContentMap, registries: RegistryCollection) -> Self:
+    def storage_model_load(
+        cls, contents: ContentMap, _version: int, registries: RegistryCollection
+    ) -> Self:
         """Load the model from storage content."""
         external = cast("dict[str, Content]", dict(contents))
         data = external.pop("data")["value"]

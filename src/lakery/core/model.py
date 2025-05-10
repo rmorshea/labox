@@ -32,40 +32,46 @@ if TYPE_CHECKING:
 T = TypeVar("T", default=Any)
 
 
-class Config(TypedDict, total=False):
+class StorageModelConfigDict(TypedDict):
     """Configuration for a storage model."""
 
     id: LiteralString
     """The ID of the storage model type."""
+    version: int
+    """The version of the storage model type."""
 
 
 @frozenclass
-class FrozenConfig:
+class StorageModelConfig:
     """A frozen configuration for a storage model."""
 
     id: UUID
     """The ID of the storage model type."""
+    version: int
+    """The version of the storage model type."""
 
 
 class BaseStorageModel(abc.ABC):
     """A base class for models that can be stored and serialized."""
 
-    _storage_model_config: ClassVar[FrozenConfig | None] = None
+    _storage_model_config: ClassVar[StorageModelConfig | None] = None
 
-    def __init_subclass__(cls, *, storage_model_config: Config | None, **kwargs: Any) -> None:
+    def __init_subclass__(
+        cls, *, storage_model_config: StorageModelConfigDict | None, **kwargs: Any
+    ) -> None:
         super().__init_subclass__(**kwargs)
         cls._storage_model_config = _make_frozen_conig(cls, storage_model_config)
 
     @overload
     @classmethod
-    def storage_model_config(cls, *, allow_missing: bool) -> FrozenConfig | None: ...
+    def storage_model_config(cls, *, allow_missing: bool) -> StorageModelConfig | None: ...
 
     @overload
     @classmethod
-    def storage_model_config(cls, *, allow_missing: Literal[False] = ...) -> FrozenConfig: ...
+    def storage_model_config(cls, *, allow_missing: Literal[False] = ...) -> StorageModelConfig: ...
 
     @classmethod
-    def storage_model_config(cls, *, allow_missing: bool = False) -> FrozenConfig | None:
+    def storage_model_config(cls, *, allow_missing: bool = False) -> StorageModelConfig | None:
         """Return the storage model config for this class."""
         if cls._storage_model_config is None:
             if not allow_missing:
@@ -81,7 +87,9 @@ class BaseStorageModel(abc.ABC):
 
     @classmethod
     @abc.abstractmethod
-    def storage_model_load(cls, contents: ContentMap, registries: RegistryCollection, /) -> Self:
+    def storage_model_load(
+        cls, contents: ContentMap, version: int, registries: RegistryCollection, /
+    ) -> Self:
         """Reconstitute the model from a mapping of contents."""
         raise NotImplementedError
 
@@ -117,8 +125,8 @@ ContentMap: TypeAlias = Mapping[str, AnyContent]
 
 def _make_frozen_conig(
     cls: type[BaseStorageModel],
-    cfg: Config | None,
-) -> FrozenConfig | None:
+    cfg: StorageModelConfigDict | None,
+) -> StorageModelConfig | None:
     if cfg is None:
         cls._storage_model_config = None
         return None
@@ -132,6 +140,23 @@ def _make_frozen_conig(
         cls._storage_model_config = None
         return None
 
-    storage_model_id = UUID(cfg["id"])
+    storage_model_id = UUID(bytes=_pad_id_str(cfg["id"]))
+    storage_model_ver = cfg["version"]
+    if storage_model_ver < 0:
+        msg = f"Storage model version must be a positive integer. Got {storage_model_ver}."
+        raise ValueError(msg) from None
 
-    return FrozenConfig(id=storage_model_id)
+    return StorageModelConfig(id=storage_model_id, version=cfg["version"])
+
+
+def _pad_id_str(id_str: str) -> bytes:
+    """Pad the ID string to 32 characters."""
+    if len(id_str) > 32:
+        msg = f"ID string {id_str} is too long."
+        raise ValueError(msg)
+    if len(id_str) < 8:
+        msg = f"ID string {id_str} is too short."
+        raise ValueError(msg)
+    id_byte_arr = bytearray.fromhex(id_str)
+    id_byte_arr.extend(b"\0" * (32 - len(id_byte_arr)))
+    return bytes(id_byte_arr)

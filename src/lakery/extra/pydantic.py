@@ -9,7 +9,6 @@ from logging import getLogger
 from typing import TYPE_CHECKING
 from typing import Annotated
 from typing import Any
-from typing import LiteralString
 from typing import Self
 from typing import TypedDict
 from typing import Unpack
@@ -27,6 +26,7 @@ from lakery.core.model import AnyContent
 from lakery.core.model import BaseStorageModel
 from lakery.core.model import Content
 from lakery.core.model import ContentMap
+from lakery.core.model import StorageModelConfig
 from lakery.core.serializer import Serializer
 from lakery.core.storage import Storage
 
@@ -58,7 +58,7 @@ class StorageModel(
         def __init_subclass__(
             cls,
             *,
-            storage_model_id: LiteralString | None,
+            storage_model_config: StorageModelConfig | None,
             **kwargs: Unpack[ConfigDict],
         ) -> None: ...
 
@@ -83,7 +83,7 @@ class StorageModel(
 
         next_external_id = 0
 
-        def get_external_id() -> int:
+        def get_next_external_id() -> int:
             nonlocal next_external_id
             next_external_id += 1
             return next_external_id
@@ -93,7 +93,7 @@ class StorageModel(
             context=_make_serialization_context(
                 _LakerySerializationContext(
                     external=external,
-                    get_external_id=get_external_id,
+                    get_next_external_id=get_next_external_id,
                     registries=registries,
                 )
             ),
@@ -109,7 +109,9 @@ class StorageModel(
         }
 
     @classmethod
-    def storage_model_load(cls, contents: ContentMap, registries: RegistryCollection) -> Self:
+    def storage_model_load(
+        cls, contents: ContentMap, _version: int, registries: RegistryCollection
+    ) -> Self:
         """Load the model from storage content."""
         contents = dict(contents)
         data = cast("Content", contents.pop("data"))["value"]
@@ -320,7 +322,8 @@ def _make_ref_str(
     info: cs.FieldSerializationInfo,
     context: _LakerySerializationContext,
 ) -> str:
-    return f"ref.{model_type.__name__}.{info.field_name}.{context['get_external_id']()}"
+    ext_id = context["get_next_external_id"]()
+    return f"ref.{model_type.__name__}.{info.field_name}.{ext_id}"
 
 
 _LAKERY_KEY = "lakery"
@@ -385,7 +388,7 @@ def _get_info_context(
 
 class _LakerySerializationContext(TypedDict):
     external: dict[str, AnyContent]
-    get_external_id: Callable[[], int]
+    get_next_external_id: Callable[[], int]
     registries: RegistryCollection
 
 

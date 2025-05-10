@@ -17,10 +17,7 @@ msgpack_serializer = basic_registries.serializers[MsgPackSerializer.name]
 json_serializer = basic_registries.serializers[JsonSerializer.name]
 
 
-class PydanticStorageModel(
-    StorageModel,
-    storage_model_config={"id": "1e76a0043a7d40a38daf87de09de1643"},
-):
+class PydanticStorageModel(StorageModel, storage_model_config={"id": "1e76a004", "version": 1}):
     no_spec: Any
     spec_with_serializer: StorageSpec[Any, msgpack_serializer]
     spec_with_storage: StorageSpec[Any, local_storage]
@@ -86,7 +83,7 @@ def test_dump_load_storage_model():
         },
     }
 
-    loaded_model = PydanticStorageModel.storage_model_load(contents, registries)
+    loaded_model = PydanticStorageModel.storage_model_load(contents, 1, registries)
     assert loaded_model == model
 
 

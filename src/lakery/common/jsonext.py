@@ -8,6 +8,7 @@ from collections.abc import Sequence
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Literal
+from typing import LiteralString
 from typing import TypedDict
 from typing import cast
 from typing import overload
@@ -15,6 +16,7 @@ from uuid import UUID
 
 from lakery.core.model import AnyContent
 from lakery.core.model import BaseStorageModel
+from lakery.core.model import StorageModelConfigDict
 
 if TYPE_CHECKING:
     from lakery.core.model import Content
@@ -66,9 +68,9 @@ class ModelJsonExt(TypedDict):
 
     __json_ext__: Literal["model"]
 
-    storage_model_id: str
-    """The ID of the storage model."""
-    content: dict[str, ContentJsonExt | RefJsonExt]
+    config: StorageModelConfigDict
+    """The configuration of the storage model."""
+    contents: dict[str, ContentJsonExt | RefJsonExt]
     """Content dumped by the model."""
 
 
@@ -175,11 +177,15 @@ def dump_json_content_ext(
 def dump_json_model_ext(value: BaseStorageModel, context: JsonExtDumpContext) -> ModelJsonExt:
     """Dump the given value to a JSON extension with a storage model."""
     cls = type(value)
+    cfg = cls.storage_model_config()
     context["registries"].models.check_registered(cls)
     return {
         "__json_ext__": "model",
-        "storage_model_id": cls.storage_model_config().id.hex,
-        "content": {
+        "config": {
+            "id": cast("LiteralString", cfg.id.hex),
+            "version": cfg.version,
+        },
+        "contents": {
             k: dump_any_json_ext(k, _check_is_not_stream_content(v), context)
             for k, v in value.storage_model_dump(context["registries"]).items()
         },
@@ -260,9 +266,10 @@ def load_json_ref_ext(value: RefJsonExt, context: JsonExtLoadContext) -> Any:
 
 def load_json_model_ext(value: ModelJsonExt, context: JsonExtLoadContext) -> BaseStorageModel:
     """Load a value from a JSON extension with a storage model."""
-    cls = context["registries"].models[UUID(value["storage_model_id"])]
-    contents = {k: load_any_json_ext(v, context) for k, v in value["content"].items()}
-    return cls.storage_model_load(contents, context["registries"])
+    cfg = value["config"]
+    cls = context["registries"].models[UUID(cfg["id"])]
+    contents = {k: load_any_json_ext(v, context) for k, v in value["contents"].items()}
+    return cls.storage_model_load(contents, cfg["version"], context["registries"])
 
 
 _load_func_by_ext = {

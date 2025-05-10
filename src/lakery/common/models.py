@@ -33,11 +33,7 @@ T = TypeVar("T")
 
 
 @frozenclass(kw_only=False)
-class Singular(
-    Generic[T],
-    BaseStorageModel,
-    storage_model_config={"id": "63b297f66dbc44bb8552f6f490cf21cb"},
-):
+class Singular(Generic[T], BaseStorageModel, storage_model_config={"id": "63b297f6", "version": 1}):
     """Models a single value."""
 
     value: T
@@ -59,6 +55,7 @@ class Singular(
     def storage_model_load(
         cls,
         contents: ContentMap,
+        _version: int,
         _registries: RegistryCollection,
     ) -> Self:
         """Load the model from storage content."""
@@ -68,11 +65,7 @@ class Singular(
 
 
 @frozenclass(kw_only=False)
-class Streamed(
-    Generic[T],
-    BaseStorageModel,
-    storage_model_config={"id": "e80e8707ffdd4785b95b30247fa4398c"},
-):
+class Streamed(Generic[T], BaseStorageModel, storage_model_config={"id": "e80e8707", "version": 1}):
     """Models a stream of data."""
 
     stream: AsyncIterable[T] = field(compare=False)
@@ -99,6 +92,7 @@ class Streamed(
     def storage_model_load(
         cls,
         contents: ContentMap,
+        _version: int,
         _registries: RegistryCollection,
     ) -> Self:
         """Load the model from storage content."""

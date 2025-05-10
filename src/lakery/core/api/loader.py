@@ -125,10 +125,10 @@ async def load_model_from_record_group(
     """Load the given model from the given record."""
     model_type = registries.models[manifest.model_id]
 
-    manifest_futures: dict[str, FutureResult[AnyContent]] = {}
+    content_futures: dict[str, FutureResult[AnyContent]] = {}
     async with create_task_group() as tg:
         for c in contents:
-            manifest_futures[c.content_key] = start_future(
+            content_futures[c.content_key] = start_future(
                 tg,
                 load_manifest_from_record,
                 c,
@@ -136,8 +136,11 @@ async def load_model_from_record_group(
                 storages=registries.storages,
             )
 
-    manifests = {i: f.result() for i, f in manifest_futures.items()}
-    return model_type.storage_model_load(manifests, registries)
+    return model_type.storage_model_load(
+        {i: f.result() for i, f in content_futures.items()},
+        manifest.model_version,
+        registries,
+    )
 
 
 async def load_manifest_from_record(
