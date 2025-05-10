@@ -9,6 +9,7 @@ from typing import ClassVar
 from typing import Generic
 from typing import Literal
 from typing import LiteralString
+from typing import NoReturn
 from typing import Self
 from typing import TypeAlias
 from typing import overload
@@ -57,10 +58,21 @@ class BaseStorageModel(abc.ABC):
     _storage_model_config: ClassVar[StorageModelConfig | None] = None
 
     def __init_subclass__(
-        cls, *, storage_model_config: StorageModelConfigDict | None, **kwargs: Any
+        cls,
+        *,
+        storage_model_config: StorageModelConfigDict | None,
+        **kwargs: Any,
     ) -> None:
         super().__init_subclass__(**kwargs)
-        cls._storage_model_config = _make_frozen_conig(cls, storage_model_config)
+        try:
+            cls._storage_model_config = _make_frozen_conig(storage_model_config)
+        except ValueError as err:
+            warn(
+                f"Ignoring storage model config for {full_class_name(cls)!r} - {err}",
+                UserWarning,
+                stacklevel=2,
+            )
+            cls._storage_model_config = None
 
     @overload
     @classmethod
@@ -123,21 +135,8 @@ ContentMap: TypeAlias = Mapping[str, AnyContent]
 """A type alias for a mapping of contents."""
 
 
-def _make_frozen_conig(
-    cls: type[BaseStorageModel],
-    cfg: StorageModelConfigDict | None,
-) -> StorageModelConfig | None:
+def _make_frozen_conig(cfg: StorageModelConfigDict | None) -> StorageModelConfig | None:
     if cfg is None:
-        cls._storage_model_config = None
-        return None
-    elif "id" not in cfg:
-        suggested_id = uuid4().hex
-        msg = (
-            f"No storage model ID declared for {full_class_name(cls)}. You may "
-            f"want to add {suggested_id!r} to your class definition instead."
-        )
-        warn(msg, UserWarning, stacklevel=2)
-        cls._storage_model_config = None
         return None
 
     storage_model_id = UUID(bytes=_pad_id_str(cfg["id"]))
@@ -150,13 +149,20 @@ def _make_frozen_conig(
 
 
 def _pad_id_str(id_str: str) -> bytes:
-    """Pad the ID string to 32 characters."""
-    if len(id_str) > 32:
-        msg = f"ID string {id_str} is too long."
-        raise ValueError(msg)
-    if len(id_str) < 8:
-        msg = f"ID string {id_str} is too short."
-        raise ValueError(msg)
-    id_byte_arr = bytearray.fromhex(id_str)
-    id_byte_arr.extend(b"\0" * (32 - len(id_byte_arr)))
-    return bytes(id_byte_arr)
+    """Pad the ID string to 16 characters."""
+    if len(id_str) < 8 or len(id_str) > 16:
+        _raise_storage_model_id_error(id_str)
+    try:
+        byte_arr = bytes.fromhex(id_str)
+    except ValueError:
+        _raise_storage_model_id_error(id_str)
+    return byte_arr.ljust(16, b"\0")
+
+
+def _raise_storage_model_id_error(given: str) -> NoReturn:
+    suggested_id = uuid4().hex
+    msg = (
+        f"{given!r} is not a valid storage model ID. Expected 8-16 character hexadecimal string. "
+        f"Try adding '{suggested_id!r}' to your class definition instead."
+    )
+    raise ValueError(msg)

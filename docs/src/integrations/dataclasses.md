@@ -1,16 +1,8 @@
 # Dataclasses
 
-!!! note
-
-    No extra installation step required.
-
 The [`DataclassModel`][lakery.extra.dataclasses.DataclassModel] model can be used to
-save standard Python dataclasses with the restriction that they cannot be nested. If you
-need to nest dataclasses you should consider using the Lakery's
-[pydantic integration](../integrations/pydantic.md) instead.
-
-For example, you might have a dataclass that holds the results of a scientific
-experiment:
+save standard Python dataclasses. For example, you might have a dataclass that holds the
+results of a scientific experiment:
 
 ```python
 from dataclasses import dataclass
@@ -53,3 +45,11 @@ but this takes time and can be unreliable. So, particularly in the case of datac
 models where the structure is known ahead of time, it's recommended to be explicit.
 Storages may also be specified in the same way under a `"storage"` key in the
 `metadata`.
+
+## Limitations
+
+Serializers and storages may only be applied to fields as a whole. A serializer cannot
+be applied to say, the elements of a list or the values of a dictionary within a field.
+If you require this functionality you should consider Lakery's
+[Pydantic integration](./pydantic.md) or implementing your own
+[custom model](../concepts/models.md#custom-models).

@@ -130,6 +130,14 @@ This class holds
 
 Every model type must declare a `storage_model_config` when it's defined.
 
+```python
+from lakery.core.model import BaseStorageModel
+
+
+class MyModel(BaseStorageModel, storage_model_config={"id": "abc123", "version": 1}):
+    pass
+```
+
 ### Storage Model ID
 
 The `id` within the config for a storage model uniquely identify it when saving and
@@ -139,7 +147,7 @@ been used to save data. On the other hand you are free to rename the class or mo
 a different module without any issues since the `id`, rather than an "import path", is
 used to identify the model.
 
-### Generating IDs
+#### Generating IDs
 
 Whenever you inherit from [`BaseStorageModel`][lakery.core.model.BaseStorageModel] you
 must declare a `storage_model_id` as part of the class definition. However, since these
@@ -150,27 +158,37 @@ placeholder value like `"..."`:
 from lakery.core.model import BaseStorageModel
 
 
-class MyModel(BaseStorageModel, config={"id": "..."}):
+class MyModel(BaseStorageModel, storage_model_config={"id": "...", "version": 1}):
     pass
 ```
 
 Later, when you run this code, Lakery will issue a `UserWarning`:
 
-```
-'...' is not a valid storage model ID for MyModel. Try adding <generated-id> to your class definition.
+```txt
+Ignoring storage model config for '__main__.MyModel' - '...' is not a valid storage
+model ID. Expected 8-16 character hexadecimal string. Try adding '<generated-id>' to
+your class definition instead.
 ```
 
-You can then use the `<generated-id>` value in place of `"..."` to make it unique.
+You can then use the `'<generated-id>'` value in place of `'...'` to make it unique.
 
 !!! note
 
     In the future, Lakery come with a linter that automatically generates unique storage model IDs
     for you as you work.
 
+### Storage Model Version
+
+The `version` within the config for a storage model is saved with a model's data. Later,
+when that data is reconstituted, the version will be passed to the model's
+`storage_model_load` method. This allows the author of the model to handle any changes
+to the model definition that may have occurred since the data was saved. For example,
+you might have changed the name of a field.
+
 ### Abstract Models
 
 If your class is "abstract" (i.e. direct instances of that class will never be saved)
-then you can declare it as `None`:
+then you can declare the storage model config to be `None`:
 
 ```python
 from lakery.core.model import BaseStorageModel
