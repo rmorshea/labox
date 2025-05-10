@@ -49,13 +49,8 @@ pandas = ["pandas>=2,<3", "lakery[pyarrow]"]
 plotly = ["plotly>=5,<6"]
 polars = ["polars>=1.18.0"]
 pyarrow = ["pyarrow>=18,<19"]
-pydantic = [
-    "pydantic-walk-core-schema>=1.0.0",
-    "pydantic>=2,<3",
-]
-imageio = [
-    "imageio>=2,<3",
-]
+pydantic = ["pydantic-walk-core-schema>=1.0.0", "pydantic>=2,<3"]
+imageio = ["imageio>=2,<3"]
 [project.urls]
 Source = "https://github.com/rmorshea/lakery"
 
@@ -104,9 +99,7 @@ test = [
     "moto>=5.0.22",
     "aiohttp>=3.11.10",
 ]
-pydantic = [
-    "pydantic-walk-core-schema>=1.0.0",
-]
+pydantic = ["pydantic-walk-core-schema>=1.0.0"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -186,7 +179,9 @@ ban-relative-imports = "all"
 ]
 "doccmd_*.py" = [
     "ANN",    # Type annotations
+    "ARG003", # Unused argument
     "B018",   # Useless expression
+    "F821",   # Undefined name (see: https://github.com/adamtheturtle/doccmd/issues/275)
     "FA102",  # Unsafe __futures__ annotations usage
     "RUF029", # No await in async function
     "S101",   # Assert statements
@@ -194,7 +189,6 @@ ban-relative-imports = "all"
     "SIM115", # Use context manager for opening files
     "T201",   # Print
     "TCH002", # Move third-party import into a type-checking block
-    "F821",   # Undefined name (see: https://github.com/adamtheturtle/doccmd/issues/275)
 ]
 
 [tool.yamlfix]

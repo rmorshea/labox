@@ -45,7 +45,7 @@ BaseRecord.create_all(engine).run()
 ```
 
 Establish [registries](./concepts/registries.md) with the
-[serializers](./concepts/serializers.md), [storages](.concepts/storages.md), and
+[serializers](./concepts/serializers.md), [storages](./concepts/storages.md), and
 [models](./concepts/models.md) you want to use.
 
 ```python

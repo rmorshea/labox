@@ -104,13 +104,12 @@ streamed_data = Streamed(
 ## Custom Models
 
 To save more complicated objects you can define your own custom models by implementing
-the [`BaseStorageModel`][lakery.core.model.BaseStorageModel] interface.
-
-To explain how this is done, consider the case of class that holds heterogeneous data
-from a scientific experiment:
+the [`BaseStorageModel`][lakery.core.model.BaseStorageModel] interface. Consider the
+case of class that holds heterogeneous data from a scientific experiment:
 
 ```python
 from datetime import datetime
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -118,13 +117,189 @@ import plotly.graph_objects as go
 
 
 class ExperimentResults:
-    timestamp: datetime
-    raw_data: pd.DataFrame
-    camera_image: np.ndarray
-    analysis: go.Figure
+    """Results from a scientific experiment."""
+
+    def __init__(
+        self,
+        timestamp: datetime,
+        timeseries_data: pd.DataFrame,
+        camera_image: np.ndarray,
+        analysis: go.Figure,
+    ):
+        self.timestamp = timestamp
+        self.timeseries_data = timeseries_data
+        self.camera_image = camera_image
+        self.analysis = analysis
 ```
 
-This class holds
+You'll then start to convert this into a model by first inheriting from
+`BaseStorageModel` and adding a `storage_model_config`:
+
+```python
+from lakery.core import BaseStorageModel
+
+
+class ExperimentResults(BaseStorageModel, storage_model_config={"id": "abc123", "version": 1}):
+    """Results from a scientific experiment."""
+
+    ...
+```
+
+You'll then need to the set of serializers that are required to encode each type of data
+in your model. In this case you could use:
+
+```python
+from lakery.extra.datetime import Iso8601Serializer
+from lakery.extra.numpy import NpySerializer
+from lakery.extra.pandas import ParquetDataFrameSerializer
+from lakery.extra.plotly import FigureSerializer
+
+iso8601_serializer = Iso8601Serializer()
+parquet_df_serializer = ParquetDataFrameSerializer()
+npy_serializer = NpySerializer()
+figure_serializer = FigureSerializer()
+```
+
+Next you'll then need to implement the `storage_model_dump` method. To do so you'll need
+to return a [`Content`][lakery.core.model.Content] dictionary for each field in your
+model given a [`RegistryCollection`](registries.md):
+
+```python
+class ExperimentResults(BaseStorageModel, storage_model_config={"id": "abc123", "version": 1}):
+    """Results from a scientific experiment."""
+
+    ...
+
+    def storage_model_dump(self, registries: RegistryCollection) -> dict[str, Content]:
+        return {
+            "timestamp": {
+                "value": self.timestamp,
+                "serializer": iso8601_serializer,
+                "storage": None,
+            },
+            "timeseries_data": {
+                "value": self.timeseries_data,
+                "serializer": parquet_df_serializer,
+                "storage": None,
+            },
+            "camera_image": {
+                "value": self.camera_image,
+                "serializer": npy_serializer,
+                "storage": None,
+            },
+            "analysis": {
+                "value": self.analysis,
+                "serializer": figure_serializer,
+                "storage": None,
+            },
+        }
+```
+
+And finally you'll need to implement the `storage_model_load` method which accepts the
+same `Content` dictionary as the `storage_model_dump` method in addition to the
+[model version](#storage-model-version) that saved the data and a
+[`RegistryCollection`](registries.md):
+
+```python
+from typing import Self
+
+
+class ExperimentResults(BaseStorageModel, storage_model_config={"id": "abc123", "version": 1}):
+    """Results from a scientific experiment."""
+
+    ...
+
+    @classmethod
+    def storage_model_load(
+        cls,
+        content: dict[str, Content],
+        version: int,
+        registries: RegistryCollection,
+    ) -> Self:
+        return cls(
+            timestamp=content["timestamp"]["value"],
+            timeseries_data=content["timeseries_data"]["value"],
+            camera_image=content["camera_image"]["value"],
+            analysis=content["analysis"]["value"],
+        )
+```
+
+Putting this all together, you get:
+
+```python
+from lakery.core import BaseStorageModel
+from lakery.extra.datetime import Iso8601Serializer
+from lakery.extra.numpy import NpySerializer
+from lakery.extra.pandas import ParquetDataFrameSerializer
+from lakery.extra.plotly import FigureSerializer
+
+iso8601_serializer = Iso8601Serializer()
+parquet_df_serializer = ParquetDataFrameSerializer()
+npy_serializer = NpySerializer()
+figure_serializer = FigureSerializer()
+
+
+class ExperimentResults(BaseStorageModel, storage_model_config={"id": "abc123", "version": 1}):
+    """Results from a scientific experiment."""
+
+    def __init__(
+        self,
+        timestamp: datetime,
+        timeseries_data: pd.DataFrame,
+        camera_image: np.ndarray,
+        analysis: go.Figure,
+        extra: Any,
+    ):
+        self.timestamp = timestamp
+        self.timeseries_data = timeseries_data
+        self.camera_image = camera_image
+        self.analysis = analysis
+        self.extra = extra
+
+    def storage_model_dump(self, registries: RegistryCollection) -> dict[str, Content]:
+        return {
+            "timestamp": {
+                "value": self.timestamp,
+                "serializer": iso8601_serializer,
+                "storage": None,
+            },
+            "timeseries_data": {
+                "value": self.timeseries_data,
+                "serializer": parquet_df_serializer,
+                "storage": None,
+            },
+            "camera_image": {
+                "value": self.camera_image,
+                "serializer": npy_serializer,
+                "storage": None,
+            },
+            "analysis": {
+                "value": self.analysis,
+                "serializer": figure_serializer,
+                "storage": None,
+            },
+            "extra": {
+                "value": self.extra,
+                "serializer": registries.serializer.infer_from_value_type(type(self.extra)),
+                "storage": None,
+            },
+        }
+
+    @classmethod
+    def storage_model_load(
+        cls,
+        content: dict[str, Content],
+        version: int,
+        registries: RegistryCollection,
+    ) -> Self:
+        return cls(
+            timestamp=content["timestamp"]["value"],
+            timeseries_data=content["timeseries_data"]["value"],
+            camera_image=content["camera_image"]["value"],
+            analysis=content["analysis"]["value"],
+            extra=content["extra"]["value"],
+        )
+```
 
 ## Storage Model Config
 
