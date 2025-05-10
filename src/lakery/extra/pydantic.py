@@ -7,7 +7,6 @@ from collections.abc import Mapping
 from collections.abc import MutableMapping
 from logging import getLogger
 from typing import TYPE_CHECKING
-from typing import Annotated
 from typing import Any
 from typing import Self
 from typing import TypedDict
@@ -27,14 +26,14 @@ from lakery.core.model import BaseStorageModel
 from lakery.core.model import Content
 from lakery.core.model import ContentMap
 from lakery.core.model import StorageModelConfig
-from lakery.core.serializer import Serializer
-from lakery.core.storage import Storage
 
 if TYPE_CHECKING:
     from lakery.common.jsonext import AnyJsonExt
     from lakery.core.registries import RegistryCollection
     from lakery.core.registries import SerializerRegistry
     from lakery.core.registries import StorageRegistry
+    from lakery.core.serializer import Serializer
+    from lakery.core.storage import Storage
 
 
 __all__ = (
@@ -97,6 +96,7 @@ class StorageModel(
                     registries=registries,
                 )
             ),
+            serialize_as_any=True,
         )
 
         return {
@@ -140,50 +140,38 @@ class StorageModel(
         return serializers.infer_from_value_type(dict)
 
 
-@frozenclass(kw_only=False)
-class StorageSpecMetadata:
+@frozenclass
+class StorageSpec:
     """An annotation for specifying the storage and serialization of a field.
 
-    This could be used directly via `Annotated[..., StorageSpecMetadata(...)]` but
-    for convenience a shorthand `StorageSpec[...]` is provided. When using the
-    shorthand positional arguments can be passed with the syntax:
+    Use [`typing.Annotated`][typing.Annotated] to add this to any type annotation.
 
     ```python
-    StorageSpec[my_serializer, my_storage]
+    from typing import Any, Annotated, TypeVar
+    from lakery.extra.pydantic import StorageSpec
+    from lakery.extra.msgpack import MsgPackSerializer
+
+    msgpack_serializer = MsgPackSerializer()
+
+    T = TypeVar("T")
+    UseMsgPack = Annotated[T, StorageSpec(serializer=msgpack_serializer)]
     ```
 
-    Keyword arguments can be provides with the slice syntax:
+    Then use it somewhere in a storage model:
 
     ```python
-    StorageSpec["serializer":my_serializer, "storage":my_storage]
+    from lakery.extra.pydantic import StorageModel
+
+
+    class MyModel(StorageModel, storage_model_config={"id": "...", "version": 1}):
+        my_field: UseMsgPack[Any]
     ```
     """
 
-    serializer: Serializer | None
-    storage: Storage | None
-
-    def __post_init__(self) -> None:
-        if self.serializer is not None and not isinstance(self.serializer, Serializer):
-            msg = f"Expected a Serializer, got {self.serializer}."
-            raise TypeError(msg)
-        if self.storage is not None and not isinstance(self.storage, Storage):
-            msg = f"Expected a Storage, got {self.storage}."
-            raise TypeError(msg)
-
-    def __class_getitem__(cls, args: tuple) -> Annotated:
-        annotation, *metadata = args
-        serializer: Serializer | None = None
-        storage: Storage | None = None
-        for m in metadata:
-            match m:
-                case Serializer():
-                    serializer = m
-                case Storage():
-                    storage = m
-                case _:
-                    msg = f"Expected a Serializer or Storage, got {m!r}."
-                    raise TypeError(msg)
-        return Annotated[annotation, StorageSpecMetadata(serializer, storage)]
+    serializer: Serializer | None = None
+    """The serializer to use for this value."""
+    storage: Storage | None = None
+    """The storage to use for this value."""
 
     def __get_pydantic_core_schema__(
         self,
@@ -191,7 +179,10 @@ class StorageSpecMetadata:
         handler: GetCoreSchemaHandler,
     ) -> cs.CoreSchema:
         schema = handler(source)
-        metadata: _SchemaMetadata = {}
+        if _has_schema_metadata(schema):
+            metadata = _get_schema_metadata(schema)
+        else:
+            metadata: _SchemaMetadata = {}
         if self.serializer is not None:
             metadata["serializer"] = self.serializer
         if self.storage is not None:
@@ -200,18 +191,11 @@ class StorageSpecMetadata:
         return schema
 
 
-if TYPE_CHECKING:
-    StorageSpec = Annotated
-    """A type-checker friendly alias for `StorageSpecMetadata`"""
-else:
-    StorageSpec = StorageSpecMetadata
-
-
 def _adapt_third_party_types(schema: cs.CoreSchema, handler: GetCoreSchemaHandler) -> cs.CoreSchema:
     def visit_is_instance_schema(schema: cs.CoreSchema, recurse):
         if schema["type"] == "definition-ref":
             return recurse(handler.resolve_ref_schema(schema), visit_is_instance_schema)
-        elif schema["type"] in ("is-instance", "any"):
+        elif _has_schema_metadata(schema) or schema["type"] in ("is-instance", "any"):
             return _adapt_core_schema(schema)
         elif "serialization" in schema:
             return schema  # Already adapted
@@ -327,6 +311,12 @@ def _make_ref_str(
 
 
 _LAKERY_KEY = "lakery"
+
+
+def _has_schema_metadata(schema: cs.CoreSchema) -> bool:
+    if not isinstance(metadata := schema.get("metadata"), Mapping):
+        return False
+    return _LAKERY_KEY in metadata
 
 
 def _get_schema_metadata(schema: cs.CoreSchema) -> _SchemaMetadata:

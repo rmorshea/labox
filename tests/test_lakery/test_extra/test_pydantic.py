@@ -1,3 +1,4 @@
+from typing import Annotated
 from typing import Any
 
 from sqlalchemy.ext.asyncio.session import AsyncSession
@@ -19,9 +20,11 @@ json_serializer = basic_registries.serializers[JsonSerializer.name]
 
 class PydanticStorageModel(StorageModel, storage_model_config={"id": "1e76a004", "version": 1}):
     no_spec: Any
-    spec_with_serializer: StorageSpec[Any, msgpack_serializer]
-    spec_with_storage: StorageSpec[Any, local_storage]
-    spec_with_serializer_and_storage: StorageSpec[Any, json_serializer, local_storage]
+    spec_with_serializer: Annotated[Any, StorageSpec(serializer=msgpack_serializer)]
+    spec_with_storage: Annotated[Any, StorageSpec(storage=local_storage)]
+    spec_with_serializer_and_storage: Annotated[
+        Any, StorageSpec(serializer=json_serializer, storage=local_storage)
+    ]
 
 
 registries = RegistryCollection.merge(
