@@ -23,6 +23,8 @@ __all__ = (
     "MsgPackSerializer",
     "MsgPackStreamSerializer",
     "MsgPackType",
+    "msgpack_serializer",
+    "msgpack_stream_serializer",
 )
 
 MsgPackType = (
@@ -117,6 +119,13 @@ class MsgPackStreamSerializer(_MsgPackBase, StreamSerializer[MsgPackType]):
     def load_stream(self, content: StreamArchive, /) -> AsyncGenerator[MsgPackType]:
         """Deserialize the given stream of MessagePack data."""
         return _load_stream(self._unpacker(), content["data_stream"])
+
+
+msgpack_serializer = MsgPackSerializer()
+"""MsgPackSerializer with default settings."""
+
+msgpack_stream_serializer = MsgPackStreamSerializer()
+"""MsgPackStreamSerializer with default settings."""
 
 
 async def _dump_stream(packer: Packer, value_stream: AsyncIterable[Any]) -> AsyncGenerator[bytes]:

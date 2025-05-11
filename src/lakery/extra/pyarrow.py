@@ -29,6 +29,10 @@ __all__ = (
     "ParquetRecordBatchStreamSerializer",
     "ParquetTableSerializer",
     "ParquetWriteOptions",
+    "arrow_record_batch_stream_serializer",
+    "arrow_table_serializer",
+    "parquet_record_batch_stream_serializer",
+    "parquet_table_serializer",
 )
 
 
@@ -255,6 +259,19 @@ class ParquetRecordBatchStreamSerializer(StreamSerializer[pa.RecordBatch]):
     def load_stream(self, content: StreamArchive) -> AsyncGenerator[pa.RecordBatch]:
         """Deserialize the given stream of Arrow record batches."""
         return _load_parquet_record_batch_stream(content["data_stream"], self.read_options)
+
+
+arrow_table_serializer = ArrowTableSerializer()
+"""ArrowTableSerializer with default settings."""
+
+arrow_record_batch_stream_serializer = ArrowRecordBatchStreamSerializer()
+"""ArrowRecordBatchStreamSerializer with default settings."""
+
+parquet_table_serializer = ParquetTableSerializer()
+"""ParquetTableSerializer with default settings."""
+
+parquet_record_batch_stream_serializer = ParquetRecordBatchStreamSerializer()
+"""ParquetRecordBatchStreamSerializer with default settings."""
 
 
 async def _dump_parquet_record_batch_stream(

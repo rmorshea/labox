@@ -5,7 +5,7 @@ from datetime import datetime
 from lakery.core.serializer import Archive
 from lakery.core.serializer import Serializer
 
-__all__ = ("Iso8601Serializer",)
+__all__ = ("Iso8601Serializer", "iso8601_serializer")
 
 
 class Iso8601Serializer(Serializer[datetime]):
@@ -27,3 +27,7 @@ class Iso8601Serializer(Serializer[datetime]):
     def load(self, content: Archive) -> datetime:
         """Deserialize the given JSON data."""
         return datetime.fromisoformat(content["data"].decode("utf-8"))
+
+
+iso8601_serializer = Iso8601Serializer()
+"""Iso8601Serializer with default settings."""

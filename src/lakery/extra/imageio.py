@@ -10,7 +10,11 @@ from lakery.common.utils import frozenclass
 from lakery.core.serializer import Archive
 from lakery.core.serializer import Serializer
 
-__all__ = ("Media", "MediaSerializer")
+__all__ = (
+    "Media",
+    "MediaSerializer",
+    "media_serializer",
+)
 
 
 @frozenclass
@@ -71,3 +75,7 @@ class MediaSerializer(Serializer[Media]):
             msg = f"{self} ould not guess extension for content type {content_type!r}."
             raise ValueError(msg)
         return ext
+
+
+media_serializer = MediaSerializer()
+"""MediaSerializer with default settings."""

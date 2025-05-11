@@ -15,6 +15,8 @@ __all__ = [
     "ParquetDataFrameSerializer",
     "ParquetReadOptions",
     "ParquetWriteOptions",
+    "arrow_dataframe_serializer",
+    "parquet_dataframe_serializer",
 ]
 
 
@@ -73,3 +75,10 @@ class ParquetDataFrameSerializer(Serializer[pd.DataFrame]):
         """Deserialize the given DataFrame."""
         table = self._parquet_serializer.load(content)
         return table.to_pandas()
+
+
+arrow_dataframe_serializer = ArrowDataFrameSerializer()
+"""ArrowDataFrameSerializer with default settings."""
+
+parquet_dataframe_serializer = ParquetDataFrameSerializer()
+"""ParquetDataFrameSerializer with default settings."""

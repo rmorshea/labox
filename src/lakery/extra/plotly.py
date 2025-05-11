@@ -63,3 +63,7 @@ class FigureSerializer(Serializer[go.Figure]):
         """Deserialize the given figure."""
         data = content["data"].decode("utf-8")
         return from_json(data, **self._load_args)
+
+
+figure_serializer = FigureSerializer()
+"""FigureSerializer with default settings."""

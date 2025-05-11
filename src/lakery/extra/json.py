@@ -22,6 +22,8 @@ from lakery.common.jsonext import JsonType
 __all__ = (
     "JsonSerializer",
     "JsonStreamSerializer",
+    "json_serializer",
+    "json_stream_serializer",
 )
 
 JSON_SCALAR_TYPES = (int, str, float, bool, type(None), dict, list, tuple)
@@ -82,6 +84,13 @@ class JsonStreamSerializer(StreamSerializer[JsonStreamType]):
     def load_stream(self, content: StreamArchive) -> AsyncGenerator[JsonStreamType]:
         """Deserialize the given stream of JSON data."""
         return _load_json_stream(content["data_stream"])
+
+
+json_serializer = JsonSerializer()
+"""JsonSerializer with default settings."""
+
+json_stream_serializer = JsonStreamSerializer()
+"""JsonStreamSerializer with default settings."""
 
 
 async def _dump_json_stream(

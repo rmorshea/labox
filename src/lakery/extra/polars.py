@@ -21,6 +21,7 @@ __all__ = (
     "ParquetDataFrameSerializer",
     "ParquetDumpArgs",
     "ParquetLoadArgs",
+    "parquet_dataframe_serializer",
 )
 
 
@@ -93,3 +94,7 @@ class ParquetDataFrameSerializer(Serializer[pl.DataFrame]):
     def load(self, content: Archive, /) -> pl.DataFrame:
         """Deserialize the given DataFrame."""
         return pl.read_parquet(BytesIO(content["data"]), **self._load_args)
+
+
+parquet_dataframe_serializer = ParquetDataFrameSerializer()
+"""ParquetDataFrameSerializer with default settings."""

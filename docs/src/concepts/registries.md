@@ -46,12 +46,130 @@ reg4 = reg3.merge(
 
 ## Model Registry
 
-The model registry is used to map
-[storage model IDs](../concepts/models.md#storage-model-ids) to Python classes. This
+A model registry is used to map
+[storage model IDs](../concepts/models.md#storage-model-id) to Python classes. This
 allows Lakery to know which class to instantiate when loading data.
+
+```python
+from lakery.common.models import Singular
+from lakery.common.models import Streamed
+from lakery.core import ModelRegistry
+
+models = ModelRegistry([Singular, Streamed])
+```
+
+### Loading Models from Modules
+
+You can also load models into a registry by module name using the
+[`from_modules`][lakery.core.registries.ModelRegistry.from_modules] method. The module
+must define an `__all__` variable which includes the models that should be loaded. Any
+non-model classes in `__all__` will be ignored.
+
+```python
+from lakery.core import ModelRegistry
+
+models = ModelRegistry.from_modules("lakery.common.models")
+```
 
 ## Serializer Registry
 
+A serializer registry is used to map serializer names to serializer instances. This
+allows Lakery to know which serializer to use when saving or loading data.
+
+```python
+from lakery.core import SerializerRegistry
+from lakery.extra.datetime import Iso8601Serializer
+from lakery.extra.numpy import NpySerializer
+
+iso8601_serializer = Iso8601Serializer()
+npy_serializer = NpySerializer()
+
+serializers = SerializerRegistry([iso8601_serializer, npy_serializer])
+```
+
+### Infering Serializers
+
+You can infer an appropriate serializer for a given type by using either of the methods:
+
+-   [`infer_from_value_type`][lakery.core.registries.SerializerRegistry.infer_from_value_type]
+-   [`infer_from_stream_type`][lakery.core.registries.SerializerRegistry.infer_from_stream_type]
+
+```python
+from datetime import datetime
+from lakery.core import SerializerRegistry
+from lakery.extra.datetime import Iso8601Serializer
+from lakery.extra.numpy import NpySerializer
+
+iso8601_serializer = Iso8601Serializer()
+npy_serializer = NpySerializer()
+
+serializers = SerializerRegistry([iso8601_serializer, npy_serializer])
+
+assert isinstance(serializer.infer_from_value_type(datetime), Iso8601Serializer)
+```
+
+### Loading Serializers from Modules
+
+You can also load serializers into a registry by module name using the
+[`from_modules`][lakery.core.registries.SerializerRegistry.from_modules] method. The
+module must define an `__all__` variable which includes the serializer instances that
+should be loaded. Any non-serializer instances in `__all__` will be ignored.
+
+```python
+from lakery.core import SerializerRegistry
+
+serializers = SerializerRegistry.from_modules("lakery.extra.json", "lakery.extra.pandas")
+```
+
 ## Storage Registry
 
+A storage registry is used to map storage names to storage instances. This allows Lakery
+to know which storage to use when saving or loading data.
+
+```python
+from lakery.core import StorageRegistry
+from lakery.extra.os import FileStorage
+from lakery.extra.s3 import S3Storage
+
+file_storage = FileStorage("mydir", mkdir=True)
+s3_storage = S3Storage(
+    s3_client=boto3.client("s3"),
+    bucket_name="my-bucket",
+    object_key_prefix="some/prefix",
+)
+
+storages = StorageRegistry([file_storage, s3_storage])
+```
+
 ### Default Storage
+
+You can declare a default storage in the registry. This will be be used in the case that
+a storage has not otherwise been specified.
+
+```python
+from lakery.core import StorageRegistry
+from lakery.extra.os import FileStorage
+from lakery.extra.s3 import S3Storage
+
+file_storage = FileStorage("mydir", mkdir=True)
+s3_storage = S3Storage(
+    s3_client=boto3.client("s3"),
+    bucket_name="my-bucket",
+    object_key_prefix="some/prefix",
+)
+
+storages = StorageRegistry([file_storage, default=s3_storage])
+```
+
+### Loading Storages from Modules
+
+You can also load storages into a registry by module name using the
+[`from_modules`][lakery.core.registries.StorageRegistry.from_modules] method. The module
+must define an `__all__` variable which includes the storage instances that should be
+loaded. Any non-storage instances in `__all__` will be ignored.
+
+```python
+from lakery.core import StorageRegistry
+
+storages = StorageRegistry.from_modules("some.module")
+```

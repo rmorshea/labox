@@ -104,12 +104,19 @@ streamed_data = Streamed(
 ## Custom Models
 
 To save more complicated objects you can define your own custom models by implementing
-the [`BaseStorageModel`][lakery.core.model.BaseStorageModel] interface. Consider the
-case of class that holds heterogeneous data from a scientific experiment:
+the [`BaseStorageModel`][lakery.core.model.BaseStorageModel] interface. Lakery provides
+a number of integrations with existing frameworks and libraries to make this easier. For
+example:
+
+- [Dataclasses](../integrations/dataclasses.md)
+- [Pydantic](../integrations/pydantic.md)
+
+### Example Custom Model
+
+Consider the case of class that holds heterogeneous data from a scientific experiment:
 
 ```python
 from datetime import datetime
-from typing import Any
 
 import numpy as np
 import pandas as pd

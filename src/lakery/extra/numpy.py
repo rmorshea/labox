@@ -60,3 +60,7 @@ class NpyLoadArgs(TypedDict, total=False):
     mmap_mode: Literal["r+", "r", "w+", "c"] | None
     allow_pickle: bool
     fix_imports: bool
+
+
+npy_serializer = NpySerializer()
+"""NpySerializer with default settings."""

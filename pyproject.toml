@@ -179,6 +179,7 @@ ban-relative-imports = "all"
 ]
 "doccmd_*.py" = [
     "ANN",    # Type annotations
+    "ARG002", # Unused method argument
     "ARG003", # Unused argument
     "B018",   # Useless expression
     "F821",   # Undefined name (see: https://github.com/adamtheturtle/doccmd/issues/275)
