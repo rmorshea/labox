@@ -91,11 +91,12 @@ serializers = SerializerRegistry([iso8601_serializer, npy_serializer])
 
 You can infer an appropriate serializer for a given type by using either of the methods:
 
--   [`infer_from_value_type`][lakery.core.registries.SerializerRegistry.infer_from_value_type]
--   [`infer_from_stream_type`][lakery.core.registries.SerializerRegistry.infer_from_stream_type]
+- [`infer_from_value_type`][lakery.core.registries.SerializerRegistry.infer_from_value_type]
+- [`infer_from_stream_type`][lakery.core.registries.SerializerRegistry.infer_from_stream_type]
 
 ```python
 from datetime import datetime
+
 from lakery.core import SerializerRegistry
 from lakery.extra.datetime import Iso8601Serializer
 from lakery.extra.numpy import NpySerializer
@@ -128,8 +129,8 @@ to know which storage to use when saving or loading data.
 
 ```python
 from lakery.core import StorageRegistry
+from lakery.extra.aws import S3Storage
 from lakery.extra.os import FileStorage
-from lakery.extra.s3 import S3Storage
 
 file_storage = FileStorage("mydir", mkdir=True)
 s3_storage = S3Storage(
@@ -147,9 +148,11 @@ You can declare a default storage in the registry. This will be be used in the c
 a storage has not otherwise been specified.
 
 ```python
+import boto3
+
 from lakery.core import StorageRegistry
+from lakery.extra.aws import S3Storage
 from lakery.extra.os import FileStorage
-from lakery.extra.s3 import S3Storage
 
 file_storage = FileStorage("mydir", mkdir=True)
 s3_storage = S3Storage(
@@ -158,7 +161,7 @@ s3_storage = S3Storage(
     object_key_prefix="some/prefix",
 )
 
-storages = StorageRegistry([file_storage, default=s3_storage])
+storages = StorageRegistry([file_storage], default=s3_storage)
 ```
 
 ### Loading Storages from Modules
