@@ -54,7 +54,7 @@ class StreamSerializer(Serializer[Iterable[T]]):
 
 
 class Archive(TypedDict):
-    """The serialized representation of a value value."""
+    """The serialized representation of a value."""
 
     data: bytes
     """The serialized data."""
