@@ -38,9 +38,7 @@ class _BaseRegistry(Mapping[K, V], abc.ABC):
     value_description: ClassVar[str]
     """A description for the type of value"""
 
-    def __init__(
-        self, values: Iterable[V] = (), /, *, ignore_conflicts: bool = False
-    ) -> None:
+    def __init__(self, values: Iterable[V] = (), /, *, ignore_conflicts: bool = False) -> None:
         items = [(self.get_key(i), i) for i in values]
 
         if not ignore_conflicts and (
@@ -169,9 +167,7 @@ class SerializerRegistry(_BaseRegistry[str, Serializer | StreamSerializer]):
             for type_ in serializer.types
         }
         self._by_stream_type = {
-            type_: serializer
-            for serializer in stream_serializers
-            for type_ in serializer.types
+            type_: serializer for serializer in stream_serializers for type_ in serializer.types
         }
 
     def get_key(self, serializer: Serializer | StreamSerializer) -> str:
