@@ -32,6 +32,7 @@ all = [
     "lakery[aws]",
     "lakery[azure]",
     "lakery[google]",
+    "lakery[imageio]",
     "lakery[msgpack]",
     "lakery[numpy]",
     "lakery[pandas]",
