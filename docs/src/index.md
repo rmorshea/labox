@@ -65,7 +65,7 @@ registries = RegistryCollection(serializers=serializers, storages=storages, mode
 
 ## Basic Usage
 
-with setup completed, find some data you want to save:
+With setup completed, find some data you want to save:
 
 ```python
 data = {"hello": "world"}

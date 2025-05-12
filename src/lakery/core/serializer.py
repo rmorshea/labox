@@ -22,7 +22,7 @@ class Serializer(Generic[T]):
 
     name: LiteralString
     """The name of the serializer."""
-    types: tuple[type[T], ...]
+    types: tuple[type[T], ...] = ()
     """The types that the serializer can handle."""
 
     @abc.abstractmethod

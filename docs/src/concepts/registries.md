@@ -91,8 +91,12 @@ serializers = SerializerRegistry([iso8601_serializer, npy_serializer])
 
 You can infer an appropriate serializer for a given type by using either of the methods:
 
-- [`infer_from_value_type`][lakery.core.registries.SerializerRegistry.infer_from_value_type]
-- [`infer_from_stream_type`][lakery.core.registries.SerializerRegistry.infer_from_stream_type]
+-   [`infer_from_value_type`][lakery.core.registries.SerializerRegistry.infer_from_value_type]
+-   [`infer_from_stream_type`][lakery.core.registries.SerializerRegistry.infer_from_stream_type]
+
+If multiple serializers
+[declare the same types](./serializers.md#serializer-type-inference) the last serializer
+in the list passed to the registry will take precedence.
 
 ```python
 from datetime import datetime

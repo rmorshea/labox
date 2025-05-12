@@ -108,8 +108,8 @@ the [`BaseStorageModel`][lakery.core.model.BaseStorageModel] interface. Lakery p
 a number of integrations with existing frameworks and libraries to make this easier. For
 example:
 
--   [Dataclasses](../integrations/dataclasses.md)
--   [Pydantic](../integrations/pydantic.md)
+- [Dataclasses](../integrations/dataclasses.md)
+- [Pydantic](../integrations/pydantic.md)
 
 ### Example Custom Model
 
