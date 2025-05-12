@@ -55,7 +55,6 @@ from lakery.core.serializer import StreamSerializer
 
 
 class Utf8StreamSerializer(StreamSerializer[str]):
-
     # Globally unique name for this serializer
     name = "examples.utf8_stream"
     # Used for serializer type inference

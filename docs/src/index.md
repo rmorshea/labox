@@ -20,7 +20,8 @@ pip install lakery[all]
 pip install lakery[pydantic,pandas,aws]
 ```
 
-There's a [complete list of extras](./integrations) in the Integrations section.
+There's a [complete list of extras](./integrations/index.md) in the Integrations
+section.
 
 ## Basic Setup
 
@@ -88,9 +89,11 @@ from lakery.core import data_saver
 
 
 async def save():
-    async with new_async_session() as session:
-        async with data_saver(session=session, registries=registries) as saver:
-            future_record = saver.save_soon(model)
+    async with (
+        new_async_session() as session,
+        data_saver(session=session, registries=registries) as saver,
+    ):
+        future_record = saver.save_soon(model)
     return future_record.result()
 
 
@@ -106,9 +109,11 @@ from lakery.core import data_loader
 
 
 async def load():
-    async with new_async_session() as session:
-        async with data_loader(session=session, registries=registries) as loader:
-            future_data = loader.load_soon(record)
+    async with (
+        new_async_session() as session,
+        data_loader(session=session, registries=registries) as loader,
+    ):
+        future_data = loader.load_soon(record)
     return future_data.result()
 
 

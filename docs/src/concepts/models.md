@@ -75,8 +75,7 @@ streamed_data = Streamed(generate_data(), serializer=parquet_stream_serializer)
     will get a late error when a serializer cannot be found.
 
 As above, if you're storage registry does not have a
-[default storage](registries.md#declaring-a-default-storage) then declaring one here is
-required.
+[default storage](registries.md#default-storage) then declaring one here is required.
 
 ```python
 import pyarrow as pa
