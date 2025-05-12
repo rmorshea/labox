@@ -93,20 +93,24 @@ class BaseStorageModel(abc.ABC):
         return cls._storage_model_config
 
     @abc.abstractmethod
-    def storage_model_dump(self, registries: RegistryCollection, /) -> ContentMap:
+    def storage_model_dump(self, registries: RegistryCollection, /) -> StorageValueMap:
         """Return a mapping of contents that describe where and how to store the model."""
         raise NotImplementedError
 
     @classmethod
     @abc.abstractmethod
     def storage_model_load(
-        cls, contents: ContentMap, version: int, registries: RegistryCollection, /
+        cls,
+        contents: Mapping[str, Any],
+        version: int,
+        registries: RegistryCollection,
+        /,
     ) -> Self:
         """Reconstitute the model from a mapping of contents."""
         raise NotImplementedError
 
 
-class Content(Generic[T], TypedDict):
+class StorageValue(Generic[T], TypedDict):
     """Describes where and how to store a value."""
 
     value: T
@@ -117,7 +121,7 @@ class Content(Generic[T], TypedDict):
     """The storage to send the serialized value to."""
 
 
-class StreamContent(Generic[T], TypedDict):
+class StorageValueStream(Generic[T], TypedDict):
     """Describes where and how to store a stream."""
 
     value_stream: AsyncIterable[T]
@@ -128,10 +132,10 @@ class StreamContent(Generic[T], TypedDict):
     """The storage to send the serialized stream to."""
 
 
-AnyContent: TypeAlias = Content | StreamContent
+AnyStorageValue: TypeAlias = StorageValue | StorageValueStream
 """A type alias for any content."""
 
-ContentMap: TypeAlias = Mapping[str, AnyContent]
+StorageValueMap: TypeAlias = Mapping[str, AnyStorageValue]
 """A type alias for a mapping of contents."""
 
 

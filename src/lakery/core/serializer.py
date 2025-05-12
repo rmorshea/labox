@@ -26,12 +26,12 @@ class Serializer(Generic[T]):
     """The types that the serializer can handle."""
 
     @abc.abstractmethod
-    def dump(self, value: T, /) -> Archive:
+    def dump(self, value: T, /) -> SerializedData:
         """Serialize the given value."""
         raise NotImplementedError
 
     @abc.abstractmethod
-    def load(self, content: Archive, /) -> T:
+    def load(self, content: SerializedData, /) -> T:
         """Deserialize the given value."""
         raise NotImplementedError
 
@@ -43,17 +43,17 @@ class StreamSerializer(Serializer[Iterable[T]]):
     """A protocol for serializing/deserializing streams of values."""
 
     @abc.abstractmethod
-    def dump_stream(self, stream: AsyncIterable[T], /) -> StreamArchive:
+    def dump_stream(self, stream: AsyncIterable[T], /) -> SerializedDataStream:
         """Serialize the given stream."""
         raise NotImplementedError
 
     @abc.abstractmethod
-    def load_stream(self, content: StreamArchive, /) -> AsyncGenerator[T]:
+    def load_stream(self, content: SerializedDataStream, /) -> AsyncGenerator[T]:
         """Deserialize the given stream."""
         raise NotImplementedError
 
 
-class Archive(TypedDict):
+class SerializedData(TypedDict):
     """The serialized representation of a value."""
 
     data: bytes
@@ -64,7 +64,7 @@ class Archive(TypedDict):
     """The MIME type of the data."""
 
 
-class StreamArchive(TypedDict):
+class SerializedDataStream(TypedDict):
     """The serialized representation of a stream of values."""
 
     data_stream: AsyncGenerator[bytes]

@@ -15,8 +15,8 @@ from typing import cast
 from lakery.common.jsonext import dump_any_json_ext
 from lakery.common.jsonext import load_json_ext
 from lakery.core.model import BaseStorageModel
-from lakery.core.model import Content
-from lakery.core.model import ContentMap
+from lakery.core.model import StorageValue
+from lakery.core.model import StorageValueMap
 from lakery.core.serializer import Serializer
 from lakery.core.storage import Storage
 
@@ -39,9 +39,9 @@ class DataclassModel(BaseStorageModel, storage_model_config=None):
 
     _: KW_ONLY
 
-    def storage_model_dump(self, registries: RegistryCollection) -> Mapping[str, Content]:
+    def storage_model_dump(self, registries: RegistryCollection) -> Mapping[str, StorageValue]:
         """Dump the model to storage content."""
-        external: dict[str, Content] = {}
+        external: dict[str, StorageValue] = {}
         context: _DumpContext = {
             "path": "",
             "registries": registries,
@@ -61,7 +61,7 @@ class DataclassModel(BaseStorageModel, storage_model_config=None):
                 )
                 raise TypeError(msg)
 
-            data = Content(
+            data = StorageValue(
                 value=value,
                 serializer=_get_field_serializer(f),
                 storage=_get_field_storage(f),
@@ -80,10 +80,10 @@ class DataclassModel(BaseStorageModel, storage_model_config=None):
 
     @classmethod
     def storage_model_load(
-        cls, contents: ContentMap, _version: int, registries: RegistryCollection
+        cls, contents: StorageValueMap, _version: int, registries: RegistryCollection
     ) -> Self:
         """Load the model from storage content."""
-        external = cast("dict[str, Content]", dict(contents))
+        external = cast("dict[str, StorageValue]", dict(contents))
         data = external.pop("data")["value"]
         kwargs = load_json_ext(data, {"external": external, "registries": registries})
         return cls(**kwargs)
@@ -117,12 +117,12 @@ def _get_field_storage(field: Field) -> Storage | None:
 class _DumpContext(TypedDict):
     path: str
     registries: RegistryCollection
-    external: dict[str, Content]
+    external: dict[str, StorageValue]
 
 
 class _LoadContext(TypedDict):
     registries: RegistryCollection
-    external: dict[str, Content]
+    external: dict[str, StorageValue]
 
 
 _LOG = getLogger(__name__)

@@ -18,7 +18,7 @@ from lakery.common.anyio import set_future_exception_forcefully
 from lakery.common.anyio import start_future
 from lakery.common.anyio import start_with_future
 from lakery.common.exceptions import NotRegistered
-from lakery.core.model import AnyContent
+from lakery.core.model import AnyStorageValue
 from lakery.core.model import BaseStorageModel
 from lakery.core.schema import ContentRecord
 from lakery.core.schema import ManifestRecord
@@ -125,7 +125,7 @@ async def load_model_from_record_group(
     """Load the given model from the given record."""
     model_type = registries.models[manifest.model_id]
 
-    content_futures: dict[str, FutureResult[AnyContent]] = {}
+    content_futures: dict[str, FutureResult[AnyStorageValue]] = {}
     async with create_task_group() as tg:
         for c in contents:
             content_futures[c.content_key] = start_future(
@@ -148,7 +148,7 @@ async def load_manifest_from_record(
     *,
     serializers: SerializerRegistry,
     storages: StorageRegistry,
-) -> AnyContent:
+) -> AnyStorageValue:
     """Load the given content from the given record."""
     serializer = serializers[record.serializer_name]
     storage = storages[record.storage_name]

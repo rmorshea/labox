@@ -108,8 +108,8 @@ the [`BaseStorageModel`][lakery.core.model.BaseStorageModel] interface. Lakery p
 a number of integrations with existing frameworks and libraries to make this easier. For
 example:
 
-- [Dataclasses](../integrations/dataclasses.md)
-- [Pydantic](../integrations/pydantic.md)
+-   [Dataclasses](../integrations/dataclasses.md)
+-   [Pydantic](../integrations/pydantic.md)
 
 ### Example Custom Model
 
@@ -234,7 +234,15 @@ class ExperimentResults(BaseStorageModel, storage_model_config={"id": "abc123", 
 Putting this all together, you get:
 
 ```python
+from datetime import datetime
+import numpy as np
+import pandas as pd
+import plotly.graph_objects as go
+
+
 from lakery.core import BaseStorageModel
+from lakery.core.model import AnyStorageValue, StorageValue
+from lakery.core.registries import RegistryCollection
 from lakery.extra.datetime import Iso8601Serializer
 from lakery.extra.numpy import NpySerializer
 from lakery.extra.pandas import ParquetDataFrameSerializer
@@ -255,15 +263,13 @@ class ExperimentResults(BaseStorageModel, storage_model_config={"id": "abc123", 
         timeseries_data: pd.DataFrame,
         camera_image: np.ndarray,
         analysis: go.Figure,
-        extra: Any,
     ):
         self.timestamp = timestamp
         self.timeseries_data = timeseries_data
         self.camera_image = camera_image
         self.analysis = analysis
-        self.extra = extra
 
-    def storage_model_dump(self, registries: RegistryCollection) -> dict[str, Content]:
+    def storage_model_dump(self, registries: RegistryCollection) -> dict[str, StorageValue]:
         return {
             "timestamp": {
                 "value": self.timestamp,
@@ -285,17 +291,12 @@ class ExperimentResults(BaseStorageModel, storage_model_config={"id": "abc123", 
                 "serializer": figure_serializer,
                 "storage": None,
             },
-            "extra": {
-                "value": self.extra,
-                "serializer": registries.serializer.infer_from_value_type(type(self.extra)),
-                "storage": None,
-            },
         }
 
     @classmethod
     def storage_model_load(
         cls,
-        content: dict[str, Content],
+        content: dict[str, StorageValue],
         version: int,
         registries: RegistryCollection,
     ) -> Self:
@@ -304,7 +305,6 @@ class ExperimentResults(BaseStorageModel, storage_model_config={"id": "abc123", 
             timeseries_data=content["timeseries_data"]["value"],
             camera_image=content["camera_image"]["value"],
             analysis=content["analysis"]["value"],
-            extra=content["extra"]["value"],
         )
 ```
 

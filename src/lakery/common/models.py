@@ -11,9 +11,9 @@ from annotated_types import KW_ONLY
 
 from lakery.common.utils import frozenclass
 from lakery.core.model import BaseStorageModel
-from lakery.core.model import Content
-from lakery.core.model import ContentMap
-from lakery.core.model import StreamContent
+from lakery.core.model import StorageValue
+from lakery.core.model import StorageValueMap
+from lakery.core.model import StorageValueStream
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable
@@ -46,7 +46,7 @@ class Singular(Generic[T], BaseStorageModel, storage_model_config={"id": "63b297
     storage: Storage | None = field(default=None, compare=False)
     """The storage for the value."""
 
-    def storage_model_dump(self, registries: RegistryCollection) -> Mapping[str, Content]:
+    def storage_model_dump(self, registries: RegistryCollection) -> Mapping[str, StorageValue]:
         """Dump the model to storage content."""
         serializer = registries.serializers.infer_from_value_type(type(self.value))
         return {"": {"value": self.value, "serializer": serializer, "storage": self.storage}}
@@ -54,7 +54,7 @@ class Singular(Generic[T], BaseStorageModel, storage_model_config={"id": "63b297
     @classmethod
     def storage_model_load(
         cls,
-        contents: ContentMap,
+        contents: Mapping[str, StorageValue],
         _version: int,
         _registries: RegistryCollection,
     ) -> Self:
@@ -78,7 +78,9 @@ class Streamed(Generic[T], BaseStorageModel, storage_model_config={"id": "e80e87
     storage: Storage | None = field(default=None, compare=False)
     """The storage for the stream."""
 
-    def storage_model_dump(self, _registries: RegistryCollection) -> Mapping[str, StreamContent]:
+    def storage_model_dump(
+        self, _registries: RegistryCollection
+    ) -> Mapping[str, StorageValueStream]:
         """Dump the model to storage content."""
         return {
             "": {
@@ -91,7 +93,7 @@ class Streamed(Generic[T], BaseStorageModel, storage_model_config={"id": "e80e87
     @classmethod
     def storage_model_load(
         cls,
-        contents: ContentMap,
+        contents: StorageValueMap,
         _version: int,
         _registries: RegistryCollection,
     ) -> Self:

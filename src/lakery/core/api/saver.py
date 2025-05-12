@@ -35,9 +35,9 @@ if TYPE_CHECKING:
     from lakery.core.model import BaseStorageModel
     from lakery.core.registries import RegistryCollection
     from lakery.core.registries import SerializerRegistry
-    from lakery.core.serializer import Archive
+    from lakery.core.serializer import SerializedData
+    from lakery.core.serializer import SerializedDataStream
     from lakery.core.serializer import Serializer
-    from lakery.core.serializer import StreamArchive
     from lakery.core.serializer import StreamSerializer
     from lakery.core.storage import Digest
     from lakery.core.storage import GetStreamDigest
@@ -235,7 +235,9 @@ async def _save_storage_stream(
         if serializer is None:
             stream_iter = aiter(stream)
             first_value = await anext(stream_iter)
-            serializer = registries.serializers.infer_from_stream_type(type(first_value))
+            serializer = registries.serializers.infer_from_stream_type(
+                type(first_value)
+            )
             stream = _continue_stream(first_value, stream_iter)
 
         content = serializer.dump_stream(stream)
@@ -263,7 +265,7 @@ async def _save_storage_stream(
 
 
 def _wrap_stream_dump(
-    archive: StreamArchive,
+    archive: SerializedDataStream,
 ) -> tuple[AsyncGenerator[bytes], GetStreamDigest]:
     data_stream = archive["data_stream"]
 
@@ -296,7 +298,7 @@ def _wrap_stream_dump(
     return wrapper(), get_digest
 
 
-def _make_value_dump_digest(archive: Archive) -> Digest:
+def _make_value_dump_digest(archive: SerializedData) -> Digest:
     data = archive["data"]
     content_hash = sha256(data)
     return {
@@ -316,7 +318,7 @@ class _SerializationHelper:
         self,
         value: Any,
         serializer: Serializer | None,
-    ) -> Archive:
+    ) -> SerializedData:
         if serializer is None:
             serializer = self._serializers.infer_from_value_type(type(value))
         return serializer.dump(value)
@@ -325,7 +327,7 @@ class _SerializationHelper:
         self,
         stream: AsyncIterable,
         serializer: StreamSerializer | None,
-    ) -> StreamArchive:
+    ) -> SerializedDataStream:
         if serializer is not None:
             return serializer.dump_stream(stream)
 
@@ -335,7 +337,9 @@ class _SerializationHelper:
         return serializer.dump_stream(_continue_stream(first_value, stream_iter))
 
 
-async def _continue_stream(first_value: Any, stream: AsyncIterable[Any]) -> AsyncGenerator[Any]:
+async def _continue_stream(
+    first_value: Any, stream: AsyncIterable[Any]
+) -> AsyncGenerator[Any]:
     yield first_value
     async for cont_value in stream:
         yield cont_value

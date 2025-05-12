@@ -8,7 +8,7 @@ from typing import TypedDict
 
 import polars as pl
 
-from lakery.core.serializer import Archive
+from lakery.core.serializer import SerializedData
 from lakery.core.serializer import Serializer
 
 if TYPE_CHECKING:
@@ -81,7 +81,7 @@ class ParquetDataFrameSerializer(Serializer[pl.DataFrame]):
         self._dump_args = dump_args or {}
         self._load_args = load_args or {}
 
-    def dump(self, value: pl.DataFrame, /) -> Archive:
+    def dump(self, value: pl.DataFrame, /) -> SerializedData:
         """Serialize the given DataFrame."""
         buffer = BytesIO()
         value.write_parquet(buffer, **self._dump_args)
@@ -91,7 +91,7 @@ class ParquetDataFrameSerializer(Serializer[pl.DataFrame]):
             "data": buffer.getvalue(),
         }
 
-    def load(self, content: Archive, /) -> pl.DataFrame:
+    def load(self, content: SerializedData, /) -> pl.DataFrame:
         """Deserialize the given DataFrame."""
         return pl.read_parquet(BytesIO(content["data"]), **self._load_args)
 

@@ -14,12 +14,12 @@ from typing import cast
 from typing import overload
 from uuid import UUID
 
-from lakery.core.model import AnyContent
+from lakery.core.model import AnyStorageValue
 from lakery.core.model import BaseStorageModel
 from lakery.core.model import StorageModelConfigDict
 
 if TYPE_CHECKING:
-    from lakery.core.model import Content
+    from lakery.core.model import StorageValue
     from lakery.core.registries import RegistryCollection
     from lakery.core.serializer import Serializer
     from lakery.core.storage import Storage
@@ -83,20 +83,20 @@ class JsonExtDumpContext(TypedDict):
 
     path: str
     registries: RegistryCollection
-    external: dict[str, Content]
+    external: dict[str, StorageValue]
 
 
 class JsonExtLoadContext(TypedDict):
     """The context for loading extended JSON data."""
 
     registries: RegistryCollection
-    external: dict[str, Content]
+    external: dict[str, StorageValue]
 
 
 def dump_json_ext(
     value: Any,
     context: JsonExtDumpContext,
-    default: Callable[[Any], Content | None] = lambda x: None,
+    default: Callable[[Any], StorageValue | None] = lambda x: None,
 ) -> JsonType:
     """Dump the given value to JSON with extensions."""
     path = context["path"]
@@ -131,7 +131,7 @@ def dump_json_ext(
 @overload
 def dump_any_json_ext(
     key: str,
-    data: Content,
+    data: StorageValue,
     context: JsonExtDumpContext,
 ) -> ContentJsonExt | RefJsonExt: ...
 
@@ -146,7 +146,7 @@ def dump_any_json_ext(
 
 def dump_any_json_ext(
     key: str,
-    data: BaseStorageModel | Content,
+    data: BaseStorageModel | StorageValue,
     context: JsonExtDumpContext,
 ) -> AnyJsonExt:
     """Dump the given value to a JSON extension."""
@@ -192,7 +192,7 @@ def dump_json_model_ext(value: BaseStorageModel, context: JsonExtDumpContext) ->
     }
 
 
-def _check_is_not_stream_content(cont: AnyContent) -> Content:
+def _check_is_not_stream_content(cont: AnyStorageValue) -> StorageValue:
     if "value_stream" in cont:
         msg = f"Stream content not supported: {cont}"
         raise ValueError(msg)
