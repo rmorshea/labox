@@ -235,9 +235,7 @@ async def _save_storage_stream(
         if serializer is None:
             stream_iter = aiter(stream)
             first_value = await anext(stream_iter)
-            serializer = registries.serializers.infer_from_stream_type(
-                type(first_value)
-            )
+            serializer = registries.serializers.infer_from_stream_type(type(first_value))
             stream = _continue_stream(first_value, stream_iter)
 
         content = serializer.dump_stream(stream)
@@ -337,9 +335,7 @@ class _SerializationHelper:
         return serializer.dump_stream(_continue_stream(first_value, stream_iter))
 
 
-async def _continue_stream(
-    first_value: Any, stream: AsyncIterable[Any]
-) -> AsyncGenerator[Any]:
+async def _continue_stream(first_value: Any, stream: AsyncIterable[Any]) -> AsyncGenerator[Any]:
     yield first_value
     async for cont_value in stream:
         yield cont_value

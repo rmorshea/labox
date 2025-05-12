@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import field
-from logging import getLogger
 from typing import TYPE_CHECKING
 from typing import Generic
 from typing import Self
@@ -11,13 +10,11 @@ from annotated_types import KW_ONLY
 
 from lakery.common.utils import frozenclass
 from lakery.core.model import BaseStorageModel
-from lakery.core.model import StorageValue
 from lakery.core.model import StorageValueMap
-from lakery.core.model import StorageValueStream
+from lakery.core.model import StorageValueStreamMap
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable
-    from collections.abc import Mapping
 
     from lakery.core.registries import RegistryCollection
     from lakery.core.serializer import Serializer
@@ -33,7 +30,11 @@ T = TypeVar("T")
 
 
 @frozenclass(kw_only=False)
-class Singular(Generic[T], BaseStorageModel, storage_model_config={"id": "63b297f6", "version": 1}):
+class Singular(
+    BaseStorageModel[StorageValueMap],
+    Generic[T],
+    storage_model_config={"id": "63b297f6", "version": 1},
+):
     """Models a single value."""
 
     value: T
@@ -46,26 +47,26 @@ class Singular(Generic[T], BaseStorageModel, storage_model_config={"id": "63b297
     storage: Storage | None = field(default=None, compare=False)
     """The storage for the value."""
 
-    def storage_model_dump(self, registries: RegistryCollection) -> Mapping[str, StorageValue]:
+    def storage_model_dump(self, registries: RegistryCollection) -> StorageValueMap:
         """Dump the model to storage content."""
         serializer = registries.serializers.infer_from_value_type(type(self.value))
         return {"": {"value": self.value, "serializer": serializer, "storage": self.storage}}
 
     @classmethod
     def storage_model_load(
-        cls,
-        contents: Mapping[str, StorageValue],
-        _version: int,
-        _registries: RegistryCollection,
+        cls, contents: StorageValueMap, _version: int, _registries: RegistryCollection
     ) -> Self:
         """Load the model from storage content."""
         cont = contents[""]
-        assert "value" in cont, f"Missing value in content {cont}"  # noqa: S101
         return cls(value=cont["value"], serializer=cont["serializer"], storage=cont["storage"])
 
 
 @frozenclass(kw_only=False)
-class Streamed(Generic[T], BaseStorageModel, storage_model_config={"id": "e80e8707", "version": 1}):
+class Streamed(
+    BaseStorageModel[StorageValueStreamMap],
+    Generic[T],
+    storage_model_config={"id": "e80e8707", "version": 1},
+):
     """Models a stream of data."""
 
     stream: AsyncIterable[T] = field(compare=False)
@@ -78,9 +79,7 @@ class Streamed(Generic[T], BaseStorageModel, storage_model_config={"id": "e80e87
     storage: Storage | None = field(default=None, compare=False)
     """The storage for the stream."""
 
-    def storage_model_dump(
-        self, _registries: RegistryCollection
-    ) -> Mapping[str, StorageValueStream]:
+    def storage_model_dump(self, _registries: RegistryCollection) -> StorageValueStreamMap:
         """Dump the model to storage content."""
         return {
             "": {
@@ -93,7 +92,7 @@ class Streamed(Generic[T], BaseStorageModel, storage_model_config={"id": "e80e87
     @classmethod
     def storage_model_load(
         cls,
-        contents: StorageValueMap,
+        contents: StorageValueStreamMap,
         _version: int,
         _registries: RegistryCollection,
     ) -> Self:
@@ -105,6 +104,3 @@ class Streamed(Generic[T], BaseStorageModel, storage_model_config={"id": "e80e87
             serializer=cont["serializer"],
             storage=cont["storage"],
         )
-
-
-_LOG = getLogger(__name__)

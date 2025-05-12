@@ -22,10 +22,10 @@ from pydantic_walk_core_schema import walk_core_schema
 
 from lakery.common.utils import frozenclass
 from lakery.core.model import AnyStorageValue
+from lakery.core.model import AnyStorageValueMap
 from lakery.core.model import BaseStorageModel
 from lakery.core.model import StorageModelConfig
 from lakery.core.model import StorageValue
-from lakery.core.model import StorageValueMap
 
 if TYPE_CHECKING:
     from lakery.common.jsonext import AnyJsonExt
@@ -46,7 +46,7 @@ _LOG = getLogger(__name__)
 
 class StorageModel(
     BaseModel,
-    BaseStorageModel,
+    BaseStorageModel[AnyStorageValueMap],
     storage_model_config=None,
     arbitrary_types_allowed=True,
 ):
@@ -76,7 +76,7 @@ class StorageModel(
             # we're defining the schema for a subclass
             return _adapt_third_party_types(handler(source), handler)
 
-    def storage_model_dump(self, registries: RegistryCollection) -> StorageValueMap:
+    def storage_model_dump(self, registries: RegistryCollection) -> AnyStorageValueMap:
         """Dump the model to storage content."""
         external: dict[str, AnyStorageValue] = {}
 
@@ -110,11 +110,16 @@ class StorageModel(
 
     @classmethod
     def storage_model_load(
-        cls, contents: StorageValueMap, _version: int, registries: RegistryCollection
+        cls, contents: AnyStorageValueMap, _version: int, registries: RegistryCollection
     ) -> Self:
         """Load the model from storage content."""
         contents = dict(contents)
-        data = cast("StorageValueMap", contents.pop("data"))["value"]
+        try:
+            data_content = contents["data"]
+            data = data_content["value"]  # type: ignore[reportGeneralTypeIssues]
+        except KeyError:
+            msg = "Missing or malformed 'data' key in model contents."
+            raise ValueError(msg) from None
         return cls.model_validate(
             data,
             context=_make_validation_context(

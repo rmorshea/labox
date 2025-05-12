@@ -11,7 +11,6 @@ from typing import Literal
 from typing import LiteralString
 from typing import NoReturn
 from typing import Self
-from typing import TypeAlias
 from typing import overload
 from uuid import UUID
 from uuid import uuid4
@@ -31,6 +30,7 @@ if TYPE_CHECKING:
 
 
 T = TypeVar("T", default=Any)
+D = TypeVar("D", bound=Mapping[str, Any])
 
 
 class StorageModelConfigDict(TypedDict):
@@ -52,7 +52,7 @@ class StorageModelConfig:
     """The version of the storage model type."""
 
 
-class BaseStorageModel(abc.ABC):
+class BaseStorageModel(abc.ABC, Generic[D]):
     """A base class for models that can be stored and serialized."""
 
     _storage_model_config: ClassVar[StorageModelConfig | None] = None
@@ -93,7 +93,7 @@ class BaseStorageModel(abc.ABC):
         return cls._storage_model_config
 
     @abc.abstractmethod
-    def storage_model_dump(self, registries: RegistryCollection, /) -> StorageValueMap:
+    def storage_model_dump(self, registries: RegistryCollection, /) -> D:
         """Return a mapping of contents that describe where and how to store the model."""
         raise NotImplementedError
 
@@ -101,7 +101,7 @@ class BaseStorageModel(abc.ABC):
     @abc.abstractmethod
     def storage_model_load(
         cls,
-        contents: Mapping[str, Any],
+        contents: D,
         version: int,
         registries: RegistryCollection,
         /,
@@ -132,11 +132,14 @@ class StorageValueStream(Generic[T], TypedDict):
     """The storage to send the serialized stream to."""
 
 
-AnyStorageValue: TypeAlias = StorageValue | StorageValueStream
-"""A type alias for any content."""
-
-StorageValueMap: TypeAlias = Mapping[str, AnyStorageValue]
-"""A type alias for a mapping of contents."""
+AnyStorageValue = StorageValue | StorageValueStream
+"""Any storage value."""
+StorageValueMap = Mapping[str, StorageValue]
+"""A mapping of storage values."""
+StorageValueStreamMap = Mapping[str, StorageValueStream]
+"""A mapping of storage stream values."""
+AnyStorageValueMap = Mapping[str, AnyStorageValue]
+"""A mapping of any storage values."""
 
 
 def _make_frozen_conig(cfg: StorageModelConfigDict | None) -> StorageModelConfig | None:

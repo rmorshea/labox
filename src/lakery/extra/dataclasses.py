@@ -2,15 +2,12 @@ from __future__ import annotations
 
 from dataclasses import KW_ONLY
 from dataclasses import Field
-from dataclasses import dataclass
 from dataclasses import fields
-from logging import getLogger
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Self
 from typing import TypedDict
 from typing import TypeVar
-from typing import cast
 
 from lakery.common.jsonext import dump_any_json_ext
 from lakery.common.jsonext import load_json_ext
@@ -21,25 +18,22 @@ from lakery.core.serializer import Serializer
 from lakery.core.storage import Storage
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
-
     from lakery.core.registries import RegistryCollection
     from lakery.core.registries import SerializerRegistry
     from lakery.core.registries import StorageRegistry
 
 
-__all__ = ("DataclassModel",)
+__all__ = ("StorageClass",)
 
 T = TypeVar("T")
 
 
-@dataclass
-class DataclassModel(BaseStorageModel, storage_model_config=None):
-    """A dataclass model that can be stored by Lakery."""
+class StorageClass(BaseStorageModel[StorageValueMap], storage_model_config=None):
+    """A base for dataclasses that can be stored by Lakery."""
 
     _: KW_ONLY
 
-    def storage_model_dump(self, registries: RegistryCollection) -> Mapping[str, StorageValue]:
+    def storage_model_dump(self, registries: RegistryCollection) -> StorageValueMap:
         """Dump the model to storage content."""
         external: dict[str, StorageValue] = {}
         context: _DumpContext = {
@@ -48,7 +42,7 @@ class DataclassModel(BaseStorageModel, storage_model_config=None):
             "external": external,
         }
         kwargs: dict[str, Any] = {}
-        for f in fields(self):
+        for f in fields(self):  # type: ignore[reportArgumentType]
             if not f.init:
                 continue
 
@@ -56,7 +50,7 @@ class DataclassModel(BaseStorageModel, storage_model_config=None):
 
             if isinstance(value, BaseStorageModel):
                 msg = (
-                    f"DataclassModel does not support nested models: {f.name}={value} - "
+                    f"StorageClass does not support nested models: {f.name}={value} - "
                     "consider using lakery.extra.pydantic.StorageModel instead"
                 )
                 raise TypeError(msg)
@@ -80,10 +74,13 @@ class DataclassModel(BaseStorageModel, storage_model_config=None):
 
     @classmethod
     def storage_model_load(
-        cls, contents: StorageValueMap, _version: int, registries: RegistryCollection
+        cls,
+        contents: StorageValueMap,
+        _version: int,
+        registries: RegistryCollection,
     ) -> Self:
         """Load the model from storage content."""
-        external = cast("dict[str, StorageValue]", dict(contents))
+        external = dict(contents)
         data = external.pop("data")["value"]
         kwargs = load_json_ext(data, {"external": external, "registries": registries})
         return cls(**kwargs)
@@ -118,11 +115,3 @@ class _DumpContext(TypedDict):
     path: str
     registries: RegistryCollection
     external: dict[str, StorageValue]
-
-
-class _LoadContext(TypedDict):
-    registries: RegistryCollection
-    external: dict[str, StorageValue]
-
-
-_LOG = getLogger(__name__)

@@ -172,12 +172,15 @@ to return a [`Content`][lakery.core.model.Content] dictionary for each field in 
 model given a [`RegistryCollection`](registries.md):
 
 ```python
+from lakery.core.model import StorageValueMap
+
+
 class ExperimentResults(BaseStorageModel, storage_model_config={"id": "abc123", "version": 1}):
     """Results from a scientific experiment."""
 
     ...
 
-    def storage_model_dump(self, registries: RegistryCollection) -> dict[str, Content]:
+    def storage_model_dump(self, registries: RegistryCollection) -> StorageValueMap:
         return {
             "timestamp": {
                 "value": self.timestamp,
@@ -219,7 +222,7 @@ class ExperimentResults(BaseStorageModel, storage_model_config={"id": "abc123", 
     @classmethod
     def storage_model_load(
         cls,
-        content: dict[str, Content],
+        content: StorageValueMap,
         version: int,
         registries: RegistryCollection,
     ) -> Self:
@@ -235,13 +238,14 @@ Putting this all together, you get:
 
 ```python
 from datetime import datetime
+from typing import Self
+
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 
-
 from lakery.core import BaseStorageModel
-from lakery.core.model import AnyStorageValue, StorageValue
+from lakery.core.model import StorageValueMap
 from lakery.core.registries import RegistryCollection
 from lakery.extra.datetime import Iso8601Serializer
 from lakery.extra.numpy import NpySerializer
@@ -269,7 +273,7 @@ class ExperimentResults(BaseStorageModel, storage_model_config={"id": "abc123", 
         self.camera_image = camera_image
         self.analysis = analysis
 
-    def storage_model_dump(self, registries: RegistryCollection) -> dict[str, StorageValue]:
+    def storage_model_dump(self, registries: RegistryCollection) -> StorageValueMap:
         return {
             "timestamp": {
                 "value": self.timestamp,
@@ -296,7 +300,7 @@ class ExperimentResults(BaseStorageModel, storage_model_config={"id": "abc123", 
     @classmethod
     def storage_model_load(
         cls,
-        content: dict[str, StorageValue],
+        content: StorageValueMap,
         version: int,
         registries: RegistryCollection,
     ) -> Self:

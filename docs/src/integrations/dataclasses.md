@@ -1,7 +1,7 @@
 # Dataclasses
 
-The [`DataclassModel`][lakery.extra.dataclasses.DataclassModel] model can be used to
-save standard Python dataclasses. For example, you might have a dataclass that holds the
+The [`StorageClass`][lakery.extra.dataclasses.StorageClass] model can be used to save
+standard Python dataclasses. For example, you might have a dataclass that holds the
 results of a scientific experiment:
 
 ```python
@@ -18,14 +18,14 @@ class ExperimentResults:
 ```
 
 To turn this into a model that can be saved with Lakery, you need to inherit from
-`DataclassModel` and declare a [`storage_model_id`](#storage-model-ids) as part of the
+`StorageClass` and declare a [`storage_model_id`](#storage-model-ids) as part of the
 class definition:
 
 ```python
 from dataclasses import dataclass
 from dataclasses import field
 
-from lakery.extra.dataclasses import DataclassModel
+from lakery.extra.dataclasses import StorageClass
 from lakery.extra.numpy import NpySerializer
 from lakery.extra.pandas import DataFrameSerializer
 
@@ -34,7 +34,7 @@ df_serializer = DataFrameSerializer()
 
 
 @dataclass
-class ExperimentResultsModel(DataclassModel, storage_model_id="..."):
+class ExperimentResultsModel(StorageClass, storage_model_id="..."):
     measurements: pd.DataFrame = field(metadata={"serializer": df_serializer})
     image: np.ndarray = field(metadata={"serializer": npy_serializer})
 ```

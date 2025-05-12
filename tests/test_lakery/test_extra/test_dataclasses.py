@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio.session import AsyncSession
 
 from lakery.core.registries import ModelRegistry
 from lakery.core.registries import RegistryCollection
-from lakery.extra.dataclasses import DataclassModel
+from lakery.extra.dataclasses import StorageClass
 from lakery.extra.json import JsonSerializer
 from lakery.extra.msgpack import MsgPackSerializer
 from lakery.extra.os import FileStorage
@@ -19,7 +19,7 @@ json_serializer = basic_registries.serializers[JsonSerializer.name]
 
 
 @dataclass
-class SampleModel(DataclassModel, storage_model_config={"id": "1d3cd969", "version": 1}):
+class SampleModel(StorageClass, storage_model_config={"id": "1d3cd969", "version": 1}):
     field_with_no_meta: Any
     field_with_serializer: Any = field(
         metadata={"serializer": msgpack_serializer},

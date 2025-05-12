@@ -33,8 +33,7 @@ def make_value_serializer_test(
         await checker(case)
 
     matrix = [
-        (partial(_check_dump_value_load_value, assertion, serializer, None), c)
-        for c in cases
+        (partial(_check_dump_value_load_value, assertion, serializer, None), c) for c in cases
     ]
 
     def get_id(x: Any) -> Any:

@@ -116,9 +116,7 @@ class MsgPackStreamSerializer(_MsgPackBase, StreamSerializer[MsgPackType]):
             "content_type": self.content_type,
         }
 
-    def load_stream(
-        self, content: SerializedDataStream, /
-    ) -> AsyncGenerator[MsgPackType]:
+    def load_stream(self, content: SerializedDataStream, /) -> AsyncGenerator[MsgPackType]:
         """Deserialize the given stream of MessagePack data."""
         return _load_stream(self._unpacker(), content["data_stream"])
 
@@ -130,16 +128,12 @@ msgpack_stream_serializer = MsgPackStreamSerializer()
 """MsgPackStreamSerializer with default settings."""
 
 
-async def _dump_stream(
-    packer: Packer, value_stream: AsyncIterable[Any]
-) -> AsyncGenerator[bytes]:
+async def _dump_stream(packer: Packer, value_stream: AsyncIterable[Any]) -> AsyncGenerator[bytes]:
     async for value in value_stream:
         yield packer.pack(value)
 
 
-async def _load_stream(
-    unpacker: Unpacker, stream: AsyncIterable[bytes]
-) -> AsyncGenerator[Any]:
+async def _load_stream(unpacker: Unpacker, stream: AsyncIterable[bytes]) -> AsyncGenerator[Any]:
     async for chunk in stream:
         unpacker.feed(chunk)
         for value in unpacker:
