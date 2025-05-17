@@ -98,9 +98,9 @@ class ManifestRecord(_StrMixin, BaseRecord, kw_only=True):
 class SerializerTypeEnum(IntEnum):
     """An enumeration of the types of serializers."""
 
-    Content = 1
+    Serializer = 1
     """A content serializer."""
-    ContentStream = 2
+    StreamSerializer = 2
     """A content stream serializer."""
 
 
