@@ -14,23 +14,31 @@ from uuid import uuid4
 
 from anysync import coroutine
 from sqlalchemy import JSON
+from sqlalchemy import BindParameter
 from sqlalchemy import ColumnElement
 from sqlalchemy import DateTime
+from sqlalchemy import Dialect
 from sqlalchemy import ForeignKey
+from sqlalchemy import String
 from sqlalchemy import UniqueConstraint
 from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import MappedColumn
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm.decl_api import MappedAsDataclass
+from sqlalchemy.sql.expression import FunctionElement
+from sqlalchemy.types import TypeDecorator
 
 from lakery.common.utils import TagMap  # noqa: TC001
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio.engine import AsyncEngine
+    from sqlalchemy.sql.compiler import SQLCompiler
+    from sqlalchemy.sql.type_api import _BindProcessorType
 
 C = TypeVar("C", bound=MappedColumn)
 
@@ -52,7 +60,25 @@ https://www.psycopg.org/psycopg3/docs/advanced/adapt.html#example-handling-infin
 """
 
 JSON_OR_JSONB = JSON().with_variant(JSONB(), "postgresql")
-"""A JSON type that uses JSONB in PostgreSQL."""
+"""Uses JSONB in PostgreSQL and falls back to JSON in other databases."""
+
+
+class RawJson(TypeDecorator[str]):
+    """A type decorator for JSON where values are given and returned as a string."""
+
+    impl = JSON_OR_JSONB
+    cache_ok = True
+
+    def bind_processor(self, dialect: Dialect) -> _BindProcessorType:  # noqa: ARG002
+        """Return a function that converts the value to bytes."""
+        return lambda value: value
+
+    def bind_expression(self, bindparam: BindParameter[str]) -> ColumnElement[str] | None:
+        return _ValidJson(bindparam)
+
+    def column_expression(self, column: ColumnElement) -> ColumnElement[str]:
+        """Return the column expression for the type decorator."""
+        return column.cast(String)
 
 
 class BaseRecord(MappedAsDataclass, DeclarativeBase):
@@ -131,7 +157,7 @@ class ContentRecord(_StrMixin, BaseRecord, kw_only=True):
     """The type of the serializer used to serialize the data."""
     storage_name: Mapped[str] = mapped_column()
     """The name of the storage backend used to store the data."""
-    storage_data: Mapped[Any] = mapped_column(JSON_OR_JSONB)
+    storage_data: Mapped[str] = mapped_column(RawJson)
     """The information needed to load data from the storage."""
     created_at: Mapped[DateTimeTZ] = mapped_column(default=func.now())
     """The timestamp when the content was created."""
@@ -141,3 +167,26 @@ UniqueConstraint(
     ContentRecord.manifest_id,
     ContentRecord.content_key,
 )
+
+
+class _ValidJson(FunctionElement):
+    """Validate that the value is a valid JSON object before inserting it into the database.
+
+    Not all dialiects validate values inserted into JSON columns (e.g. SQLite).
+    """
+
+    name = "valid_json"
+    inherit_cache = True
+
+    def __init__(self, element: ColumnElement) -> None:
+        self.element = element
+
+
+@compiles(_ValidJson)
+def _default_compile_valid_json(element: _ValidJson, compiler: SQLCompiler, **kw: Any) -> str:
+    return compiler.process(element.element, **kw)
+
+
+@compiles(_ValidJson, "sqlite")
+def _sqlite_compile_valid_json(element: _ValidJson, compiler: SQLCompiler, **kw: Any) -> str:
+    return f"json({compiler.process(element.element, **kw)})"

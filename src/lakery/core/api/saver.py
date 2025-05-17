@@ -75,12 +75,8 @@ async def data_saver(
                 _LOG.debug("Saving manifest %s", m.id.hex)
                 manifests.append(m)
 
-        async with session.begin():
-            session.add_all(manifests)
-            for m in manifests:
-                session.expunge(m)
-                for c in m.contents:
-                    session.expunge(c)
+        session.add_all(manifests)
+        await session.commit()
 
         if errors:
             msg = f"Failed to save {len(errors)} out of {len(futures)} items."
