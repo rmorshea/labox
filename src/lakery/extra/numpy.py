@@ -32,7 +32,7 @@ class NpySerializer(Serializer[np.ndarray]):
         self._dump_args = dump_args or {}
         self._load_args = load_args or {}
 
-    def dump(self, value: np.ndarray, /) -> SerializedData:
+    def dump_data(self, value: np.ndarray, /) -> SerializedData:
         """Serialize the given DataFrame."""
         buffer = BytesIO()
         np.save(buffer, value, **self._dump_args)
@@ -42,7 +42,7 @@ class NpySerializer(Serializer[np.ndarray]):
             "data": buffer.getvalue(),
         }
 
-    def load(self, content: SerializedData, /) -> np.ndarray:
+    def load_data(self, content: SerializedData, /) -> np.ndarray:
         """Deserialize the given DataFrame."""
         return np.load(BytesIO(content["data"]), **self._load_args)
 

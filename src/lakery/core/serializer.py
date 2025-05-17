@@ -26,12 +26,12 @@ class Serializer(Generic[T]):
     """The types that the serializer can handle."""
 
     @abc.abstractmethod
-    def dump(self, value: T, /) -> SerializedData:
+    def dump_data(self, value: T, /) -> SerializedData:
         """Serialize the given value."""
         raise NotImplementedError
 
     @abc.abstractmethod
-    def load(self, content: SerializedData, /) -> T:
+    def load_data(self, content: SerializedData, /) -> T:
         """Deserialize the given value."""
         raise NotImplementedError
 
@@ -43,12 +43,12 @@ class StreamSerializer(Serializer[Iterable[T]]):
     """A protocol for serializing/deserializing streams of values."""
 
     @abc.abstractmethod
-    def dump_stream(self, stream: AsyncIterable[T], /) -> SerializedDataStream:
+    def dump_data_stream(self, stream: AsyncIterable[T], /) -> SerializedDataStream:
         """Serialize the given stream."""
         raise NotImplementedError
 
     @abc.abstractmethod
-    def load_stream(self, content: SerializedDataStream, /) -> AsyncGenerator[T]:
+    def load_data_stream(self, content: SerializedDataStream, /) -> AsyncGenerator[T]:
         """Deserialize the given stream."""
         raise NotImplementedError
 

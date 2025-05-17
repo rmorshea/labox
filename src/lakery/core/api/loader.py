@@ -154,7 +154,7 @@ async def load_manifest_from_record(
     storage = storages[record.storage_name]
     match record.serializer_type:
         case SerializerTypeEnum.Content:
-            value = serializer.load(
+            value = serializer.load_data(
                 {
                     "content_encoding": record.content_encoding,
                     "content_type": record.content_type,
@@ -166,7 +166,7 @@ async def load_manifest_from_record(
             if not isinstance(serializer, StreamSerializer):
                 msg = f"Content {record.id} expects a stream serializer, got {serializer}."
                 raise TypeError(msg)
-            stream = serializer.load_stream(
+            stream = serializer.load_data_stream(
                 {
                     "content_encoding": record.content_encoding,
                     "content_type": record.content_type,

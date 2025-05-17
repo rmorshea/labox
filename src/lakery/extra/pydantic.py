@@ -258,7 +258,7 @@ def _make_validator_func() -> cs.WithInfoValidatorFunction:
                 raise ValueError(msg)
         elif json_ext["__json_ext__"] == "content":
             serializer = registries.serializers[json_ext["serializer_name"]]
-            return serializer.load(
+            return serializer.load_data(
                 {
                     "data": b64decode(json_ext["content_base64"].encode("ascii")),
                     "content_encoding": json_ext["content_encoding"],
@@ -294,7 +294,7 @@ def _make_serializer_func(schema: cs.CoreSchema) -> cs.FieldPlainInfoSerializerF
             )
             return {"__json_ext__": "ref", "ref": ref_str}
 
-        content = serializer.dump(value)
+        content = serializer.dump_data(value)
         return {
             "__json_ext__": "content",
             "content_base64": b64encode(content["data"]).decode("ascii"),

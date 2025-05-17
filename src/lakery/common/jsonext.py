@@ -164,7 +164,7 @@ def dump_json_content_ext(
 ) -> ContentJsonExt:
     """Dump the given value to a JSON extension with embedded content."""
     serializer = serializer or context["registries"].serializers.infer_from_value_type(type(value))
-    content = serializer.dump(value)
+    content = serializer.dump_data(value)
     return {
         "__json_ext__": "content",
         "content_base64": b64encode(content["data"]).decode("ascii"),
@@ -250,7 +250,7 @@ def load_any_json_ext(value: AnyJsonExt, context: JsonExtLoadContext) -> Any:
 def load_json_content_ext(json_ext: ContentJsonExt, context: JsonExtLoadContext) -> Any:
     """Load a value from a JSON extension with embedded content."""
     serializer = context["registries"].serializers[json_ext["serializer_name"]]
-    return serializer.load(
+    return serializer.load_data(
         {
             "data": b64decode(json_ext["content_base64"].encode("ascii")),
             "content_encoding": json_ext["content_encoding"],

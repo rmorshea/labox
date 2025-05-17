@@ -37,14 +37,14 @@ class ArrowDataFrameSerializer(Serializer[pd.DataFrame]):
             read_options=read_options,
         )
 
-    def dump(self, value: pd.DataFrame, /) -> SerializedData:
+    def dump_data(self, value: pd.DataFrame, /) -> SerializedData:
         """Serialize the given DataFrame."""
         table = pa.Table.from_pandas(value)
-        return self._arrow_serializer.dump(table)
+        return self._arrow_serializer.dump_data(table)
 
-    def load(self, content: SerializedData, /) -> pd.DataFrame:
+    def load_data(self, content: SerializedData, /) -> pd.DataFrame:
         """Deserialize the given DataFrame."""
-        table = self._arrow_serializer.load(content)
+        table = self._arrow_serializer.load_data(content)
         return table.to_pandas()
 
 
@@ -66,14 +66,14 @@ class ParquetDataFrameSerializer(Serializer[pd.DataFrame]):
             read_options=read_options,
         )
 
-    def dump(self, value: pd.DataFrame, /) -> SerializedData:
+    def dump_data(self, value: pd.DataFrame, /) -> SerializedData:
         """Serialize the given DataFrame."""
         table = pa.Table.from_pandas(value)
-        return self._parquet_serializer.dump(table)
+        return self._parquet_serializer.dump_data(table)
 
-    def load(self, content: SerializedData, /) -> pd.DataFrame:
+    def load_data(self, content: SerializedData, /) -> pd.DataFrame:
         """Deserialize the given DataFrame."""
-        table = self._parquet_serializer.load(content)
+        table = self._parquet_serializer.load_data(content)
         return table.to_pandas()
 
 

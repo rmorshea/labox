@@ -16,7 +16,7 @@ class Iso8601Serializer(Serializer[datetime]):
     types = (datetime,)
     content_type = "application/text"
 
-    def dump(self, value: datetime) -> SerializedData:
+    def dump_data(self, value: datetime) -> SerializedData:
         """Serialize the given value to JSON."""
         return {
             "content_encoding": "utf-8",
@@ -24,7 +24,7 @@ class Iso8601Serializer(Serializer[datetime]):
             "data": value.isoformat().encode("utf-8"),
         }
 
-    def load(self, content: SerializedData) -> datetime:
+    def load_data(self, content: SerializedData) -> datetime:
         """Deserialize the given JSON data."""
         return datetime.fromisoformat(content["data"].decode("utf-8"))
 

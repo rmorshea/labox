@@ -200,7 +200,7 @@ async def _save_storage_value(
 ) -> ContentRecord:
     storage = storage or registries.storages.default
     serializer = serializer or registries.serializers.infer_from_value_type(type(value))
-    content = serializer.dump(value)
+    content = serializer.dump_data(value)
     digest = _make_value_dump_digest(content)
     storage_data = await storage.put_data(content["data"], digest, tags)
     return ContentRecord(
@@ -238,7 +238,7 @@ async def _save_storage_stream(
             serializer = registries.serializers.infer_from_stream_type(type(first_value))
             stream = _continue_stream(first_value, stream_iter)
 
-        content = serializer.dump_stream(stream)
+        content = serializer.dump_data_stream(stream)
         byte_stream, get_digest = _wrap_stream_dump(content)
         storage_data = await storage.put_data_stream(byte_stream, get_digest, tags)
         try:
@@ -319,7 +319,7 @@ class _SerializationHelper:
     ) -> SerializedData:
         if serializer is None:
             serializer = self._serializers.infer_from_value_type(type(value))
-        return serializer.dump(value)
+        return serializer.dump_data(value)
 
     async def dump_stream(
         self,
@@ -327,12 +327,12 @@ class _SerializationHelper:
         serializer: StreamSerializer | None,
     ) -> SerializedDataStream:
         if serializer is not None:
-            return serializer.dump_stream(stream)
+            return serializer.dump_data_stream(stream)
 
         stream_iter = aiter(stream)
         first_value = await anext(stream_iter)
         serializer = self._serializers.infer_from_stream_type(type(first_value))
-        return serializer.dump_stream(_continue_stream(first_value, stream_iter))
+        return serializer.dump_data_stream(_continue_stream(first_value, stream_iter))
 
 
 async def _continue_stream(first_value: Any, stream: AsyncIterable[Any]) -> AsyncGenerator[Any]:
