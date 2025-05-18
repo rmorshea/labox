@@ -110,7 +110,7 @@ class BaseStorageModel(abc.ABC, Generic[D]):
         raise NotImplementedError
 
 
-class StorageValue(Generic[T], TypedDict):
+class ModeledValue(Generic[T], TypedDict):
     """Describes where and how to store a value."""
 
     value: T
@@ -121,7 +121,7 @@ class StorageValue(Generic[T], TypedDict):
     """The storage to send the serialized value to."""
 
 
-class StorageValueStream(Generic[T], TypedDict):
+class ModeledValueStream(Generic[T], TypedDict):
     """Describes where and how to store a stream."""
 
     value_stream: AsyncIterable[T]
@@ -132,13 +132,13 @@ class StorageValueStream(Generic[T], TypedDict):
     """The storage to send the serialized stream to."""
 
 
-AnyStorageValue = StorageValue | StorageValueStream
+AnyModeledValue = ModeledValue | ModeledValueStream
 """Any storage value."""
-StorageValueMap = Mapping[str, StorageValue]
+ModeledValueMap = Mapping[str, ModeledValue]
 """A mapping of storage values."""
-StorageValueStreamMap = Mapping[str, StorageValueStream]
+ModeledValueStreamMap = Mapping[str, ModeledValueStream]
 """A mapping of storage stream values."""
-AnyStorageValueMap = Mapping[str, AnyStorageValue]
+AnyModeledValueMap = Mapping[str, AnyModeledValue]
 """A mapping of any storage values."""
 
 

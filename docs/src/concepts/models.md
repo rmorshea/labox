@@ -107,8 +107,8 @@ the [`BaseStorageModel`][lakery.core.model.BaseStorageModel] interface. Lakery p
 a number of integrations with existing frameworks and libraries to make this easier. For
 example:
 
-- [Dataclasses](../integrations/dataclasses.md)
-- [Pydantic](../integrations/pydantic.md)
+-   [Dataclasses](../integrations/dataclasses.md)
+-   [Pydantic](../integrations/pydantic.md)
 
 ### Example Custom Model
 
@@ -171,7 +171,7 @@ to return a [`Content`][lakery.core.model.Content] dictionary for each field in 
 model given a [`RegistryCollection`](registries.md):
 
 ```python
-from lakery.core.model import StorageValueMap
+from lakery.core.model import ModeledValueMap
 
 
 class ExperimentResults(BaseStorageModel, storage_model_config={"id": "abc123", "version": 1}):
@@ -179,7 +179,7 @@ class ExperimentResults(BaseStorageModel, storage_model_config={"id": "abc123", 
 
     ...
 
-    def storage_model_dump(self, registries: RegistryCollection) -> StorageValueMap:
+    def storage_model_dump(self, registries: RegistryCollection) -> ModeledValueMap:
         return {
             "timestamp": {
                 "value": self.timestamp,
@@ -221,7 +221,7 @@ class ExperimentResults(BaseStorageModel, storage_model_config={"id": "abc123", 
     @classmethod
     def storage_model_load(
         cls,
-        content: StorageValueMap,
+        content: ModeledValueMap,
         version: int,
         registries: RegistryCollection,
     ) -> Self:
@@ -244,7 +244,7 @@ import pandas as pd
 import plotly.graph_objects as go
 
 from lakery.core import BaseStorageModel
-from lakery.core.model import StorageValueMap
+from lakery.core.model import ModeledValueMap
 from lakery.core.registries import RegistryCollection
 from lakery.extra.datetime import Iso8601Serializer
 from lakery.extra.numpy import NpySerializer
@@ -272,7 +272,7 @@ class ExperimentResults(BaseStorageModel, storage_model_config={"id": "abc123", 
         self.camera_image = camera_image
         self.analysis = analysis
 
-    def storage_model_dump(self, registries: RegistryCollection) -> StorageValueMap:
+    def storage_model_dump(self, registries: RegistryCollection) -> ModeledValueMap:
         return {
             "timestamp": {
                 "value": self.timestamp,
@@ -299,7 +299,7 @@ class ExperimentResults(BaseStorageModel, storage_model_config={"id": "abc123", 
     @classmethod
     def storage_model_load(
         cls,
-        content: StorageValueMap,
+        content: ModeledValueMap,
         version: int,
         registries: RegistryCollection,
     ) -> Self:

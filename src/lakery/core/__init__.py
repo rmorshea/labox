@@ -3,8 +3,8 @@ from lakery.core.api.loader import data_loader
 from lakery.core.api.saver import DataSaver
 from lakery.core.api.saver import data_saver
 from lakery.core.model import BaseStorageModel
-from lakery.core.model import StorageValue
-from lakery.core.model import StorageValueStream
+from lakery.core.model import ModeledValue
+from lakery.core.model import ModeledValueStream
 from lakery.core.registries import ModelRegistry
 from lakery.core.registries import RegistryCollection
 from lakery.core.registries import SerializerRegistry
@@ -32,6 +32,8 @@ __all__ = (
     "GetStreamDigest",
     "ManifestRecord",
     "ModelRegistry",
+    "ModeledValue",
+    "ModeledValueStream",
     "RegistryCollection",
     "RegistryCollection",
     "SerializedData",
@@ -40,8 +42,6 @@ __all__ = (
     "SerializerRegistry",
     "Storage",
     "StorageRegistry",
-    "StorageValue",
-    "StorageValueStream",
     "StreamDigest",
     "StreamSerializer",
     "data_loader",

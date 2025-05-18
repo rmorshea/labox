@@ -21,11 +21,11 @@ from pydantic_core import core_schema as cs
 from pydantic_walk_core_schema import walk_core_schema
 
 from lakery.common.utils import frozenclass
-from lakery.core.model import AnyStorageValue
-from lakery.core.model import AnyStorageValueMap
+from lakery.core.model import AnyModeledValue
+from lakery.core.model import AnyModeledValueMap
 from lakery.core.model import BaseStorageModel
+from lakery.core.model import ModeledValue
 from lakery.core.model import StorageModelConfig
-from lakery.core.model import StorageValue
 
 if TYPE_CHECKING:
     from lakery.common.jsonext import AnyJsonExt
@@ -46,7 +46,7 @@ _LOG = getLogger(__name__)
 
 class StorageModel(
     BaseModel,
-    BaseStorageModel[AnyStorageValueMap],
+    BaseStorageModel[AnyModeledValueMap],
     storage_model_config=None,
     arbitrary_types_allowed=True,
 ):
@@ -76,9 +76,9 @@ class StorageModel(
             # we're defining the schema for a subclass
             return _adapt_third_party_types(handler(source), handler)
 
-    def storage_model_dump(self, registries: RegistryCollection) -> AnyStorageValueMap:
+    def storage_model_dump(self, registries: RegistryCollection) -> AnyModeledValueMap:
         """Dump the model to storage content."""
-        external: dict[str, AnyStorageValue] = {}
+        external: dict[str, AnyModeledValue] = {}
 
         next_external_id = 0
 
@@ -110,7 +110,7 @@ class StorageModel(
 
     @classmethod
     def storage_model_load(
-        cls, contents: AnyStorageValueMap, _version: int, registries: RegistryCollection
+        cls, contents: AnyModeledValueMap, _version: int, registries: RegistryCollection
     ) -> Self:
         """Load the model from storage content."""
         contents = dict(contents)
@@ -287,7 +287,7 @@ def _make_serializer_func(schema: cs.CoreSchema) -> cs.FieldPlainInfoSerializerF
 
         if storage_from_schema is not None:
             ref_str = _make_ref_str(type(model), info, context)
-            external[ref_str] = StorageValue(
+            external[ref_str] = ModeledValue(
                 value=value,
                 serializer=serializer,
                 storage=storage_from_schema,
@@ -382,11 +382,11 @@ def _get_info_context(
 
 
 class _LakerySerializationContext(TypedDict):
-    external: dict[str, AnyStorageValue]
+    external: dict[str, AnyModeledValue]
     get_next_external_id: Callable[[], int]
     registries: RegistryCollection
 
 
 class _LakeryValidationContext(TypedDict):
-    external: dict[str, AnyStorageValue]
+    external: dict[str, AnyModeledValue]
     registries: RegistryCollection

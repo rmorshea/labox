@@ -12,8 +12,8 @@ from typing import TypeVar
 from lakery.common.jsonext import dump_any_json_ext
 from lakery.common.jsonext import load_json_ext
 from lakery.core.model import BaseStorageModel
-from lakery.core.model import StorageValue
-from lakery.core.model import StorageValueMap
+from lakery.core.model import ModeledValue
+from lakery.core.model import ModeledValueMap
 from lakery.core.serializer import Serializer
 from lakery.core.storage import Storage
 
@@ -28,14 +28,14 @@ __all__ = ("StorageClass",)
 T = TypeVar("T")
 
 
-class StorageClass(BaseStorageModel[StorageValueMap], storage_model_config=None):
+class StorageClass(BaseStorageModel[ModeledValueMap], storage_model_config=None):
     """A base for dataclasses that can be stored by Lakery."""
 
     _: KW_ONLY
 
-    def storage_model_dump(self, registries: RegistryCollection) -> StorageValueMap:
+    def storage_model_dump(self, registries: RegistryCollection) -> ModeledValueMap:
         """Dump the model to storage content."""
-        external: dict[str, StorageValue] = {}
+        external: dict[str, ModeledValue] = {}
         context: _DumpContext = {
             "path": "",
             "registries": registries,
@@ -55,7 +55,7 @@ class StorageClass(BaseStorageModel[StorageValueMap], storage_model_config=None)
                 )
                 raise TypeError(msg)
 
-            data = StorageValue(
+            data = ModeledValue(
                 value=value,
                 serializer=_get_field_serializer(f),
                 storage=_get_field_storage(f),
@@ -75,7 +75,7 @@ class StorageClass(BaseStorageModel[StorageValueMap], storage_model_config=None)
     @classmethod
     def storage_model_load(
         cls,
-        contents: StorageValueMap,
+        contents: ModeledValueMap,
         _version: int,
         registries: RegistryCollection,
     ) -> Self:
@@ -114,4 +114,4 @@ def _get_field_storage(field: Field) -> Storage | None:
 class _DumpContext(TypedDict):
     path: str
     registries: RegistryCollection
-    external: dict[str, StorageValue]
+    external: dict[str, ModeledValue]

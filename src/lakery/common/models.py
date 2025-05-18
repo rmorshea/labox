@@ -10,8 +10,8 @@ from annotated_types import KW_ONLY
 
 from lakery.common.utils import frozenclass
 from lakery.core.model import BaseStorageModel
-from lakery.core.model import StorageValueMap
-from lakery.core.model import StorageValueStreamMap
+from lakery.core.model import ModeledValueMap
+from lakery.core.model import ModeledValueStreamMap
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable
@@ -31,7 +31,7 @@ T = TypeVar("T")
 
 @frozenclass(kw_only=False)
 class Singular(
-    BaseStorageModel[StorageValueMap],
+    BaseStorageModel[ModeledValueMap],
     Generic[T],
     storage_model_config={"id": "63b297f6", "version": 1},
 ):
@@ -47,14 +47,14 @@ class Singular(
     storage: Storage | None = field(default=None, compare=False)
     """The storage for the value."""
 
-    def storage_model_dump(self, registries: RegistryCollection) -> StorageValueMap:
+    def storage_model_dump(self, registries: RegistryCollection) -> ModeledValueMap:
         """Dump the model to storage content."""
         serializer = registries.serializers.infer_from_value_type(type(self.value))
         return {"": {"value": self.value, "serializer": serializer, "storage": self.storage}}
 
     @classmethod
     def storage_model_load(
-        cls, contents: StorageValueMap, _version: int, _registries: RegistryCollection
+        cls, contents: ModeledValueMap, _version: int, _registries: RegistryCollection
     ) -> Self:
         """Load the model from storage content."""
         cont = contents[""]
@@ -63,7 +63,7 @@ class Singular(
 
 @frozenclass(kw_only=False)
 class Streamed(
-    BaseStorageModel[StorageValueStreamMap],
+    BaseStorageModel[ModeledValueStreamMap],
     Generic[T],
     storage_model_config={"id": "e80e8707", "version": 1},
 ):
@@ -79,7 +79,7 @@ class Streamed(
     storage: Storage | None = field(default=None, compare=False)
     """The storage for the stream."""
 
-    def storage_model_dump(self, _registries: RegistryCollection) -> StorageValueStreamMap:
+    def storage_model_dump(self, _registries: RegistryCollection) -> ModeledValueStreamMap:
         """Dump the model to storage content."""
         return {
             "": {
@@ -92,7 +92,7 @@ class Streamed(
     @classmethod
     def storage_model_load(
         cls,
-        contents: StorageValueStreamMap,
+        contents: ModeledValueStreamMap,
         _version: int,
         _registries: RegistryCollection,
     ) -> Self:
