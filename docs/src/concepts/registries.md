@@ -51,11 +51,11 @@ A model registry is used to map
 allows Lakery to know which class to instantiate when loading data.
 
 ```python
-from lakery.builtin.models import Singular
-from lakery.builtin.models import Streamed
+from lakery.builtin.models import SimpleValue
+from lakery.builtin.models import SimpleValueStream
 from lakery.core import ModelRegistry
 
-models = ModelRegistry([Singular, Streamed])
+models = ModelRegistry([SimpleValue, SimpleValueStream])
 ```
 
 ### Loading Models from Modules

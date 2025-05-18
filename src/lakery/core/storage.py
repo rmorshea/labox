@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import abc
+import json
 from typing import TYPE_CHECKING
 from typing import Generic
 from typing import LiteralString
@@ -52,9 +53,17 @@ class Storage(Generic[T], abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_data_stream(self, data: T, /) -> AsyncGenerator[bytes]:
+    def get_data_stream(self, info: T, /) -> AsyncGenerator[bytes]:
         """Load a stream of data using the given information."""
         raise NotImplementedError
+
+    def dump_json_storage_data(self, info: T) -> str:
+        """Dump the storage information to a JSON string."""
+        return json.dumps(info)
+
+    def load_json_storage_data(self, data: str) -> T:
+        """Load the storage information from a JSON string."""
+        return json.loads(data)
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.name!r})"

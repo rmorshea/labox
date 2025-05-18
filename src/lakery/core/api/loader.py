@@ -152,13 +152,14 @@ async def load_manifest_from_record(
     """Load the given content from the given record."""
     serializer = serializers[record.serializer_name]
     storage = storages[record.storage_name]
+    storage_data = storage.load_json_storage_data(record.storage_data)
     match record.serializer_type:
         case SerializerTypeEnum.Serializer:
             value = serializer.load_data(
                 {
                     "content_encoding": record.content_encoding,
                     "content_type": record.content_type,
-                    "data": await storage.get_data(record.storage_data),
+                    "data": await storage.get_data(storage_data),
                 }
             )
             return {"value": value, "serializer": serializer, "storage": storage}
@@ -170,7 +171,7 @@ async def load_manifest_from_record(
                 {
                     "content_encoding": record.content_encoding,
                     "content_type": record.content_type,
-                    "data_stream": storage.get_data_stream(record.storage_data),
+                    "data_stream": storage.get_data_stream(storage_data),
                 }
             )
             return {

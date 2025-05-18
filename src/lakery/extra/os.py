@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import logging
 import sys
 from pathlib import Path
@@ -58,11 +57,11 @@ class FileStorage(Storage[str]):
         if not content_path.exists():
             content_path.parent.mkdir(parents=True, exist_ok=True)
             content_path.write_bytes(data)
-        return json.dumps(_path_to_str(content_path))
+        return _path_to_str(content_path)
 
     async def get_data(self, location: str) -> bytes:
         """Load data from the given location."""
-        path = _str_to_path(json.loads(location))
+        path = _str_to_path(location)
         _LOG.debug("Loading data from %s", path)
         return path.read_bytes()
 
@@ -88,11 +87,11 @@ class FileStorage(Storage[str]):
         finally:
             _LOG.debug("Deleting temporary file %s", temp_path)
             temp_path.unlink(missing_ok=True)
-        return json.dumps(_path_to_str(content_path))
+        return _path_to_str(content_path)
 
     async def get_data_stream(self, location: str) -> AsyncGenerator[bytes]:
         """Load a stream of data from the given location."""
-        path = _str_to_path(json.loads(location))
+        path = _str_to_path(location)
         _LOG.debug("Loading data stream from %s", path)
         async with create_task_group() as tg:
             with start_as_async_iterator(tg, _iter_file_chunks(path, self.chunk_size)) as chunks:

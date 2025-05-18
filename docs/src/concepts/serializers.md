@@ -1,16 +1,16 @@
 # Serializers
 
-Serializers tell Lakery how to convert values or streams of values into binary data that
+Lakery serializers convert values or streams of values into binary data that
 [storage backends](storages.md) can save. Likewise, they can also convert binary data
 back into values or streams of values.
 
-## Normal Serializers
+## Basic Serializers
 
-Normal serializers are used to convert singular values to and from binary data. To
-define one you must inherit from the [`Serializer`][lakery.core.serializers.Serializer]
-class, define a [globally unique name](#serializer-names), as well as implement
-`load_data` and `dump_data` methods. The code below shows a serializer that turns UTF-8
-strings into binary data and back.
+Basic serializers are used to convert singular values to and from binary data. To define
+one you must inherit from the [`Serializer`][lakery.core.serializer.Serializer] class,
+define a [globally unique name](#serializer-names), as well as implement `load_data` and
+`dump_data` methods. The code below shows a serializer that turns UTF-8 strings into
+binary data and back.
 
 ```python
 from lakery.core.serializer import SerializedData
@@ -38,9 +38,9 @@ class Utf8Serializer(Serializer[str]):
 
 Stream serializers are used to asynchronsouly convert streams of values to and from
 streams of binary data. To define one you must inherit from the
-[`StreamSerializer`][lakery.core.serializers.StreamSerializer] class. Since the
+[`StreamSerializer`][lakery.core.serializer.StreamSerializer] class. Since the
 `StreamSerializer` class is a subclass of the `Serializer` class, you can use the same
-`dump_data` and `load_data` methods as you would for a normal serializer. In addition,
+`dump_data` and `load_data` methods as you would for a basic serializer. In addition,
 you must implement the `dump_data_stream` and `load_data_stream` methods. To demonstrate
 what this looks like the code samples below will walk you though defining a stream
 serializer that converts a stream of UTF-8 strings into a stream of binary data and back
@@ -135,6 +135,60 @@ later. Once a serializer has been used to saved data this name must never be cha
 the implementation of the serializer must always remain backwards compatible. If you
 need to change the implementation of a serializer you should create a new one with a new
 name.
+
+One strategy for managing data saved with an older serializer might be to register a
+compatibility layer under the name of the old serializer. When dumping data you can warn
+the user about the deprecation and when loading you can forward the call to the new
+serializer implementation via the compatibility layer. The code below shows an example
+of how to do this:
+
+```python
+from collections.abc import Callable
+from typing import TypeVar
+from warnings import warn
+
+T = TypeVar("T")
+
+
+class DeprecatedSerializer(Serializer[T]):
+    # We don't wwant this to be used for type inference
+    types = ()
+
+    def __init__(
+        self,
+        old_serializer: Serializer[T],
+        compatibility_layer: Callable[[SerializedData], SerializedData],
+        new_serializer: Serializer[T],
+        reason: str = "deprecated",
+    ) -> None:
+        self.name = old_serializer.name
+        self.old_serializer = old_serializer
+        self.compatibility_layer = compatibility_layer
+        self.new_serializer = new_serializer
+        self.reason = reason
+
+    def dump_data(self, value: T) -> SerializedData:
+        warn(
+            f"{self.name} is deprecated and will be removed in a future version. "
+            f"Use {self.new_serializer.name} instead.",
+            DeprecationWarning,
+            stacklevel=1,
+        )
+        # Do as the user says and dump the data with the old serializer
+        return self.old_serializer.dump_data(value)
+
+    def load_data(self, data: SerializedData) -> T:
+        # Apply the compatibility layer to the data
+        data = self.compatibility_layer(data)
+        # Forward the call to the new serializer
+        return self.new_serializer.load_data(data)
+```
+
+In the future you might eventually replace the warning with an exception to force users
+to migrate to the new serializer. This would also give you an opportunity to remove the
+old serializer implementation. You should continue to maintain the compatibility layer
+until you've either migrated all data to the new format or your retention policy no
+longer requires you to keep the data.
 
 ## Serializer Type Inference
 

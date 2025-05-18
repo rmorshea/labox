@@ -6,10 +6,10 @@ Lakery relies on "models" to define where and how to store your data.
 
 ### Simple Value
 
-The [`Singular`][lakery.builtin.models.SimpleValue] model can be used to save any value
-for which there is a [serializer](./serializers.md). For example, you might have a
-`pandas.DataFrame` that you want to save as a Parquet file. All you need to do is wrap
-it in a `SimpleValue` instance:
+The [`SimpleValue`][lakery.builtin.models.SimpleValue] model can be used to save any
+single value for which there is a [serializer](./serializers.md). For example, you might
+have a `pandas.DataFrame` that you want to save as a Parquet file. All you need to do is
+wrap it in a `SimpleValue` instance:
 
 ```python
 import pandas as pd
