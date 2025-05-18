@@ -22,15 +22,15 @@ if TYPE_CHECKING:
     from lakery.core.storage import Storage
 
 __all__ = (
-    "Singular",
-    "Streamed",
+    "SimpleValue",
+    "SimpleValueStream",
 )
 
 T = TypeVar("T")
 
 
 @frozenclass(kw_only=False)
-class Singular(
+class SimpleValue(
     BaseStorageModel[ModeledValueMap],
     Generic[T],
     storage_model_config={"id": "63b297f6", "version": 1},
@@ -62,14 +62,14 @@ class Singular(
 
 
 @frozenclass(kw_only=False)
-class Streamed(
+class SimpleValueStream(
     BaseStorageModel[ModeledValueStreamMap],
     Generic[T],
     storage_model_config={"id": "e80e8707", "version": 1},
 ):
-    """Models a stream of data."""
+    """Models a value stream."""
 
-    stream: AsyncIterable[T] = field(compare=False)
+    value_stream: AsyncIterable[T] = field(compare=False)
     """The stream."""
 
     _ = KW_ONLY
@@ -83,7 +83,7 @@ class Streamed(
         """Dump the model to storage content."""
         return {
             "": {
-                "value_stream": self.stream,
+                "value_stream": self.value_stream,
                 "serializer": self.serializer,
                 "storage": self.storage,
             }
@@ -100,7 +100,7 @@ class Streamed(
         cont = contents[""]
         assert "value_stream" in cont, f"Missing stream in content {cont}"  # noqa: S101
         return cls(
-            stream=cont["value_stream"],
+            value_stream=cont["value_stream"],
             serializer=cont["serializer"],
             storage=cont["storage"],
         )
