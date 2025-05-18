@@ -70,10 +70,11 @@ class RawJson(TypeDecorator[str]):
     cache_ok = True
 
     def bind_processor(self, dialect: Dialect) -> _BindProcessorType:  # noqa: ARG002
-        """Return a function that converts the value to bytes."""
+        """Return a function that passes the value to the database as a string."""
         return lambda value: value
 
     def bind_expression(self, bindparam: BindParameter[str]) -> ColumnElement[str] | None:
+        """Return a bind expression that passes the value to the database as a string."""
         return _ValidJson(bindparam)
 
     def column_expression(self, column: ColumnElement) -> ColumnElement[str]:

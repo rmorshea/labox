@@ -59,7 +59,7 @@ from lakery.extra.os import FileStorage
 
 serializers = SerializerRegistry([JsonSerializer()])
 storages = StorageRegistry(default=FileStorage("temp", mkdir=True))
-models = ModelRegistry.from_modules("lakery.common.models")
+models = ModelRegistry.from_modules("lakery.builtin.models")
 
 registries = RegistryCollection(serializers=serializers, storages=storages, models=models)
 ```
@@ -75,9 +75,9 @@ data = {"hello": "world"}
 Pick a [model](./concepts/models.md) to save it with:
 
 ```python
-from lakery.common.models import Singular
+from lakery.builtin.models import SimpleValue
 
-model = Singular(data)
+model = SimpleValue(data)
 ```
 
 Save the data and return a record of it:

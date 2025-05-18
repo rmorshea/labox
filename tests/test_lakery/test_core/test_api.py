@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio.session import AsyncSession
 
-from lakery.common.models import SimpleValue
-from lakery.common.models import SimpleValueStream
+from lakery.builtin.models import SimpleValue
+from lakery.builtin.models import SimpleValueStream
 from tests.core_api_utils import assert_save_load_equivalence
 from tests.core_api_utils import assert_save_load_stream_equivalence
 from tests.core_context_utils import basic_registries

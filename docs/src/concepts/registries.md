@@ -51,8 +51,8 @@ A model registry is used to map
 allows Lakery to know which class to instantiate when loading data.
 
 ```python
-from lakery.common.models import Singular
-from lakery.common.models import Streamed
+from lakery.builtin.models import Singular
+from lakery.builtin.models import Streamed
 from lakery.core import ModelRegistry
 
 models = ModelRegistry([Singular, Streamed])
@@ -68,7 +68,7 @@ non-model classes in `__all__` will be ignored.
 ```python
 from lakery.core import ModelRegistry
 
-models = ModelRegistry.from_modules("lakery.common.models")
+models = ModelRegistry.from_modules("lakery.builtin.models")
 ```
 
 ## Serializer Registry
