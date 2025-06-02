@@ -50,7 +50,7 @@ class FigureSerializer(Serializer[go.Figure]):
         self._dump_args = dump_args or {}
         self._load_args = load_args or {}
 
-    def dump_data(self, value: go.Figure, /) -> SerializedData:
+    def deserialize_data(self, value: go.Figure, /) -> SerializedData:
         """Serialize the given figure."""
         data = cast("str", to_json(value, **self._dump_args))
         return {
@@ -59,7 +59,7 @@ class FigureSerializer(Serializer[go.Figure]):
             "data": data.encode("utf-8"),
         }
 
-    def load_data(self, content: SerializedData, /) -> go.Figure:
+    def serializer_data(self, content: SerializedData, /) -> go.Figure:
         """Deserialize the given figure."""
         data = content["data"].decode("utf-8")
         return from_json(data, **self._load_args)

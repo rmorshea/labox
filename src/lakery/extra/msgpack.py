@@ -71,7 +71,7 @@ class MsgPackSerializer(_MsgPackBase, Serializer[MsgPackType]):
     name = "lakery.msgpack.value"
     version = 1
 
-    def dump_data(self, value: MsgPackType) -> SerializedData:
+    def deserialize_data(self, value: MsgPackType) -> SerializedData:
         """Serialize the given value to MessagePack."""
         return {
             "content_encoding": None,
@@ -79,7 +79,7 @@ class MsgPackSerializer(_MsgPackBase, Serializer[MsgPackType]):
             "data": self._pack(value),
         }
 
-    def load_data(self, content: SerializedData) -> MsgPackType:
+    def serializer_data(self, content: SerializedData) -> MsgPackType:
         """Deserialize the given MessagePack data."""
         return self._unpack(content["data"])
 

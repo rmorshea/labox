@@ -11,9 +11,9 @@ from sqlalchemy.orm import raiseload
 from lakery.common.anyio import FutureResult
 from lakery.core.api.loader import data_loader
 from lakery.core.api.saver import data_saver
-from lakery.core.model import BaseStorageModel
-from lakery.core.registries import RegistryCollection
-from lakery.core.schema import ManifestRecord
+from lakery.core.database import ManifestRecord
+from lakery.core.decomposer import BaseStorageModel
+from lakery.core.registry import RegistryCollection
 
 M = TypeVar("M", bound=BaseStorageModel)
 

@@ -43,7 +43,7 @@ class MediaSerializer(Serializer[Media]):
     def __init__(self, mimetypes: MimeTypes = _DEFAULT_MIMETYPES) -> None:
         self.mimetypes = mimetypes
 
-    def dump_data(self, media: Media) -> SerializedData:
+    def deserialize_data(self, media: Media) -> SerializedData:
         """Serialize the given array."""
         buffer = BytesIO()
         imageio.imwrite(
@@ -57,7 +57,7 @@ class MediaSerializer(Serializer[Media]):
             "content_encoding": media.content_encoding,
         }
 
-    def load_data(self, content: SerializedData) -> Media:
+    def serializer_data(self, content: SerializedData) -> Media:
         """Deserialize the given array."""
         ext = self._guess_extension(content["content_type"])
         buffer = BytesIO(content["data"])

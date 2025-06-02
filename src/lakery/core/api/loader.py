@@ -18,11 +18,11 @@ from lakery.common.anyio import set_future_exception_forcefully
 from lakery.common.anyio import start_future
 from lakery.common.anyio import start_with_future
 from lakery.common.exceptions import NotRegistered
-from lakery.core.model import AnyModeledValue
-from lakery.core.model import BaseStorageModel
-from lakery.core.schema import ContentRecord
-from lakery.core.schema import ManifestRecord
-from lakery.core.schema import SerializerTypeEnum
+from lakery.core.database import ContentRecord
+from lakery.core.database import ManifestRecord
+from lakery.core.database import SerializerTypeEnum
+from lakery.core.decomposer import AnyModeledValue
+from lakery.core.decomposer import BaseStorageModel
 from lakery.core.serializer import StreamSerializer
 
 if TYPE_CHECKING:
@@ -31,9 +31,9 @@ if TYPE_CHECKING:
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
-    from lakery.core.registries import RegistryCollection
-    from lakery.core.registries import SerializerRegistry
-    from lakery.core.registries import StorageRegistry
+    from lakery.core.registry import RegistryCollection
+    from lakery.core.registry import SerializerRegistry
+    from lakery.core.registry import StorageRegistry
 
 
 M = TypeVar("M", bound=BaseStorageModel)

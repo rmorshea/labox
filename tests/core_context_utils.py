@@ -1,10 +1,10 @@
 import shutil
 from pathlib import Path
 
-from lakery.core.registries import ModelRegistry
-from lakery.core.registries import RegistryCollection
-from lakery.core.registries import SerializerRegistry
-from lakery.core.registries import StorageRegistry
+from lakery.core.registry import ModelRegistry
+from lakery.core.registry import RegistryCollection
+from lakery.core.registry import SerializerRegistry
+from lakery.core.registry import StorageRegistry
 from lakery.extra.json import JsonSerializer
 from lakery.extra.json import JsonStreamSerializer
 from lakery.extra.msgpack import MsgPackSerializer

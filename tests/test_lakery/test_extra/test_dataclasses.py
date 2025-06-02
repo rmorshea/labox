@@ -4,8 +4,8 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio.session import AsyncSession
 
-from lakery.core.registries import ModelRegistry
-from lakery.core.registries import RegistryCollection
+from lakery.core.registry import ModelRegistry
+from lakery.core.registry import RegistryCollection
 from lakery.extra.dataclasses import StorageClass
 from lakery.extra.json import JsonSerializer
 from lakery.extra.msgpack import MsgPackSerializer

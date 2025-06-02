@@ -56,7 +56,7 @@ class ArrowTableSerializer(_ArrowTableBase, Serializer[pa.Table]):
     version = 1
     types = (pa.Table,)
 
-    def dump_data(self, value: pa.Table) -> SerializedData:
+    def deserialize_data(self, value: pa.Table) -> SerializedData:
         """Serialize the given Arrow table."""
         sink = pa.BufferOutputStream()
         with pa.ipc.new_file(sink, value.schema, options=self._write_options) as writer:
@@ -67,7 +67,7 @@ class ArrowTableSerializer(_ArrowTableBase, Serializer[pa.Table]):
             "data": sink.getvalue().to_pybytes(),
         }
 
-    def load_data(self, content: SerializedData) -> pa.Table:
+    def serializer_data(self, content: SerializedData) -> pa.Table:
         """Deserialize the given Arrow table."""
         return pa.ipc.open_file(
             pa.BufferReader(content["data"]),
@@ -177,7 +177,7 @@ class ParquetTableSerializer(Serializer[pa.Table]):
         self.write_option_extras = write_option_extras or {}
         self.read_options = read_options or {}
 
-    def dump_data(self, value: pa.Table) -> SerializedData:
+    def deserialize_data(self, value: pa.Table) -> SerializedData:
         """Serialize the given Arrow table."""
         buffer = io.BytesIO()
         with pq.ParquetWriter(
@@ -193,7 +193,7 @@ class ParquetTableSerializer(Serializer[pa.Table]):
             "data": buffer.getvalue(),
         }
 
-    def load_data(self, content: SerializedData) -> pa.Table:
+    def serializer_data(self, content: SerializedData) -> pa.Table:
         """Deserialize the given Arrow table."""
         return pq.ParquetFile(pa.BufferReader(content["data"]), **self.read_options).read()
 

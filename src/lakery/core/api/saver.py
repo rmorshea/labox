@@ -18,9 +18,9 @@ from anysync import contextmanager
 
 from lakery.common.anyio import FutureResult
 from lakery.common.anyio import start_future
-from lakery.core.schema import ContentRecord
-from lakery.core.schema import ManifestRecord
-from lakery.core.schema import SerializerTypeEnum
+from lakery.core.database import ContentRecord
+from lakery.core.database import ManifestRecord
+from lakery.core.database import SerializerTypeEnum
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
@@ -32,9 +32,9 @@ if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
     from lakery.common.utils import TagMap
-    from lakery.core.model import BaseStorageModel
-    from lakery.core.registries import RegistryCollection
-    from lakery.core.registries import SerializerRegistry
+    from lakery.core.decomposer import BaseStorageModel
+    from lakery.core.registry import RegistryCollection
+    from lakery.core.registry import SerializerRegistry
     from lakery.core.serializer import SerializedData
     from lakery.core.serializer import SerializedDataStream
     from lakery.core.serializer import Serializer
@@ -196,9 +196,9 @@ async def _save_storage_value(
 ) -> ContentRecord:
     storage = storage or registries.storages.default
     serializer = serializer or registries.serializers.infer_from_value_type(type(value))
-    content = serializer.dump_data(value)
+    content = serializer.deserialize_data(value)
     digest = _make_value_dump_digest(content)
-    storage_data = await storage.put_data(content["data"], digest, tags)
+    storage_data = await storage.write_data(content["data"], digest, tags)
     return ContentRecord(
         content_encoding=content["content_encoding"],
         content_hash_algorithm=digest["content_hash_algorithm"],
@@ -236,7 +236,7 @@ async def _save_storage_stream(
 
         content = serializer.dump_data_stream(stream)
         byte_stream, get_digest = _wrap_stream_dump(content)
-        storage_data = await storage.put_data_stream(byte_stream, get_digest, tags)
+        storage_data = await storage.write_data_stream(byte_stream, get_digest, tags)
         try:
             digest = get_digest()
         except ValueError:
@@ -315,7 +315,7 @@ class _SerializationHelper:
     ) -> SerializedData:
         if serializer is None:
             serializer = self._serializers.infer_from_value_type(type(value))
-        return serializer.dump_data(value)
+        return serializer.deserialize_data(value)
 
     async def dump_stream(
         self,

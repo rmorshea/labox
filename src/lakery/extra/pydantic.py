@@ -21,17 +21,17 @@ from pydantic_core import core_schema as cs
 from pydantic_walk_core_schema import walk_core_schema
 
 from lakery.common.utils import frozenclass
-from lakery.core.model import AnyModeledValue
-from lakery.core.model import AnyModeledValueMap
-from lakery.core.model import BaseStorageModel
-from lakery.core.model import ModeledValue
-from lakery.core.model import StorageModelConfig
+from lakery.core.decomposer import AnyModeledValue
+from lakery.core.decomposer import AnyModeledValueMap
+from lakery.core.decomposer import BaseStorageModel
+from lakery.core.decomposer import StorageModelConfig
+from lakery.core.decomposer import UnpackedValue
 
 if TYPE_CHECKING:
     from lakery.common.jsonext import AnyJsonExt
-    from lakery.core.registries import RegistryCollection
-    from lakery.core.registries import SerializerRegistry
-    from lakery.core.registries import StorageRegistry
+    from lakery.core.registry import RegistryCollection
+    from lakery.core.registry import SerializerRegistry
+    from lakery.core.registry import StorageRegistry
     from lakery.core.serializer import Serializer
     from lakery.core.storage import Storage
 
@@ -287,14 +287,14 @@ def _make_serializer_func(schema: cs.CoreSchema) -> cs.FieldPlainInfoSerializerF
 
         if storage_from_schema is not None:
             ref_str = _make_ref_str(type(model), info, context)
-            external[ref_str] = ModeledValue(
+            external[ref_str] = UnpackedValue(
                 value=value,
                 serializer=serializer,
                 storage=storage_from_schema,
             )
             return {"__json_ext__": "ref", "ref": ref_str}
 
-        content = serializer.dump_data(value)
+        content = serializer.deserialize_data(value)
         return {
             "__json_ext__": "content",
             "content_base64": b64encode(content["data"]).decode("ascii"),

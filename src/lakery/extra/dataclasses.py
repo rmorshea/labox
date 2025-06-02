@@ -11,16 +11,16 @@ from typing import TypeVar
 
 from lakery.common.jsonext import dump_any_json_ext
 from lakery.common.jsonext import load_json_ext
-from lakery.core.model import BaseStorageModel
-from lakery.core.model import ModeledValue
-from lakery.core.model import ModeledValueMap
+from lakery.core.decomposer import BaseStorageModel
+from lakery.core.decomposer import ModeledValueMap
+from lakery.core.decomposer import UnpackedValue
 from lakery.core.serializer import Serializer
 from lakery.core.storage import Storage
 
 if TYPE_CHECKING:
-    from lakery.core.registries import RegistryCollection
-    from lakery.core.registries import SerializerRegistry
-    from lakery.core.registries import StorageRegistry
+    from lakery.core.registry import RegistryCollection
+    from lakery.core.registry import SerializerRegistry
+    from lakery.core.registry import StorageRegistry
 
 
 __all__ = ("StorageClass",)
@@ -35,7 +35,7 @@ class StorageClass(BaseStorageModel[ModeledValueMap], storage_model_config=None)
 
     def storage_model_dump(self, registries: RegistryCollection) -> ModeledValueMap:
         """Dump the model to storage content."""
-        external: dict[str, ModeledValue] = {}
+        external: dict[str, UnpackedValue] = {}
         context: _DumpContext = {
             "path": "",
             "registries": registries,
@@ -55,7 +55,7 @@ class StorageClass(BaseStorageModel[ModeledValueMap], storage_model_config=None)
                 )
                 raise TypeError(msg)
 
-            data = ModeledValue(
+            data = UnpackedValue(
                 value=value,
                 serializer=_get_field_serializer(f),
                 storage=_get_field_storage(f),
@@ -114,4 +114,4 @@ def _get_field_storage(field: Field) -> Storage | None:
 class _DumpContext(TypedDict):
     path: str
     registries: RegistryCollection
-    external: dict[str, ModeledValue]
+    external: dict[str, UnpackedValue]

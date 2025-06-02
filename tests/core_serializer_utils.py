@@ -152,7 +152,7 @@ async def _check_dump_value_load_value(
     value: Any,
     conv: Callable[[Any], Any] = lambda x: x,
 ) -> None:
-    assertion(conv(serializer.load_data(serializer.dump_data(value))), conv(value))
+    assertion(conv(serializer.serializer_data(serializer.deserialize_data(value))), conv(value))
 
 
 async def _to_async_iterable(iterable: Iterable[Any]) -> AsyncIterator[Any]:

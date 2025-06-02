@@ -26,7 +26,7 @@ class Storage(Generic[T], abc.ABC):
     """The name of the storage."""
 
     @abc.abstractmethod
-    async def put_data(
+    async def write_data(
         self,
         data: bytes,
         digest: Digest,
@@ -37,12 +37,12 @@ class Storage(Generic[T], abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    async def get_data(self, info: T, /) -> bytes:
+    async def read_data(self, info: T, /) -> bytes:
         """Load data using the given information."""
         raise NotImplementedError
 
     @abc.abstractmethod
-    async def put_data_stream(
+    async def write_data_stream(
         self,
         data_stream: AsyncIterable[bytes],
         get_digest: GetStreamDigest,
@@ -53,7 +53,7 @@ class Storage(Generic[T], abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_data_stream(self, info: T, /) -> AsyncGenerator[bytes]:
+    def read_data_stream(self, info: T, /) -> AsyncGenerator[bytes]:
         """Load a stream of data using the given information."""
         raise NotImplementedError
 

@@ -40,7 +40,7 @@ class JsonSerializer(Serializer[JsonType]):
     types = JSON_SCALAR_TYPES
     content_type = "application/json"
 
-    def dump_data(self, value: JsonType) -> SerializedData:
+    def deserialize_data(self, value: JsonType) -> SerializedData:
         """Serialize the given value to JSON."""
         return {
             "content_encoding": "utf-8",
@@ -48,7 +48,7 @@ class JsonSerializer(Serializer[JsonType]):
             "data": json.dumps(value, separators=(",", ":")).encode("utf-8"),
         }
 
-    def load_data(self, content: SerializedData) -> JsonType:
+    def serializer_data(self, content: SerializedData) -> JsonType:
         """Deserialize the given JSON data."""
         return json.loads(content["data"].decode("utf-8"))
 

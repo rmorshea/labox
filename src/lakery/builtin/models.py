@@ -9,14 +9,14 @@ from typing import TypeVar
 from annotated_types import KW_ONLY
 
 from lakery.common.utils import frozenclass
-from lakery.core.model import BaseStorageModel
-from lakery.core.model import ModeledValueMap
-from lakery.core.model import ModeledValueStreamMap
+from lakery.core.decomposer import BaseStorageModel
+from lakery.core.decomposer import ModeledValueMap
+from lakery.core.decomposer import ModeledValueStreamMap
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable
 
-    from lakery.core.registries import RegistryCollection
+    from lakery.core.registry import RegistryCollection
     from lakery.core.serializer import Serializer
     from lakery.core.serializer import StreamSerializer
     from lakery.core.storage import Storage

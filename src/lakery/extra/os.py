@@ -45,7 +45,7 @@ class FileStorage(Storage[str]):
         self.chunk_size = chunk_size
         (self.path / "temp").mkdir()
 
-    async def put_data(
+    async def write_data(
         self,
         data: bytes,
         digest: Digest,
@@ -59,13 +59,13 @@ class FileStorage(Storage[str]):
             content_path.write_bytes(data)
         return _path_to_str(content_path)
 
-    async def get_data(self, location: str) -> bytes:
+    async def read_data(self, location: str) -> bytes:
         """Load data from the given location."""
         path = _str_to_path(location)
         _LOG.debug("Loading data from %s", path)
         return path.read_bytes()
 
-    async def put_data_stream(
+    async def write_data_stream(
         self,
         data_stream: AsyncIterable[bytes],
         get_digest: GetStreamDigest,
@@ -89,7 +89,7 @@ class FileStorage(Storage[str]):
             temp_path.unlink(missing_ok=True)
         return _path_to_str(content_path)
 
-    async def get_data_stream(self, location: str) -> AsyncGenerator[bytes]:
+    async def read_data_stream(self, location: str) -> AsyncGenerator[bytes]:
         """Load a stream of data from the given location."""
         path = _str_to_path(location)
         _LOG.debug("Loading data stream from %s", path)

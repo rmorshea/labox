@@ -79,7 +79,7 @@ class S3Storage(Storage[str]):
         self._stream_writer_buffer_type = stream_writer_buffer_type
         self._stream_reader_part_size = stream_reader_part_size
 
-    async def put_data(
+    async def write_data(
         self,
         data: bytes,
         digest: Digest,
@@ -99,7 +99,7 @@ class S3Storage(Storage[str]):
         await self._to_thread(self._client.put_object, **put_request)
         return location
 
-    async def get_data(self, location: str) -> bytes:
+    async def read_data(self, location: str) -> bytes:
         """Load the value from the given location."""
         try:
             result = await self._to_thread(
@@ -112,7 +112,7 @@ class S3Storage(Storage[str]):
             msg = f"No data found for {location!r}."
             raise NoStorageData(msg) from error
 
-    async def put_data_stream(
+    async def write_data_stream(
         self,
         data_stream: AsyncIterable[bytes],
         get_digest: GetStreamDigest,
@@ -204,7 +204,7 @@ class S3Storage(Storage[str]):
 
         return final_location
 
-    async def get_data_stream(self, location: str) -> AsyncGenerator[bytes]:
+    async def read_data_stream(self, location: str) -> AsyncGenerator[bytes]:
         """Load the stream from the given location."""
         try:
             result = await self._to_thread(

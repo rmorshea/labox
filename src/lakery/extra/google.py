@@ -84,7 +84,7 @@ class BlobStorage(Storage[str]):
         self._reader_type = reader_type
         self.__current_bucket = None
 
-    async def put_data(
+    async def write_data(
         self,
         data: bytes,
         digest: Digest,
@@ -99,7 +99,7 @@ class BlobStorage(Storage[str]):
         await self._to_thread(writer.write, data)
         return location
 
-    async def get_data(self, location: str) -> bytes:
+    async def read_data(self, location: str) -> bytes:
         """Load data from the given location."""
         _LOG.debug("Loading data from %s", location)
         reader = self._reader_type(self._bucket.blob(location, chunk_size=self._object_chunk_size))
@@ -110,7 +110,7 @@ class BlobStorage(Storage[str]):
                 msg = f"Failed to load value from {location!r}"
                 raise NoStorageData(msg) from error
 
-    async def put_data_stream(
+    async def write_data_stream(
         self,
         data_stream: AsyncIterable[bytes],
         get_digest: GetStreamDigest,
@@ -157,7 +157,7 @@ class BlobStorage(Storage[str]):
 
         return final_location
 
-    async def get_data_stream(self, location: str) -> AsyncGenerator[bytes]:
+    async def read_data_stream(self, location: str) -> AsyncGenerator[bytes]:
         """Load a data stream from the given location."""
         _LOG.debug("Loading data stream from %s", location)
         blob = self._bucket.blob(location, chunk_size=self._object_chunk_size)

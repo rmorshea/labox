@@ -81,7 +81,7 @@ class ParquetDataFrameSerializer(Serializer[pl.DataFrame]):
         self._dump_args = dump_args or {}
         self._load_args = load_args or {}
 
-    def dump_data(self, value: pl.DataFrame, /) -> SerializedData:
+    def deserialize_data(self, value: pl.DataFrame, /) -> SerializedData:
         """Serialize the given DataFrame."""
         buffer = BytesIO()
         value.write_parquet(buffer, **self._dump_args)
@@ -91,7 +91,7 @@ class ParquetDataFrameSerializer(Serializer[pl.DataFrame]):
             "data": buffer.getvalue(),
         }
 
-    def load_data(self, content: SerializedData, /) -> pl.DataFrame:
+    def serializer_data(self, content: SerializedData, /) -> pl.DataFrame:
         """Deserialize the given DataFrame."""
         return pl.read_parquet(BytesIO(content["data"]), **self._load_args)
 

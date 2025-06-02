@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import abc
-from collections.abc import Iterable
 from typing import TYPE_CHECKING
 from typing import Generic
 from typing import LiteralString
@@ -26,12 +25,12 @@ class Serializer(Generic[T]):
     """The types that the serializer can handle."""
 
     @abc.abstractmethod
-    def dump_data(self, value: T, /) -> SerializedData:
+    def deserialize_data(self, value: T, /) -> SerializedData:
         """Serialize the given value."""
         raise NotImplementedError
 
     @abc.abstractmethod
-    def load_data(self, content: SerializedData, /) -> T:
+    def serializer_data(self, content: SerializedData, /) -> T:
         """Deserialize the given value."""
         raise NotImplementedError
 
@@ -39,8 +38,13 @@ class Serializer(Generic[T]):
         return f"{self.__class__.__name__}({self.name!r})"
 
 
-class StreamSerializer(Serializer[Iterable[T]]):
+class StreamSerializer(Generic[T]):
     """A protocol for serializing/deserializing streams of values."""
+
+    name: LiteralString
+    """The name of the serializer."""
+    types: tuple[type[T], ...] = ()
+    """The types that the serializer can handle."""
 
     @abc.abstractmethod
     def dump_data_stream(self, stream: AsyncIterable[T], /) -> SerializedDataStream:
