@@ -112,10 +112,8 @@ class ManifestRecord(_StrMixin, BaseRecord, kw_only=True):
     """The ID of the stored model."""
     tags: Mapped[TagMap | None] = mapped_column(JSON_OR_JSONB)
     """User defined tags associated with the stored model."""
-    model_id: Mapped[UUID] = mapped_column()
-    """An ID that uniquely identifies the type of model that was stored."""
-    model_version: Mapped[int] = mapped_column()
-    """The version of the model that was stored."""
+    class_id: Mapped[UUID] = mapped_column()
+    """An ID that uniquely identifies the type that was stored."""
     created_at: Mapped[DateTimeTZ] = mapped_column(default=func.now())
     """The timestamp when the model was created."""
     contents: Mapped[Sequence[ContentRecord]] = relationship(default=(), collection_class=list)
