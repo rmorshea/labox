@@ -22,25 +22,25 @@ T = TypeVar("T", default=Any)
 D = TypeVar("D", bound=Mapping[str, Any], default=Mapping[str, Any])
 
 
-class Decomposer(abc.ABC, Generic[T, D]):
+class Unpacker(abc.ABC, Generic[T, D]):
     """A base for classes that decompose models into their constituent parts."""
 
     name: LiteralString
     """The name of the packer."""
 
     @abc.abstractmethod
-    def recompose_model(self, obj: T, registry: Registry, /) -> D:
+    def unpack_model(self, obj: T, registry: Registry, /) -> D:
         """Return a mapping of that describes where and how to store the object's contents."""
         raise NotImplementedError
 
     @classmethod
     @abc.abstractmethod
-    def decompose_model(cls, unpacked: D, registry: Registry, /) -> T:
+    def repack_model(cls, unpacked: D, registry: Registry, /) -> T:
         """Reconstitute the object from a mapping of its unpacked contents."""
         raise NotImplementedError
 
 
-class DecomposedValue(Generic[T], TypedDict):
+class UnpackedValue(Generic[T], TypedDict):
     """Describes where and how to store a value."""
 
     value: T

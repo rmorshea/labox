@@ -10,11 +10,11 @@ from typing import cast
 
 from ruyaml import import_module
 
-from lakery.core.decomposer import Decomposer
 from lakery.core.model import BaseModel
 from lakery.core.serializer import Serializer
 from lakery.core.serializer import StreamSerializer
 from lakery.core.storage import Storage
+from lakery.core.unpacker import Unpacker
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -34,7 +34,7 @@ class RegistryKwargs(TypedDict, total=False):
 
     models: Iterable[type[BaseModel]]
     """Models to register."""
-    decomposer: Iterable[Decomposer]
+    unpackers: Iterable[Unpacker]
     """Decomposers to register."""
     serializers: Iterable[Serializer | StreamSerializer]
     """Serializers to register."""
@@ -52,7 +52,7 @@ class Registry:
 
     def __init__(self, **kwargs: Unpack[RegistryKwargs]) -> None:
         attrs = _kwargs_to_attrs(kwargs)
-        self.decomposer_by_name = attrs["decomposer_by_name"]
+        self.unpacker_by_name = attrs["unpacker_by_name"]
         self.default_storage = attrs["default_storage"]
         self.model_by_id = attrs["model_by_id"]
         self.serializer_by_name = attrs["serializer_by_name"]
@@ -69,7 +69,7 @@ class Registry:
     ) -> Self:
         """Create a registry from the given modules."""
         models: list[type[BaseModel]] = []
-        decomposers: list[Decomposer] = []
+        unpackers: list[Unpacker] = []
         serializers: list[Serializer | StreamSerializer] = []
         storages: list[Storage] = []
 
@@ -79,15 +79,15 @@ class Registry:
                     storages.append(value)
                 case Serializer() | StreamSerializer():
                     serializers.append(value)
-                case Decomposer():
-                    decomposers.append(value)
+                case Unpacker():
+                    unpackers.append(value)
                 case type():
                     if issubclass(value, BaseModel):
                         models.append(value)
 
         return cls(
             models=models,
-            decomposer=decomposers,
+            unpackers=unpackers,
             serializers=serializers,
             storages=storages,
             use_default_storage=use_default_storage,
@@ -99,7 +99,7 @@ class Registry:
             [
                 {
                     "model_by_id": o.model_by_id,
-                    "decomposer_by_name": o.decomposer_by_name,
+                    "unpacker_by_name": o.unpacker_by_name,
                     "serializer_by_name": o.serializer_by_name,
                     "stream_serializer_by_name": o.stream_serializer_by_name,
                     "storage_by_name": o.storage_by_name,
@@ -130,7 +130,7 @@ class Registry:
 
 
 _DEFAULT_REGISTRY_ATTRS: _RegistryAttrs = {
-    "decomposer_by_name": {},
+    "unpacker_by_name": {},
     "default_storage": None,
     "model_by_id": {},
     "serializer_by_name": {},
@@ -143,7 +143,7 @@ _DEFAULT_REGISTRY_ATTRS: _RegistryAttrs = {
 
 def _kwargs_to_attrs(kwargs: RegistryKwargs) -> _RegistryAttrs:
     attrs_from_kwargs = kwargs.get("_normalized_attributes") or _DEFAULT_REGISTRY_ATTRS
-    decomposer_by_name = dict(attrs_from_kwargs["decomposer_by_name"])
+    unpacker_by_name = dict(attrs_from_kwargs["unpacker_by_name"])
     default_storage = attrs_from_kwargs["default_storage"]
     model_by_id = dict(attrs_from_kwargs["model_by_id"])
     serializer_by_name = dict(attrs_from_kwargs["serializer_by_name"])
@@ -152,8 +152,8 @@ def _kwargs_to_attrs(kwargs: RegistryKwargs) -> _RegistryAttrs:
     stream_serializer_by_name = dict(attrs_from_kwargs["stream_serializer_by_name"])
     stream_serializer_by_type = dict(attrs_from_kwargs["stream_serializer_by_type"])
 
-    for decomposer in kwargs.get("decomposer", ()):
-        decomposer_by_name[decomposer.name] = decomposer
+    for unpacker in kwargs.get("unpacker", ()):
+        unpacker_by_name[unpacker.name] = unpacker
     for model in kwargs.get("models", ()):
         model_by_id[model.model_class_id()] = model
     for serializer in reversed(tuple(kwargs.get("serializers", ()))):
@@ -169,7 +169,7 @@ def _kwargs_to_attrs(kwargs: RegistryKwargs) -> _RegistryAttrs:
             default_storage = storage
 
     return {
-        "decomposer_by_name": decomposer_by_name,
+        "unpacker_by_name": unpacker_by_name,
         "default_storage": default_storage,
         "model_by_id": model_by_id,
         "serializer_by_name": serializer_by_name,
@@ -192,7 +192,7 @@ def _merge_attrs_with_descending_priority(attrs: Sequence[_RegistryAttrs]) -> _R
 class _RegistryAttrs(TypedDict):
     """Attributes for a registry."""
 
-    decomposer_by_name: Mapping[str, Decomposer]
+    unpacker_by_name: Mapping[str, Unpacker]
     default_storage: Storage | None
     model_by_id: Mapping[UUID, type[BaseModel]]
     serializer_by_name: Mapping[str, Serializer]
