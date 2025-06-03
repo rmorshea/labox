@@ -23,8 +23,7 @@ __all__ = [
 class ArrowDataFrameSerializer(Serializer[pd.DataFrame]):
     """Serializer for Pandas DataFrames using Arrow."""
 
-    name = "lakery.pandas.arrow.file"
-    version = 1
+    name = "lakery.pandas.arrow.file@v1"
     types = (pd.DataFrame,)
 
     def __init__(
@@ -37,22 +36,21 @@ class ArrowDataFrameSerializer(Serializer[pd.DataFrame]):
             read_options=read_options,
         )
 
-    def deserialize_data(self, value: pd.DataFrame, /) -> SerializedData:
+    def serialize_data(self, value: pd.DataFrame, /) -> SerializedData:
         """Serialize the given DataFrame."""
         table = pa.Table.from_pandas(value)
-        return self._arrow_serializer.deserialize_data(table)
+        return self._arrow_serializer.serialize_data(table)
 
-    def serializer_data(self, content: SerializedData, /) -> pd.DataFrame:
+    def deserialize_data(self, content: SerializedData, /) -> pd.DataFrame:
         """Deserialize the given DataFrame."""
-        table = self._arrow_serializer.serializer_data(content)
+        table = self._arrow_serializer.deserialize_data(content)
         return table.to_pandas()
 
 
 class ParquetDataFrameSerializer(Serializer[pd.DataFrame]):
     """Serializer for Pandas DataFrames using Parquet."""
 
-    name = "lakery.pandas.parquet.file"
-    version = 1
+    name = "lakery.pandas.parquet.file@v1"
     types = (pd.DataFrame,)
 
     def __init__(
@@ -66,14 +64,14 @@ class ParquetDataFrameSerializer(Serializer[pd.DataFrame]):
             read_options=read_options,
         )
 
-    def deserialize_data(self, value: pd.DataFrame, /) -> SerializedData:
+    def serialize_data(self, value: pd.DataFrame, /) -> SerializedData:
         """Serialize the given DataFrame."""
         table = pa.Table.from_pandas(value)
-        return self._parquet_serializer.deserialize_data(table)
+        return self._parquet_serializer.serialize_data(table)
 
-    def serializer_data(self, content: SerializedData, /) -> pd.DataFrame:
+    def deserialize_data(self, content: SerializedData, /) -> pd.DataFrame:
         """Deserialize the given DataFrame."""
-        table = self._parquet_serializer.serializer_data(content)
+        table = self._parquet_serializer.deserialize_data(content)
         return table.to_pandas()
 
 

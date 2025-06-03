@@ -33,7 +33,7 @@ from sqlalchemy.orm.decl_api import MappedAsDataclass
 from sqlalchemy.sql.expression import FunctionElement
 from sqlalchemy.types import TypeDecorator
 
-from lakery.common.utils import TagMap  # noqa: TC001
+from lakery._internal.utils import TagMap  # noqa: TC001
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio.engine import AsyncEngine
@@ -83,12 +83,12 @@ class RawJson(TypeDecorator[str]):
 
 
 class BaseRecord(MappedAsDataclass, DeclarativeBase):
-    """The base for lakery's core schema classes."""
+    """The base for lakery's core database classes."""
 
     @classmethod
     @coroutine
     async def create_all(cls, engine: AsyncEngine) -> None:
-        """Create all tables for the schema."""
+        """Create all tables for the database."""
         async with engine.begin() as conn:
             await conn.run_sync(cls.metadata.create_all)
 

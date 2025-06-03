@@ -8,7 +8,7 @@ from uuid import uuid4
 
 from anyio import create_task_group
 
-from lakery.common.anyio import start_as_async_iterator
+from lakery._internal.anyio import start_as_async_iterator
 from lakery.core.storage import Storage
 from lakery.extra._utils import make_path_parts_from_digest
 
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterable
     from collections.abc import Iterator
 
-    from lakery.common.utils import TagMap
+    from lakery._internal.utils import TagMap
     from lakery.core.storage import Digest
     from lakery.core.storage import GetStreamDigest
 
@@ -29,7 +29,7 @@ _LOG = logging.getLogger(__name__)
 class FileStorage(Storage[str]):
     """A storage backend for testing that saves data to local files."""
 
-    name = "lakery.os.local_file"
+    name = "lakery.os.file@v1"
     version = 1
 
     def __init__(

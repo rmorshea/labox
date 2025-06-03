@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     from google.cloud.storage import Blob
     from google.cloud.storage import Bucket
 
-    from lakery.common.utils import TagMap
+    from lakery._internal.utils import TagMap
 
 __all__ = (
     "BlobStorage",
@@ -63,8 +63,7 @@ class ReaderType(Protocol):
 class BlobStorage(Storage[str]):
     """A storage backend that uses Google Cloud Storage."""
 
-    name = "lakery.google.blob"
-    version = 1
+    name = "lakery.google.blob@v1"
 
     def __init__(
         self,

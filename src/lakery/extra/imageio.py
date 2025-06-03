@@ -6,7 +6,7 @@ import numpy as np
 from imageio import v3 as imageio
 from numpy.typing import NDArray
 
-from lakery.common.utils import frozenclass
+from lakery._internal.utils import frozenclass
 from lakery.core.serializer import SerializedData
 from lakery.core.serializer import Serializer
 
@@ -37,13 +37,13 @@ _DEFAULT_MIMETYPES = MimeTypes()
 class MediaSerializer(Serializer[Media]):
     """Serializer for ImageIO Arrays."""
 
-    name = "lakery.imageio.v3"
+    name = "lakery.imageio@v1"
     types = (Media,)
 
     def __init__(self, mimetypes: MimeTypes = _DEFAULT_MIMETYPES) -> None:
         self.mimetypes = mimetypes
 
-    def deserialize_data(self, media: Media) -> SerializedData:
+    def serialize_data(self, media: Media) -> SerializedData:
         """Serialize the given array."""
         buffer = BytesIO()
         imageio.imwrite(
@@ -57,7 +57,7 @@ class MediaSerializer(Serializer[Media]):
             "content_encoding": media.content_encoding,
         }
 
-    def serializer_data(self, content: SerializedData) -> Media:
+    def deserialize_data(self, content: SerializedData) -> Media:
         """Deserialize the given array."""
         ext = self._guess_extension(content["content_type"])
         buffer = BytesIO(content["data"])

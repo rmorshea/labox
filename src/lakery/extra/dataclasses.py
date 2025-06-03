@@ -11,11 +11,11 @@ from typing import TypeVar
 
 from lakery.common.jsonext import dump_any_json_ext
 from lakery.common.jsonext import load_json_ext
-from lakery.core.decomposer import BaseStorageModel
-from lakery.core.decomposer import ModeledValueMap
-from lakery.core.decomposer import UnpackedValue
 from lakery.core.serializer import Serializer
 from lakery.core.storage import Storage
+from lakery.core.unpacker import BaseStorageModel
+from lakery.core.unpacker import ModeledValueMap
+from lakery.core.unpacker import UnpackedValue
 
 if TYPE_CHECKING:
     from lakery.core.registry import RegistryCollection

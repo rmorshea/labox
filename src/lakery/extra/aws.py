@@ -15,7 +15,7 @@ from anyio import create_task_group
 from anyio.abc import CapacityLimiter
 from anyio.to_thread import run_sync
 
-from lakery.common.anyio import start_as_async_iterator
+from lakery._internal.anyio import start_as_async_iterator
 from lakery.common.exceptions import NoStorageData
 from lakery.common.streaming import write_async_byte_stream_into
 from lakery.core.storage import Digest
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     from types_boto3_s3.type_defs import CreateMultipartUploadRequestRequestTypeDef
     from types_boto3_s3.type_defs import PutObjectRequestRequestTypeDef
 
-    from lakery.common.utils import TagMap
+    from lakery._internal.utils import TagMap
 
 __all__ = ("S3Storage",)
 
@@ -50,8 +50,7 @@ StreamBufferType = Callable[[], AbstractContextManager[IO[bytes]]]
 class S3Storage(Storage[str]):
     """Storage for S3 data."""
 
-    name = "lakery.aws.s3"
-    version = 1
+    name = "lakery.aws.s3@v1"
 
     def __init__(
         self,

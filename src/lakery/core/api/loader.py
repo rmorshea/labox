@@ -13,17 +13,17 @@ from anysync import contextmanager
 from sqlalchemy import inspect as orm_inspect
 from sqlalchemy import select
 
-from lakery.common.anyio import FutureResult
-from lakery.common.anyio import set_future_exception_forcefully
-from lakery.common.anyio import start_future
-from lakery.common.anyio import start_with_future
+from lakery._internal.anyio import FutureResult
+from lakery._internal.anyio import set_future_exception_forcefully
+from lakery._internal.anyio import start_future
+from lakery._internal.anyio import start_with_future
 from lakery.common.exceptions import NotRegistered
 from lakery.core.database import ContentRecord
 from lakery.core.database import ManifestRecord
 from lakery.core.database import SerializerTypeEnum
-from lakery.core.decomposer import AnyModeledValue
-from lakery.core.decomposer import BaseStorageModel
 from lakery.core.serializer import StreamSerializer
+from lakery.core.unpacker import AnyModeledValue
+from lakery.core.unpacker import BaseStorageModel
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -167,7 +167,7 @@ async def load_manifest_from_record(
             if not isinstance(serializer, StreamSerializer):
                 msg = f"Content {record.id} expects a stream serializer, got {serializer}."
                 raise TypeError(msg)
-            stream = serializer.load_data_stream(
+            stream = serializer.deserialize_json_stream(
                 {
                     "content_encoding": record.content_encoding,
                     "content_type": record.content_type,

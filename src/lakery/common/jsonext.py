@@ -14,15 +14,15 @@ from typing import cast
 from typing import overload
 from uuid import UUID
 
-from lakery.core.decomposer import AnyModeledValue
-from lakery.core.decomposer import BaseStorageModel
-from lakery.core.decomposer import StorageModelConfigDict
+from lakery.core.unpacker import AnyModeledValue
+from lakery.core.unpacker import BaseStorageModel
+from lakery.core.unpacker import StorageModelConfigDict
 
 if TYPE_CHECKING:
-    from lakery.core.decomposer import UnpackedValue
     from lakery.core.registry import RegistryCollection
     from lakery.core.serializer import Serializer
     from lakery.core.storage import Storage
+    from lakery.core.unpacker import UnpackedValue
 
 JsonType = (
     int
@@ -164,7 +164,7 @@ def dump_json_content_ext(
 ) -> ContentJsonExt:
     """Dump the given value to a JSON extension with embedded content."""
     serializer = serializer or context["registries"].serializers.infer_from_value_type(type(value))
-    content = serializer.deserialize_data(value)
+    content = serializer.serialize_data(value)
     return {
         "__json_ext__": "content",
         "content_base64": b64encode(content["data"]).decode("ascii"),

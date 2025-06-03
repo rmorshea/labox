@@ -3,17 +3,20 @@ from __future__ import annotations
 import abc
 import json
 from typing import TYPE_CHECKING
+from typing import ClassVar
 from typing import Generic
 from typing import LiteralString
 from typing import Protocol
 from typing import TypedDict
 from typing import TypeVar
 
+from lakery._internal.utils import validate_versioned_class_name
+
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
     from collections.abc import AsyncIterable
 
-    from lakery.common.utils import TagMap
+    from lakery._internal.utils import TagMap
 
 
 T = TypeVar("T")
@@ -22,8 +25,11 @@ T = TypeVar("T")
 class Storage(Generic[T], abc.ABC):
     """A protocol for storing and retrieving data."""
 
-    name: LiteralString
+    name: ClassVar[LiteralString]
     """The name of the storage."""
+
+    def __init_subclass__(cls) -> None:
+        validate_versioned_class_name(cls)
 
     @abc.abstractmethod
     async def write_data(

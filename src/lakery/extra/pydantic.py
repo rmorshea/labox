@@ -20,12 +20,12 @@ from pydantic import GetCoreSchemaHandler
 from pydantic_core import core_schema as cs
 from pydantic_walk_core_schema import walk_core_schema
 
-from lakery.common.utils import frozenclass
-from lakery.core.decomposer import AnyModeledValue
-from lakery.core.decomposer import AnyModeledValueMap
-from lakery.core.decomposer import BaseStorageModel
-from lakery.core.decomposer import StorageModelConfig
-from lakery.core.decomposer import UnpackedValue
+from lakery._internal.utils import frozenclass
+from lakery.core.unpacker import AnyModeledValue
+from lakery.core.unpacker import AnyModeledValueMap
+from lakery.core.unpacker import BaseStorageModel
+from lakery.core.unpacker import StorageModelConfig
+from lakery.core.unpacker import UnpackedValue
 
 if TYPE_CHECKING:
     from lakery.common.jsonext import AnyJsonExt
@@ -294,7 +294,7 @@ def _make_serializer_func(schema: cs.CoreSchema) -> cs.FieldPlainInfoSerializerF
             )
             return {"__json_ext__": "ref", "ref": ref_str}
 
-        content = serializer.deserialize_data(value)
+        content = serializer.serialize_data(value)
         return {
             "__json_ext__": "content",
             "content_base64": b64encode(content["data"]).decode("ascii"),

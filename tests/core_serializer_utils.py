@@ -110,7 +110,7 @@ async def _check_dump_value_load_stream(
         "content_type": content["content_type"],
         "data_stream": restream(content["data"]),
     }
-    loaded_stream = serializer.load_data_stream(stream_content)
+    loaded_stream = serializer.deserialize_json_stream(stream_content)
 
     loaded_values = [value async for value in loaded_stream]
 
@@ -123,7 +123,7 @@ async def _check_dump_stream_load_value(
     restream: Any,
     values: Sequence[Any],
 ) -> None:
-    stream_content = serializer.dump_data_stream(_to_async_iterable(values))
+    stream_content = serializer.serialize_data_stream(_to_async_iterable(values))
     data = b"".join([chunk async for chunk in stream_content["data_stream"]])
     value_dump: SerializedData = {
         "content_encoding": stream_content["content_encoding"],
@@ -139,9 +139,9 @@ async def _check_dump_stream_load_stream(
     restream: Callable[[bytes], AsyncGenerator[bytes]],
     values: Sequence[Any],
 ) -> None:
-    content = serializer.dump_data_stream(_to_async_iterable(values))
+    content = serializer.serialize_data_stream(_to_async_iterable(values))
     data_stream = restream(b"".join([chunk async for chunk in content["data_stream"]]))
-    loaded_stream = serializer.load_data_stream({**content, "data_stream": data_stream})
+    loaded_stream = serializer.deserialize_json_stream({**content, "data_stream": data_stream})
     assertion([value async for value in loaded_stream], list(values))  # type: ignore[reportArgumentType]
 
 
@@ -152,7 +152,7 @@ async def _check_dump_value_load_value(
     value: Any,
     conv: Callable[[Any], Any] = lambda x: x,
 ) -> None:
-    assertion(conv(serializer.serializer_data(serializer.deserialize_data(value))), conv(value))
+    assertion(conv(serializer.deserialize_data(serializer.serialize_data(value))), conv(value))
 
 
 async def _to_async_iterable(iterable: Iterable[Any]) -> AsyncIterator[Any]:

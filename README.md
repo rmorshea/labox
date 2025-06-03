@@ -7,10 +7,10 @@ A data storage framework for Python.
 
 ## Todo
 
--   decouple serialization dumper/loader logic and storage writer/reader logic
-    -   this will allow many to one relationships between dumpers/loaders and
+- decouple serialization dumper/loader logic and storage writer/reader logic
+    - this will allow many to one relationships between dumpers/loaders and
         writers/readers
-    -   this would allow for multiple storage writers can specify that they use a common
+    - this would allow for multiple storage writers can specify that they use a common
         reader
-    -   for example, a file storage with multiple writers (e.g. different paths) ought
+    - for example, a file storage with multiple writers (e.g. different paths) ought
         to be able to use the same reader

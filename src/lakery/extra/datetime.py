@@ -11,20 +11,18 @@ __all__ = ("Iso8601Serializer", "iso8601_serializer")
 class Iso8601Serializer(Serializer[datetime]):
     """A serializer for JSON data."""
 
-    name = "lakery.json.value"
-    version = 1
+    name = "lakery.iso8601@v1"
     types = (datetime,)
-    content_type = "application/text"
 
-    def deserialize_data(self, value: datetime) -> SerializedData:
+    def serialize_data(self, value: datetime) -> SerializedData:
         """Serialize the given value to JSON."""
         return {
             "content_encoding": "utf-8",
-            "content_type": self.content_type,
+            "content_type": "application/text",
             "data": value.isoformat().encode("utf-8"),
         }
 
-    def serializer_data(self, content: SerializedData) -> datetime:
+    def deserialize_data(self, content: SerializedData) -> datetime:
         """Deserialize the given JSON data."""
         return datetime.fromisoformat(content["data"].decode("utf-8"))
 

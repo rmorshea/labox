@@ -66,3 +66,18 @@ else:
 def full_class_name(cls: type) -> str:
     """Return the fully qualified name of a class."""
     return f"{cls.__module__}.{cls.__qualname__}"
+
+
+_NAME_PATTERN = re.compile(r"^.*\@v\d+.*$")
+
+
+def validate_versioned_class_name(cls: type) -> None:
+    if not hasattr(cls, "name"):
+        return
+    name: str = cls.name
+    if not _NAME_PATTERN.match(name):
+        msg = (
+            f"Expected a versioned name for {cls.__name__!r}, "
+            f"of the form '<name>@v<version>', but got {name!r}."
+        )
+        raise ValueError(msg)

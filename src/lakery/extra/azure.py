@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
     from azure.storage.blob.aio import ContainerClient
 
-    from lakery.common.utils import TagMap
+    from lakery._internal.utils import TagMap
 
 
 __all__ = ("BlobStorage",)
@@ -31,8 +31,7 @@ _LOG = logging.getLogger(__name__)
 class BlobStorage(Storage[str]):
     """Storage for Azure Blob data."""
 
-    name = "lakery.azure.blob"
-    version = 1
+    name = "lakery.azure.blob@v1"
 
     def __init__(
         self,

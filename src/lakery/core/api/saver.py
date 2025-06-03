@@ -16,8 +16,8 @@ from uuid import uuid4
 from anyio import create_task_group
 from anysync import contextmanager
 
-from lakery.common.anyio import FutureResult
-from lakery.common.anyio import start_future
+from lakery._internal.anyio import FutureResult
+from lakery._internal.anyio import start_future
 from lakery.core.database import ContentRecord
 from lakery.core.database import ManifestRecord
 from lakery.core.database import SerializerTypeEnum
@@ -31,10 +31,8 @@ if TYPE_CHECKING:
     from anyio.abc import TaskGroup
     from sqlalchemy.ext.asyncio import AsyncSession
 
-    from lakery.common.utils import TagMap
-    from lakery.core.decomposer import BaseStorageModel
-    from lakery.core.registry import RegistryCollection
-    from lakery.core.registry import SerializerRegistry
+    from lakery._internal.utils import TagMap
+    from lakery.core.registry import Registry
     from lakery.core.serializer import SerializedData
     from lakery.core.serializer import SerializedDataStream
     from lakery.core.serializer import Serializer
@@ -56,14 +54,14 @@ _LOG = getLogger(__name__)
 @contextmanager
 async def data_saver(
     *,
-    registries: RegistryCollection,
+    registry: Registry,
     session: AsyncSession,
 ) -> AsyncIterator[DataSaver]:
     """Create a context manager for saving data."""
     futures: list[FutureResult[ManifestRecord]] = []
     try:
         async with create_task_group() as tg:
-            yield _DataSaver(tg, futures, registries)
+            yield _DataSaver(tg, futures, registry)
     finally:
         errors: list[BaseException] = []
         manifests: list[ManifestRecord] = []
@@ -88,27 +86,27 @@ class _DataSaver:
         self,
         task_group: TaskGroup,
         futures: list[FutureResult[ManifestRecord]],
-        registries: RegistryCollection,
+        registry: Registry,
     ):
         self._futures = futures
         self._task_group = task_group
-        self._registries = registries
+        self._registry = registry
 
     def save_soon(
         self,
-        model: BaseStorageModel,
+        model: Any,
         *,
         tags: Mapping[str, str] | None = None,
     ) -> FutureResult[ManifestRecord]:
         """Schedule the given model to be saved."""
-        self._registries.models.check_registered(type(model))
+        self._registry.models.check_registered(type(model))
 
         future = start_future(
             self._task_group,
             _save_model,
             model,
             tags or {},
-            self._registries,
+            self._registry,
         )
         self._futures.append(future)
 
@@ -196,7 +194,7 @@ async def _save_storage_value(
 ) -> ContentRecord:
     storage = storage or registries.storages.default
     serializer = serializer or registries.serializers.infer_from_value_type(type(value))
-    content = serializer.deserialize_data(value)
+    content = serializer.serialize_data(value)
     digest = _make_value_dump_digest(content)
     storage_data = await storage.write_data(content["data"], digest, tags)
     return ContentRecord(
@@ -234,7 +232,7 @@ async def _save_storage_stream(
             serializer = registries.serializers.infer_from_stream_type(type(first_value))
             stream = _continue_stream(first_value, stream_iter)
 
-        content = serializer.dump_data_stream(stream)
+        content = serializer.serialize_data_stream(stream)
         byte_stream, get_digest = _wrap_stream_dump(content)
         storage_data = await storage.write_data_stream(byte_stream, get_digest, tags)
         try:
@@ -302,33 +300,6 @@ def _make_value_dump_digest(archive: SerializedData) -> Digest:
         "content_size": len(data),
         "content_type": archive["content_type"],
     }
-
-
-class _SerializationHelper:
-    def __init__(self, serializers: SerializerRegistry) -> None:
-        self._serializers = serializers
-
-    def dump(
-        self,
-        value: Any,
-        serializer: Serializer | None,
-    ) -> SerializedData:
-        if serializer is None:
-            serializer = self._serializers.infer_from_value_type(type(value))
-        return serializer.deserialize_data(value)
-
-    async def dump_stream(
-        self,
-        stream: AsyncIterable,
-        serializer: StreamSerializer | None,
-    ) -> SerializedDataStream:
-        if serializer is not None:
-            return serializer.dump_data_stream(stream)
-
-        stream_iter = aiter(stream)
-        first_value = await anext(stream_iter)
-        serializer = self._serializers.infer_from_stream_type(type(first_value))
-        return serializer.dump_data_stream(_continue_stream(first_value, stream_iter))
 
 
 async def _continue_stream(first_value: Any, stream: AsyncIterable[Any]) -> AsyncGenerator[Any]:
