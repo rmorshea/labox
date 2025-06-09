@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
     from collections.abc import AsyncIterable
 
-    from lakery._internal.utils import TagMap
+    from lakery.common.types import TagMap
 
 
 T = TypeVar("T")

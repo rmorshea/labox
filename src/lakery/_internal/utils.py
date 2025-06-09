@@ -6,21 +6,39 @@ from dataclasses import dataclass
 from dataclasses import field
 from typing import TYPE_CHECKING
 from typing import Any
+from typing import TypedDict
 from typing import TypeVar
 from typing import cast
 from typing import dataclass_transform
 from typing import overload
 
 T = TypeVar("T")
-
-TagMap = Mapping[str, str]
-"""A simple mapping from tag names to values."""
+D = TypeVar("D", bound=Mapping[str, Any])
 
 UNDEFINED = cast("Any", type("UNDEFINED", (), {"__repr__": lambda _: "UNDEFINED"})())
 """A sentinel value representing an undefined value."""
 
 NON_ALPHANUMERIC = re.compile(r"[^a-z0-9]+")
 """Matches non-alphanumeric characters."""
+
+
+def get_typed_dict(typed_dict: type[D], merged_dict: Mapping[str, Any], /) -> D:
+    """Partition a merged dictionary into typed dictionaries."""
+    extracted: dict[str, Any] = {}
+
+    typed_dict_cls = TypedDict if TYPE_CHECKING else typed_dict
+
+    for k in typed_dict_cls.__required_keys__:
+        if k in merged_dict:
+            extracted[k] = merged_dict[k]
+        else:
+            msg = f"Missing required key '{k}' in {typed_dict_cls.__name__}."
+            raise KeyError(msg)
+    for k in typed_dict_cls.__optional_keys__:
+        if k in merged_dict:
+            extracted[k] = merged_dict[k]
+
+    return cast("D", extracted)
 
 
 def slugify(string: str) -> str:

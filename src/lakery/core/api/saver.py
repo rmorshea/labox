@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     from anyio.abc import TaskGroup
     from sqlalchemy.ext.asyncio import AsyncSession
 
-    from lakery._internal.utils import TagMap
+    from lakery.common.types import TagMap
     from lakery.core.registry import Registry
     from lakery.core.serializer import SerializedData
     from lakery.core.serializer import SerializedDataStream

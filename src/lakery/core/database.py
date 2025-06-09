@@ -33,7 +33,7 @@ from sqlalchemy.orm.decl_api import MappedAsDataclass
 from sqlalchemy.sql.expression import FunctionElement
 from sqlalchemy.types import TypeDecorator
 
-from lakery._internal.utils import TagMap  # noqa: TC001
+from lakery.common.types import TagMap  # noqa: TC001
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio.engine import AsyncEngine

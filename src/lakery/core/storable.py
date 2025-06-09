@@ -15,8 +15,6 @@ from warnings import warn
 from lakery._internal.utils import full_class_name
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
-
     from lakery.core.unpacker import Unpacker
 
 T = TypeVar("T")
@@ -64,21 +62,6 @@ class Storable:
                 class_id = UUID(class_id)
         unpacker = cfg.get("storable_unpacker", cls.storable_config.unpacker)
         cls.storable_config = StorableConfig(class_id=class_id, unpacker=unpacker)
-
-
-def partition_storable_config_dict(d: Mapping[K, T]) -> tuple[StorableConfigDict, dict[K, T]]:
-    """Partition a dictionary into a StorableConfigDict and a rest dictionary."""
-    rest: dict[K, T] = dict(d)
-    cfg: StorableConfigDict = {}
-    for long_name in LongStorableConfigDict.__annotations__:
-        if long_name in rest:
-            cfg[long_name] = rest.pop(long_name)  # type: ignore[reportArgumentType]
-            continue
-        short_name = _to_short_config_name(long_name)
-        if short_name in rest:
-            cfg[long_name] = rest.pop(short_name)  # type: ignore[reportArgumentType]
-            continue
-    return cfg, rest
 
 
 def normalize_storable_config_dict(cfg: StorableConfigDict) -> LongStorableConfigDict:

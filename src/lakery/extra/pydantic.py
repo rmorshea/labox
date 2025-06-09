@@ -9,16 +9,20 @@ from logging import getLogger
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import TypedDict
+from typing import Unpack
 from typing import cast
 from typing import overload
 
 from pydantic import BaseModel
+from pydantic import ConfigDict as _ConfigDict
 from pydantic import GetCoreSchemaHandler
 from pydantic_core import core_schema as cs
 from pydantic_walk_core_schema import walk_core_schema
 
 from lakery._internal.utils import frozenclass
+from lakery._internal.utils import get_typed_dict
 from lakery.core.storable import Storable
+from lakery.core.storable import StorableConfigDict
 from lakery.core.unpacker import AnyUnpackedValue
 from lakery.core.unpacker import UnpackedValue
 from lakery.core.unpacker import Unpacker
@@ -97,6 +101,14 @@ class StorageModelUnpacker(Unpacker["StorageModel"]):
         )
 
 
+class ConfigDict(StorableConfigDict, _ConfigDict):
+    """Configuration for a storage model.
+
+    See [`StorableConfigDict`][lakery.core.storable.StorableConfigDict] and
+    [`pydantic.ConfigDict`][pydantic.ConfigDict] for more details.
+    """
+
+
 class StorageModel(
     Storable,
     BaseModel,
@@ -104,6 +116,12 @@ class StorageModel(
     storable_unpacker=StorageModelUnpacker(),
 ):
     """A Pydantic model that can be stored by Lakery."""
+
+    def __init_subclass__(cls, **kwargs: Unpack[ConfigDict]) -> None:
+        storable_config = get_typed_dict(StorableConfigDict, kwargs)
+        pydantic_config = get_typed_dict(_ConfigDict, kwargs)
+        super(StorageModel).__init_subclass__(**storable_config)
+        super(Storable).__init_subclass__(**pydantic_config)
 
     @classmethod
     def __get_pydantic_core_schema__(
