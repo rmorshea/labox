@@ -21,7 +21,7 @@ from lakery._internal.anyio import start_future
 from lakery.core.database import ContentRecord
 from lakery.core.database import ManifestRecord
 from lakery.core.database import SerializerTypeEnum
-from lakery.core.model import Storable
+from lakery.core.storable import Storable
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator

@@ -18,7 +18,7 @@ from pydantic_core import core_schema as cs
 from pydantic_walk_core_schema import walk_core_schema
 
 from lakery._internal.utils import frozenclass
-from lakery.core.model import Storable
+from lakery.core.storable import Storable
 from lakery.core.unpacker import AnyUnpackedValue
 from lakery.core.unpacker import UnpackedValue
 from lakery.core.unpacker import Unpacker
@@ -104,8 +104,6 @@ class StorageModel(
     storable_config={"unpacker": StorageModelUnpacker()},
 ):
     """A Pydantic model that can be stored by Lakery."""
-
-    _lakery_model_unpacker = StorageModelUnpacker()
 
     @classmethod
     def __get_pydantic_core_schema__(

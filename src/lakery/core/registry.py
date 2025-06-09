@@ -13,9 +13,9 @@ from ruyaml import import_module
 
 from lakery._internal.utils import full_class_name
 from lakery.common.exceptions import NotRegistered
-from lakery.core.model import Storable
 from lakery.core.serializer import Serializer
 from lakery.core.serializer import StreamSerializer
+from lakery.core.storable import Storable
 from lakery.core.storage import Storage
 from lakery.core.unpacker import Unpacker
 

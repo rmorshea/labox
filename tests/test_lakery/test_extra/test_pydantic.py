@@ -18,7 +18,7 @@ msgpack_serializer = basic_registries.serializers[MsgPackSerializer.name]
 json_serializer = basic_registries.serializers[JsonSerializer.name]
 
 
-class PydanticStorageModel(StorageModel, storage_model_config={"id": "1e76a004", "version": 1}):
+class PydanticStorageModel(StorageModel, Lakery(id="1e76a004")):
     no_spec: Any
     spec_with_serializer: Annotated[Any, StorageSpec(serializer=msgpack_serializer)]
     spec_with_storage: Annotated[Any, StorageSpec(storage=local_storage)]

@@ -13,8 +13,8 @@ from sqlalchemy.util.typing import TypedDict
 from typing_extensions import TypeVar
 
 from lakery._internal.utils import validate_versioned_class_name
-from lakery.core.model import Storable
 from lakery.core.registry import Registry
+from lakery.core.storable import Storable
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable
