@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import abc
+from collections.abc import Mapping
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import ClassVar
@@ -16,7 +17,6 @@ from lakery.core.registry import Registry
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable
-    from collections.abc import Mapping
 
     from lakery.core.registry import Registry
     from lakery.core.serializer import Serializer
@@ -25,9 +25,10 @@ if TYPE_CHECKING:
 
 
 T = TypeVar("T", bound=Any, default=Any)
+D = TypeVar("D", bound=Mapping[str, Any], default=Mapping[str, Any])
 
 
-class Unpacker(abc.ABC, Generic[T]):
+class Unpacker(abc.ABC, Generic[T, D]):
     """A base for classes that decompose models into their constituent parts."""
 
     name: ClassVar[LiteralString]
@@ -39,12 +40,12 @@ class Unpacker(abc.ABC, Generic[T]):
         validate_versioned_class_name(cls)
 
     @abc.abstractmethod
-    def unpack_object(self, obj: T, registry: Registry, /) -> Mapping[str, Any]:
+    def unpack_object(self, obj: T, registry: Registry, /) -> D:
         """Return a mapping of that describes where and how to store the object's contents."""
         raise NotImplementedError
 
     @abc.abstractmethod
-    def repack_object(self, unpacked: Mapping[str, Any], registry: Registry, /) -> T:
+    def repack_object(self, cls: type[T], contents: D, registry: Registry, /) -> T:
         """Reconstitute the object from a mapping of its unpacked contents."""
         raise NotImplementedError
 
@@ -69,3 +70,7 @@ class UnpackedValueStream(Generic[T], TypedDict, total=False):
     """The serializer to apply to the stream."""
     storage: Storage | None
     """The storage to send the serialized stream to."""
+
+
+AnyUnpackedValue = UnpackedValue[Any] | UnpackedValueStream[Any]
+"""A type that can be either a value or a stream of values."""

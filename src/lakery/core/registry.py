@@ -11,8 +11,9 @@ from typing import cast
 from ruyaml import import_module
 
 from lakery._internal.utils import full_class_name
-from lakery.core.model import get_model_id
-from lakery.core.model import has_model_id
+from lakery.common.exceptions import NotRegistered
+from lakery.core.model import get_model_info
+from lakery.core.model import has_model_info
 from lakery.core.serializer import Serializer
 from lakery.core.serializer import StreamSerializer
 from lakery.core.storage import Storage
@@ -57,7 +58,7 @@ class Registry:
 
     def __init__(self, **kwargs: Unpack[RegistryKwargs]) -> None:
         attrs = _kwargs_to_attrs(kwargs)
-        self.default_storage = attrs["default_storage"]
+        self._default_storage = attrs["default_storage"]
         self.model_by_id = attrs["model_by_id"]
         self.serializer_by_name = attrs["serializer_by_name"]
         self.serializer_by_type = attrs["serializer_by_type"]
@@ -67,6 +68,13 @@ class Registry:
         self.unpacker_by_name = attrs["unpacker_by_name"]
         self.unpacker_by_type = attrs["unpacker_by_type"]
         self.use_type_inference = kwargs.get("use_type_inference", True)
+
+    def get_default_storage(self) -> Storage:
+        """Return the default storage for this registry."""
+        if self._default_storage is None:
+            msg = "No default storage is set for this registry."
+            raise ValueError(msg)
+        return self._default_storage
 
     @classmethod
     def from_modules(
@@ -89,7 +97,7 @@ class Registry:
                 case Unpacker():
                     unpackers.append(value)
                 case type():
-                    if has_model_id(value):
+                    if has_model_info(value):
                         models.append(value)
 
         return cls(
@@ -105,7 +113,7 @@ class Registry:
         kwargs["_normalized_attributes"] = _merge_attrs_with_descending_priority(
             [
                 {
-                    "default_storage": o.default_storage,
+                    "default_storage": o._default_storage,  # noqa: SLF001
                     "model_by_id": o.model_by_id,
                     "serializer_by_name": o.serializer_by_name,
                     "serializer_by_type": o.serializer_by_type,
@@ -119,6 +127,50 @@ class Registry:
             ]
         )
         return self.__class__(**kwargs)
+
+    def check_model_registered(self, model: type[Any]) -> None:
+        """Check if the given model is registered in this registry."""
+        if not has_model_info(model):
+            msg = f"The model {full_class_name(model)} must have a model ID."
+            raise ValueError(msg)
+        if get_model_info(model) not in self.model_by_id:
+            msg = f"The model {full_class_name(model)} is not registered in this registry."
+            raise NotRegistered(msg)
+
+    def get_model(self, model_id: UUID) -> type[Any]:
+        """Get a model by its ID."""
+        if model := self.model_by_id.get(model_id):
+            return model
+        msg = f"No model found with ID '{model_id}'."
+        raise NotRegistered(msg)
+
+    def get_serializer(self, name: str) -> Serializer:
+        """Get a serializer by its name."""
+        if serializer := self.serializer_by_name.get(name):
+            return serializer
+        msg = f"No serializer found with name '{name}'."
+        raise NotRegistered(msg)
+
+    def get_stream_serializer(self, name: str) -> StreamSerializer:
+        """Get a stream serializer by its name."""
+        if serializer := self.stream_serializer_by_name.get(name):
+            return serializer
+        msg = f"No stream serializer found with name '{name}'."
+        raise NotRegistered(msg)
+
+    def get_unpacker(self, name: str) -> Unpacker:
+        """Get an unpacker by its name."""
+        if unpacker := self.unpacker_by_name.get(name):
+            return unpacker
+        msg = f"No unpacker found with name '{name}'."
+        raise NotRegistered(msg)
+
+    def get_storage(self, name: str) -> Storage:
+        """Get a storage by its name."""
+        if storage := self.storage_by_name.get(name):
+            return storage
+        msg = f"No storage found with name '{name}'."
+        raise NotRegistered(msg)
 
     def infer_unpacker(self, cls: type[T]) -> Unpacker[T]:
         """Get the first unpacker that can handle the given type or its parent classes."""
@@ -180,7 +232,7 @@ def _kwargs_to_attrs(kwargs: RegistryKwargs) -> _RegistryAttrs:
         _check_name_defined_on_class(unpacker)
         unpacker_by_name[unpacker.name] = unpacker
     for model in kwargs.get("models", ()):
-        model_by_id[get_model_id(model)] = model
+        model_by_id[get_model_info(model).model_id] = model
     for serializer in reversed(tuple(kwargs.get("serializers", ()))):
         _check_name_defined_on_class(serializer)
         if isinstance(serializer, StreamSerializer):

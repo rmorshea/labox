@@ -22,8 +22,6 @@ from lakery.core.database import ContentRecord
 from lakery.core.database import ManifestRecord
 from lakery.core.database import SerializerTypeEnum
 from lakery.core.serializer import StreamSerializer
-from lakery.core.unpacker import AnyModeledValue
-from lakery.core.unpacker import BaseStorageModel
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -31,21 +29,19 @@ if TYPE_CHECKING:
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
-    from lakery.core.registry import RegistryCollection
-    from lakery.core.registry import SerializerRegistry
-    from lakery.core.registry import StorageRegistry
+    from lakery.core.registry import Registry
 
 
-M = TypeVar("M", bound=BaseStorageModel)
+M = TypeVar("M")
 
-_Requests = tuple[ManifestRecord, type[BaseStorageModel] | None, FutureResult[BaseStorageModel]]
+_Requests = tuple[ManifestRecord, type[Any] | None, FutureResult[Any]]
 _RecordGroup = tuple[ManifestRecord, Sequence[ContentRecord]]
 
 
 @contextmanager
 async def data_loader(
     *,
-    registries: RegistryCollection,
+    registry: Registry,
     session: AsyncSession,
 ) -> AsyncIterator[DataLoader]:
     """Create a context manager for saving data."""
@@ -59,7 +55,7 @@ async def data_loader(
             record_groups, requests, strict=False
         ):
             try:
-                actual_model_type = registries.models[manifest.model_id]
+                actual_model_type = registry.get_model(manifest.model_id)
             except NotRegistered as error:
                 set_future_exception_forcefully(future, error)
                 continue
@@ -75,7 +71,7 @@ async def data_loader(
                 load_model_from_record_group,
                 manifest,
                 contents,
-                registries=registries,
+                registry=registry,
             )
 
 
@@ -97,12 +93,12 @@ class _DataLoader:
         manifest: ManifestRecord,
         model_type: None = ...,
         /,
-    ) -> FutureResult[BaseStorageModel]: ...
+    ) -> FutureResult[Any]: ...
 
     def load_soon(
         self,
         manifest: ManifestRecord,
-        model_type: type[BaseStorageModel] | None = None,
+        model_type: type[Any] | None = None,
         /,
     ) -> FutureResult[Any]:
         """Load the given model soon."""
@@ -120,58 +116,58 @@ async def load_model_from_record_group(
     contents: Sequence[ContentRecord],
     /,
     *,
-    registries: RegistryCollection,
-) -> BaseStorageModel:
+    registry: Registry,
+) -> Any:
     """Load the given model from the given record."""
-    model_type = registries.models[manifest.model_id]
+    unpacker = registry.get_unpacker(manifest.unpacker_name)
+    model_type = registry.get_model(manifest.model_id)
 
-    content_futures: dict[str, FutureResult[AnyModeledValue]] = {}
+    content_futures: dict[str, FutureResult[Any]] = {}
     async with create_task_group() as tg:
         for c in contents:
             content_futures[c.content_key] = start_future(
                 tg,
                 load_manifest_from_record,
                 c,
-                serializers=registries.serializers,
-                storages=registries.storages,
+                registry=registry,
             )
 
-    return model_type.storage_model_load(
+    return unpacker.repack_object(
+        model_type,
         {i: f.result() for i, f in content_futures.items()},
-        manifest.model_version,
-        registries,
+        registry,
     )
 
 
 async def load_manifest_from_record(
     record: ContentRecord,
     *,
-    serializers: SerializerRegistry,
-    storages: StorageRegistry,
-) -> AnyModeledValue:
+    registry: Registry,
+) -> Any:
     """Load the given content from the given record."""
-    serializer = serializers[record.serializer_name]
-    storage = storages[record.storage_name]
+    storage = registry.get_storage(record.storage_name)
     storage_data = storage.load_json_storage_data(record.storage_data)
     match record.serializer_type:
         case SerializerTypeEnum.Serializer:
-            value = serializer.load_data(
+            serializer = registry.get_serializer(record.serializer_name)
+            value = serializer.deserialize_data(
                 {
                     "content_encoding": record.content_encoding,
                     "content_type": record.content_type,
-                    "data": await storage.get_data(storage_data),
+                    "data": await storage.read_data(storage_data),
                 }
             )
             return {"value": value, "serializer": serializer, "storage": storage}
         case SerializerTypeEnum.StreamSerializer:
+            serializer = registry.get_stream_serializer(record.serializer_name)
             if not isinstance(serializer, StreamSerializer):
                 msg = f"Content {record.id} expects a stream serializer, got {serializer}."
                 raise TypeError(msg)
-            stream = serializer.deserialize_json_stream(
+            stream = serializer.deserialize_data_stream(
                 {
                     "content_encoding": record.content_encoding,
                     "content_type": record.content_type,
-                    "data_stream": storage.get_data_stream(storage_data),
+                    "data_stream": storage.read_data_stream(storage_data),
                 }
             )
             return {

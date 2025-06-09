@@ -21,6 +21,7 @@ from lakery._internal.anyio import start_future
 from lakery.core.database import ContentRecord
 from lakery.core.database import ManifestRecord
 from lakery.core.database import SerializerTypeEnum
+from lakery.core.model import get_model_info
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
@@ -41,9 +42,10 @@ if TYPE_CHECKING:
     from lakery.core.storage import GetStreamDigest
     from lakery.core.storage import Storage
     from lakery.core.storage import StreamDigest
+    from lakery.core.unpacker import Unpacker
 
 
-T = TypeVar("T")
+T = TypeVar("T", default=Any)
 P = ParamSpec("P")
 D = TypeVar("D", bound=ManifestRecord)
 
@@ -94,17 +96,19 @@ class _DataSaver:
 
     def save_soon(
         self,
-        model: Any,
+        model: T,
         *,
+        unpacker: Unpacker[T] | None = None,
         tags: Mapping[str, str] | None = None,
     ) -> FutureResult[ManifestRecord]:
         """Schedule the given model to be saved."""
-        self._registry.models.check_registered(type(model))
+        self._registry.check_model_registered(type(model))
 
         future = start_future(
             self._task_group,
             _save_model,
             model,
+            unpacker,
             tags or {},
             self._registry,
         )
@@ -118,13 +122,17 @@ DataSaver: TypeAlias = _DataSaver
 
 
 async def _save_model(
-    model: BaseStorageModel,
+    model: Any,
+    unpacker: Unpacker[Any] | None,
     tags: TagMap,
-    registries: RegistryCollection,
+    registry: Registry,
 ) -> ManifestRecord:
     """Save the given data to the database."""
-    model_cfg = model.storage_model_config()
-    model_contents = model.storage_model_dump(registries)
+    model_cls = model.__class__
+    model_info = get_model_info(model_cls)
+    model_id = model_info.model_id
+    unpacker = unpacker or model_info.unpacker or registry.infer_unpacker(model_cls)
+    model_contents = unpacker.unpack_object(model, registry)
 
     manifest_id = uuid4()
     data_record_futures: list[FutureResult[ContentRecord]] = []
@@ -142,7 +150,7 @@ async def _save_model(
                         content["value"],
                         content.get("serializer"),
                         content.get("storage"),
-                        registries,
+                        registry,
                     )
                 )
             elif "value_stream" in content:
@@ -156,7 +164,7 @@ async def _save_model(
                         content["value_stream"],
                         content.get("serializer"),
                         content.get("storage"),
-                        registries,
+                        registry,
                     )
                 )
             else:
@@ -177,9 +185,9 @@ async def _save_model(
     return ManifestRecord(
         id=manifest_id,
         tags=tags,
-        model_id=model_cfg.id,
-        model_version=model_cfg.version,
+        model_id=model_id,
         contents=contents,
+        unpacker_name=unpacker.name,
     )
 
 
@@ -190,10 +198,10 @@ async def _save_storage_value(
     value: Any,
     serializer: Serializer | None,
     storage: Storage | None,
-    registries: RegistryCollection,
+    registry: Registry,
 ) -> ContentRecord:
-    storage = storage or registries.storages.default
-    serializer = serializer or registries.serializers.infer_from_value_type(type(value))
+    storage = storage or registry.get_default_storage()
+    serializer = serializer or registry.infer_serializer(type(value))
     content = serializer.serialize_data(value)
     digest = _make_value_dump_digest(content)
     storage_data = await storage.write_data(content["data"], digest, tags)
@@ -219,9 +227,9 @@ async def _save_storage_stream(
     stream: AsyncIterable[Any],
     serializer: StreamSerializer | None,
     storage: Storage | None,
-    registries: RegistryCollection,
+    registry: Registry,
 ) -> ContentRecord:
-    storage = storage or registries.storages.default
+    storage = storage or registry.get_default_storage()
     async with AsyncExitStack() as stack:
         if isasyncgen(stream):
             await stack.enter_async_context(aclosing(stream))
@@ -229,7 +237,7 @@ async def _save_storage_stream(
         if serializer is None:
             stream_iter = aiter(stream)
             first_value = await anext(stream_iter)
-            serializer = registries.serializers.infer_from_stream_type(type(first_value))
+            serializer = registry.infer_stream_serializer(type(first_value))
             stream = _continue_stream(first_value, stream_iter)
 
         content = serializer.serialize_data_stream(stream)

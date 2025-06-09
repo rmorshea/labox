@@ -10,12 +10,10 @@ from typing import TYPE_CHECKING
 from typing import Any
 from typing import Self
 from typing import TypedDict
-from typing import Unpack
 from typing import cast
 from typing import overload
 
 from pydantic import BaseModel
-from pydantic import ConfigDict
 from pydantic import GetCoreSchemaHandler
 from pydantic_core import core_schema as cs
 from pydantic_walk_core_schema import walk_core_schema
@@ -23,8 +21,6 @@ from pydantic_walk_core_schema import walk_core_schema
 from lakery._internal.utils import frozenclass
 from lakery.core.unpacker import AnyModeledValue
 from lakery.core.unpacker import AnyModeledValueMap
-from lakery.core.unpacker import BaseStorageModel
-from lakery.core.unpacker import StorageModelConfig
 from lakery.core.unpacker import UnpackedValue
 
 if TYPE_CHECKING:
@@ -44,22 +40,8 @@ __all__ = (
 _LOG = getLogger(__name__)
 
 
-class StorageModel(
-    BaseModel,
-    BaseStorageModel[AnyModeledValueMap],
-    storage_model_config=None,
-    arbitrary_types_allowed=True,
-):
+class StorageModel(BaseModel, arbitrary_types_allowed=True):
     """A Pydantic model that can be stored by Lakery."""
-
-    if TYPE_CHECKING:
-
-        def __init_subclass__(
-            cls,
-            *,
-            storage_model_config: StorageModelConfig | None,
-            **kwargs: Unpack[ConfigDict],
-        ) -> None: ...
 
     @classmethod
     def __get_pydantic_core_schema__(
