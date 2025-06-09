@@ -101,7 +101,7 @@ class StorageModel(
     Storable,
     BaseModel,
     arbitrary_types_allowed=True,
-    storable_config={"unpacker": StorageModelUnpacker()},
+    storable_unpacker=StorageModelUnpacker(),
 ):
     """A Pydantic model that can be stored by Lakery."""
 
@@ -374,11 +374,11 @@ def _get_info_context(
 
 
 class _LakerySerializationContext(TypedDict):
-    external: dict[str, AnyModeledValue]
+    external: dict[str, AnyUnpackedValue]
     get_next_external_id: Callable[[], int]
     registry: Registry
 
 
 class _LakeryValidationContext(TypedDict):
-    external: dict[str, AnyModeledValue]
+    external: dict[str, AnyUnpackedValue]
     registry: Registry

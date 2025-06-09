@@ -6,6 +6,7 @@ from typing import ClassVar
 from typing import LiteralString
 from typing import TypedDict
 from typing import TypeVar
+from typing import Unpack
 from typing import cast
 from uuid import UUID
 from uuid import uuid4
@@ -14,17 +15,31 @@ from warnings import warn
 from lakery._internal.utils import full_class_name
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from lakery.core.unpacker import Unpacker
 
 T = TypeVar("T")
 S = TypeVar("S", bound=str)
+K = TypeVar("K")
 
 
-class StorableConfigDict(TypedDict, total=False):
+class LongStorableConfigDict(TypedDict, total=False):
+    """Configuration for a storable class with explicit names."""
+
+    storable_class_id: LiteralString | None
+    """ID of the storable class, as a 16-character hexadecimal string."""
+    storable_unpacker: Unpacker | None
+    """ID of the storable class, as a 16-character hexadecimal string."""
+
+
+class StorableConfigDict(LongStorableConfigDict, total=False):
     """Configuration for a storable class."""
 
     class_id: LiteralString | None
+    """An alias for `storable_class_id`."""
     unpacker: Unpacker | None
+    """An alias for `storable_unpacker`."""
 
 
 @dataclass(frozen=True)
@@ -41,24 +56,56 @@ class Storable:
     storable_config: ClassVar[StorableConfig] = StorableConfig()
     """Configuration for the storable class."""
 
-    def __init_subclass__(cls, storable_config: StorableConfigDict) -> None:
-        class_id = _validate_id(cls, storable_config.get("class_id"))
-        if class_id is not None:
-            class_id = UUID(class_id)
-        unpacker = storable_config.get("unpacker", cls.storable_config.unpacker)
+    def __init_subclass__(cls, **kwargs: Unpack[StorableConfigDict]) -> None:
+        cfg = normalize_storable_config_dict(kwargs)
+        if (class_id := cfg.get("storable_class_id")) is not None:
+            class_id = _validate_id(cls, class_id, warn_with_stacklevel=2)
+            if class_id is not None:
+                class_id = UUID(class_id)
+        unpacker = cfg.get("storable_unpacker", cls.storable_config.unpacker)
         cls.storable_config = StorableConfig(class_id=class_id, unpacker=unpacker)
+
+
+def partition_storable_config_dict(d: Mapping[K, T]) -> tuple[StorableConfigDict, dict[K, T]]:
+    """Partition a dictionary into a StorableConfigDict and a rest dictionary."""
+    rest: dict[K, T] = dict(d)
+    cfg: StorableConfigDict = {}
+    for long_name in LongStorableConfigDict.__annotations__:
+        if long_name in rest:
+            cfg[long_name] = rest.pop(long_name)  # type: ignore[reportArgumentType]
+            continue
+        short_name = _to_short_config_name(long_name)
+        if short_name in rest:
+            cfg[long_name] = rest.pop(short_name)  # type: ignore[reportArgumentType]
+            continue
+    return cfg, rest
+
+
+def normalize_storable_config_dict(cfg: StorableConfigDict) -> LongStorableConfigDict:
+    """Normalize a StorableConfigDict to an ExplicitStorableConfigDict."""
+    normalized: LongStorableConfigDict = {}
+    for long_name in LongStorableConfigDict.__annotations__:
+        if long_name in cfg:
+            normalized[long_name] = cfg[long_name]
+        else:
+            short_name = _to_short_config_name(long_name)
+            if short_name in cfg:
+                normalized[long_name] = cfg[short_name]
+    return normalized
+
+
+def _to_short_config_name(long_name: str) -> str:
+    """Convert an explicit name to a short name."""
+    return long_name.removeprefix("storable_")
 
 
 def _validate_id(
     cls: type,
-    id_str: S | None,
+    id_str: S,
     *,
     warn_with_stacklevel: int | None = None,
 ) -> S | None:
     """Validate the ID string and pad it to 16 bytes."""
-    if id_str is None:
-        _id_warning_or_error(cls, id_str, warn_with_stacklevel)
-        return None
     if len(id_str) < 8 or len(id_str) > 16:
         _id_warning_or_error(cls, id_str, warn_with_stacklevel)
         return None
