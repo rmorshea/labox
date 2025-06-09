@@ -2,113 +2,51 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
-from typing import Any
+from typing import ClassVar
 from typing import LiteralString
 from typing import TypedDict
 from typing import TypeVar
 from typing import cast
-from typing import overload
 from uuid import UUID
 from uuid import uuid4
 from warnings import warn
-from weakref import WeakKeyDictionary
 
 from lakery._internal.utils import full_class_name
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
     from lakery.core.unpacker import Unpacker
 
 T = TypeVar("T")
 S = TypeVar("S", bound=str)
 
 
-@overload
-def set_model(
-    cls: type[T],
-    /,
-    *,
-    id: LiteralString,
-    unpacker: Unpacker[T] | None = None,
-) -> type[T]: ...
+class StorableConfigDict(TypedDict, total=False):
+    """Configuration for a storable class."""
 
-
-@overload
-def set_model(
-    *,
-    id: LiteralString,
-    unpacker: Unpacker[T] | None = None,
-) -> Callable[[type[T]], type[T]]: ...
-
-
-def set_model(
-    cls: type[T] | None = None,
-    /,
-    *,
-    id: LiteralString,  # noqa: A002
-    unpacker: Unpacker[T] | None = None,
-) -> type[T] | Callable[[type[T]], type[T]]:
-    """Return a decorator to register a model with a specific ID.
-
-    The ID must be a valid 8-16 character hexadecimal string.
-    """
-    model_id = id
-    del id
-
-    def decorator(cls: type[T]) -> type[T]:
-        _validate_id(cls, model_id, warn_with_stacklevel=2)
-        _MODEL_INFO_STR_BY_TYPE[cls] = {"model_id": model_id, "unpacker": unpacker}
-        return cls
-
-    return decorator if cls is None else decorator(cls)
-
-
-def has_model_info(cls: type[T]) -> bool:
-    """Check if a model type has a registered model ID."""
-    return cls in _MODEL_INFO_STR_BY_TYPE
-
-
-def get_model_info(cls: type[T]) -> ModelInfo:
-    """Return the ID of a model type."""
-    try:
-        info = _MODEL_INFO_STR_BY_TYPE[cls]
-    except KeyError:
-        msg = (
-            f"{full_class_name(cls)} does not have a model ID - "
-            "did you use the model_id(...) decorator?"
-        )
-        raise ValueError(msg) from None
-
-    _validate_id(cls, info["model_id"])
-
-    return ModelInfo(
-        model_id=UUID(info["model_id"]),
-        unpacker=info["unpacker"],
-    )
+    class_id: LiteralString | None
+    unpacker: Unpacker | None
 
 
 @dataclass(frozen=True)
-class ModelInfo:
-    """Metadata about a model type."""
+class StorableConfig:
+    """Configuration for a storable class."""
 
-    model_id: UUID
-    """The model ID as an 8-16 character hexadecimal string."""
-    unpacker: Unpacker[Any] | None
-    """The unpacker used to decompose the model into its constituent parts."""
+    class_id: UUID | None = None
+    unpacker: Unpacker | None = None
 
 
-class _ModelInfo(TypedDict):
-    """Metadata about a model type."""
+class Storable:
+    """Base class for storable objects."""
 
-    model_id: str
-    unpacker: Unpacker[Any] | None
+    storable_config: ClassVar[StorableConfig] = StorableConfig()
+    """Configuration for the storable class."""
 
-
-# We do not automatically include these in the registry because this is only
-# populated when a model's module is imported. To ensure consistent behavior
-# we require models to be explicitly added to a registry.
-_MODEL_INFO_STR_BY_TYPE: WeakKeyDictionary[type, _ModelInfo] = WeakKeyDictionary()
+    def __init_subclass__(cls, storable_config: StorableConfigDict) -> None:
+        class_id = _validate_id(cls, storable_config.get("class_id"))
+        if class_id is not None:
+            class_id = UUID(class_id)
+        unpacker = storable_config.get("unpacker", cls.storable_config.unpacker)
+        cls.storable_config = StorableConfig(class_id=class_id, unpacker=unpacker)
 
 
 def _validate_id(
@@ -120,15 +58,15 @@ def _validate_id(
     """Validate the ID string and pad it to 16 bytes."""
     if id_str is None:
         _id_warning_or_error(cls, id_str, warn_with_stacklevel)
-        return id_str
+        return None
     if len(id_str) < 8 or len(id_str) > 16:
         _id_warning_or_error(cls, id_str, warn_with_stacklevel)
-        return id_str
+        return None
     try:
         byte_arr = bytes.fromhex(id_str)
     except ValueError:
         _id_warning_or_error(cls, id_str, warn_with_stacklevel)
-        return id_str
+        return None
     return cast("S", byte_arr.ljust(16, b"\0").decode("ascii"))
 
 

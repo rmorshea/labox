@@ -51,24 +51,24 @@ async def data_loader(
     record_groups = await _load_manifest_contents(session, [m for m, _, _ in requests])
 
     async with create_task_group() as tg:
-        for (manifest, contents), (_, expected_model_type, future) in zip(
+        for (manifest, contents), (_, expected_cls, future) in zip(
             record_groups, requests, strict=False
         ):
             try:
-                actual_model_type = registry.get_model(manifest.model_id)
+                actual_cls = registry.get_storable(manifest.class_id)
             except NotRegistered as error:
                 set_future_exception_forcefully(future, error)
                 continue
 
-            if expected_model_type and not issubclass(actual_model_type, expected_model_type):
-                msg = f"Expected {expected_model_type}, but {manifest} is {actual_model_type}."
+            if expected_cls and not issubclass(actual_cls, expected_cls):
+                msg = f"Expected {expected_cls}, but {manifest} is {actual_cls}."
                 set_future_exception_forcefully(future, TypeError(msg))
                 continue
 
             start_with_future(
                 tg,
                 future,
-                load_model_from_record_group,
+                load_object_from_record_group,
                 manifest,
                 contents,
                 registry=registry,
@@ -83,7 +83,7 @@ class _DataLoader:
     def load_soon(
         self,
         manifest: ManifestRecord,
-        model_type: type[M],
+        cls: type[M],
         /,
     ) -> FutureResult[M]: ...
 
@@ -91,19 +91,19 @@ class _DataLoader:
     def load_soon(
         self,
         manifest: ManifestRecord,
-        model_type: None = ...,
+        cls: None = ...,
         /,
     ) -> FutureResult[Any]: ...
 
     def load_soon(
         self,
         manifest: ManifestRecord,
-        model_type: type[Any] | None = None,
+        cls: type[Any] | None = None,
         /,
     ) -> FutureResult[Any]:
-        """Load the given model soon."""
+        """Load an object from the given manifest record."""
         future = FutureResult()
-        self._requests.append((manifest, model_type, future))
+        self._requests.append((manifest, cls, future))
         return future
 
 
@@ -111,16 +111,16 @@ DataLoader: TypeAlias = _DataLoader
 """Defines a protocol for saving data."""
 
 
-async def load_model_from_record_group(
+async def load_object_from_record_group(
     manifest: ManifestRecord,
     contents: Sequence[ContentRecord],
     /,
     *,
     registry: Registry,
 ) -> Any:
-    """Load the given model from the given record."""
+    """Load an object from the given manifest record."""
     unpacker = registry.get_unpacker(manifest.unpacker_name)
-    model_type = registry.get_model(manifest.model_id)
+    cls = registry.get_storable(manifest.class_id)
 
     content_futures: dict[str, FutureResult[Any]] = {}
     async with create_task_group() as tg:
@@ -133,7 +133,7 @@ async def load_model_from_record_group(
             )
 
     return unpacker.repack_object(
-        model_type,
+        cls,
         {i: f.result() for i, f in content_futures.items()},
         registry,
     )
@@ -182,12 +182,12 @@ async def load_manifest_from_record(
 
 async def _load_manifest_contents(
     session: AsyncSession,
-    records: Sequence[ManifestRecord],
+    manifests: Sequence[ManifestRecord],
 ) -> Sequence[_RecordGroup]:
-    """Load the content records for the given model records."""
+    """Load the content records for the given manifest records."""
     missing: list[ManifestRecord] = []
     present: list[_RecordGroup] = []
-    for m in records:
+    for m in manifests:
         if "contents" in orm_inspect(m).unloaded:
             missing.append(m)
         else:

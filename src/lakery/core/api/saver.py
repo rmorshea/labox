@@ -21,7 +21,7 @@ from lakery._internal.anyio import start_future
 from lakery.core.database import ContentRecord
 from lakery.core.database import ManifestRecord
 from lakery.core.database import SerializerTypeEnum
-from lakery.core.model import get_model_info
+from lakery.core.model import Storable
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
@@ -46,6 +46,7 @@ if TYPE_CHECKING:
 
 
 T = TypeVar("T", default=Any)
+S = TypeVar("S", bound=Storable)
 P = ParamSpec("P")
 D = TypeVar("D", bound=ManifestRecord)
 
@@ -96,18 +97,18 @@ class _DataSaver:
 
     def save_soon(
         self,
-        model: T,
+        obj: S,
         *,
-        unpacker: Unpacker[T] | None = None,
+        unpacker: Unpacker[S] | None = None,
         tags: Mapping[str, str] | None = None,
     ) -> FutureResult[ManifestRecord]:
-        """Schedule the given model to be saved."""
-        self._registry.check_model_registered(type(model))
+        """Schedule the object to be saved."""
+        self._registry.has_storable(type(obj), raise_if_missing=True)
 
         future = start_future(
             self._task_group,
-            _save_model,
-            model,
+            _save_object,
+            obj,
             unpacker,
             tags or {},
             self._registry,
@@ -121,23 +122,23 @@ DataSaver: TypeAlias = _DataSaver
 """Defines a protocol for saving data."""
 
 
-async def _save_model(
-    model: Any,
+async def _save_object(
+    obj: Storable,
     unpacker: Unpacker[Any] | None,
     tags: TagMap,
     registry: Registry,
 ) -> ManifestRecord:
     """Save the given data to the database."""
-    model_cls = model.__class__
-    model_info = get_model_info(model_cls)
-    model_id = model_info.model_id
-    unpacker = unpacker or model_info.unpacker or registry.infer_unpacker(model_cls)
-    model_contents = unpacker.unpack_object(model, registry)
+    cls = obj.__class__
+    cfg = cls.storable_config
+    assert cfg.class_id is not None, f"Class {cls.__name__} is not registered as storable."  # noqa: S101
+    unpacker = unpacker or cfg.unpacker or registry.infer_unpacker(cls)
+    obj_contents = unpacker.unpack_object(obj, registry)
 
     manifest_id = uuid4()
     data_record_futures: list[FutureResult[ContentRecord]] = []
     async with create_task_group() as tg:
-        for content_key, content in model_contents.items():
+        for content_key, content in obj_contents.items():
             _LOG.debug("Saving %s in manifest %s", content_key, manifest_id.hex)
             if "value" in content:
                 data_record_futures.append(
@@ -168,11 +169,11 @@ async def _save_model(
                     )
                 )
             else:
-                msg = f"Invalid manifest {content_key!r} in {model!r} - {content}"
+                msg = f"Invalid manifest {content_key!r} in {obj!r} - {content}"
                 raise AssertionError(msg)
 
     contents: list[ContentRecord] = []
-    for k, f in zip(model_contents, data_record_futures, strict=False):
+    for k, f in zip(obj_contents, data_record_futures, strict=False):
         if exc := f.exception():
             _LOG.error(
                 "Failed to save %s in manifest %s",
@@ -185,7 +186,7 @@ async def _save_model(
     return ManifestRecord(
         id=manifest_id,
         tags=tags,
-        model_id=model_id,
+        class_id=cfg.class_id,
         contents=contents,
         unpacker_name=unpacker.name,
     )

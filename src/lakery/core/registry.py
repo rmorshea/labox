@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 from typing import Any
 from typing import Self
 from typing import TypedDict
+from typing import TypeIs
 from typing import TypeVar
 from typing import Unpack
 from typing import cast
@@ -12,8 +13,7 @@ from ruyaml import import_module
 
 from lakery._internal.utils import full_class_name
 from lakery.common.exceptions import NotRegistered
-from lakery.core.model import get_model_info
-from lakery.core.model import has_model_info
+from lakery.core.model import Storable
 from lakery.core.serializer import Serializer
 from lakery.core.serializer import StreamSerializer
 from lakery.core.storage import Storage
@@ -29,6 +29,7 @@ if TYPE_CHECKING:
 
 
 T = TypeVar("T")
+S = TypeVar("S", bound=Storable)
 V = TypeVar("V")
 D = TypeVar("D", bound="Mapping[str, Mapping]")
 
@@ -36,8 +37,8 @@ D = TypeVar("D", bound="Mapping[str, Mapping]")
 class RegistryKwargs(TypedDict, total=False):
     """Arguments for creating a registry."""
 
-    models: Iterable[type[Any]]
-    """Models to register."""
+    storables: Iterable[type[Storable]]
+    """Storable classes to register."""
     unpackers: Iterable[Unpacker]
     """Decomposers to register."""
     serializers: Iterable[Serializer | StreamSerializer]
@@ -59,7 +60,7 @@ class Registry:
     def __init__(self, **kwargs: Unpack[RegistryKwargs]) -> None:
         attrs = _kwargs_to_attrs(kwargs)
         self._default_storage = attrs["default_storage"]
-        self.model_by_id = attrs["model_by_id"]
+        self.storable_by_id = attrs["storable_by_id"]
         self.serializer_by_name = attrs["serializer_by_name"]
         self.serializer_by_type = attrs["serializer_by_type"]
         self.storage_by_name = attrs["storage_by_name"]
@@ -83,7 +84,7 @@ class Registry:
         use_default_storage: bool = False,
     ) -> Self:
         """Create a registry from the given modules."""
-        models: list[type[Any]] = []
+        storables: list[type[Any]] = []
         unpackers: list[Unpacker] = []
         serializers: list[Serializer | StreamSerializer] = []
         storages: list[Storage] = []
@@ -97,11 +98,11 @@ class Registry:
                 case Unpacker():
                     unpackers.append(value)
                 case type():
-                    if has_model_info(value):
-                        models.append(value)
+                    if issubclass(value, Storable):
+                        storables.append(value)
 
         return cls(
-            models=models,
+            storables=storables,
             unpackers=unpackers,
             serializers=serializers,
             storages=storages,
@@ -114,7 +115,7 @@ class Registry:
             [
                 {
                     "default_storage": o._default_storage,  # noqa: SLF001
-                    "model_by_id": o.model_by_id,
+                    "storable_by_id": o.storable_by_id,
                     "serializer_by_name": o.serializer_by_name,
                     "serializer_by_type": o.serializer_by_type,
                     "storage_by_name": o.storage_by_name,
@@ -128,54 +129,62 @@ class Registry:
         )
         return self.__class__(**kwargs)
 
-    def check_model_registered(self, model: type[Any]) -> None:
-        """Check if the given model is registered in this registry."""
-        if not has_model_info(model):
-            msg = f"The model {full_class_name(model)} must have a model ID."
-            raise ValueError(msg)
-        if get_model_info(model) not in self.model_by_id:
-            msg = f"The model {full_class_name(model)} is not registered in this registry."
+    def has_storable(
+        self,
+        cls: type[Any],
+        *,
+        raise_if_missing: bool = False,
+    ) -> TypeIs[type[Storable]]:
+        """Check if the given class is registered in this registry."""
+        if not issubclass(cls, Storable):
+            msg = f"The class {full_class_name(cls)} is not a storable class."
+            raise TypeError(msg)
+        if (cls_id := cls.storable_config.class_id) and cls_id in self.storable_by_id:
+            return True
+        if raise_if_missing:
+            msg = f"No storable class {cls} with ID {cls_id} found."
             raise NotRegistered(msg)
+        return False
 
-    def get_model(self, model_id: UUID) -> type[Any]:
-        """Get a model by its ID."""
-        if model := self.model_by_id.get(model_id):
-            return model
-        msg = f"No model found with ID '{model_id}'."
+    def get_storable(self, class_id: UUID) -> type[Any]:
+        """Get a storable class by its ID."""
+        if cls := self.storable_by_id.get(class_id):
+            return cls
+        msg = f"No storable class found with ID {class_id}."
         raise NotRegistered(msg)
 
     def get_serializer(self, name: str) -> Serializer:
         """Get a serializer by its name."""
         if serializer := self.serializer_by_name.get(name):
             return serializer
-        msg = f"No serializer found with name '{name}'."
+        msg = f"No serializer found with name {name!r}."
         raise NotRegistered(msg)
 
     def get_stream_serializer(self, name: str) -> StreamSerializer:
         """Get a stream serializer by its name."""
         if serializer := self.stream_serializer_by_name.get(name):
             return serializer
-        msg = f"No stream serializer found with name '{name}'."
+        msg = f"No stream serializer found with name {name!r}."
         raise NotRegistered(msg)
 
     def get_unpacker(self, name: str) -> Unpacker:
         """Get an unpacker by its name."""
         if unpacker := self.unpacker_by_name.get(name):
             return unpacker
-        msg = f"No unpacker found with name '{name}'."
+        msg = f"No unpacker found with name {name!r}."
         raise NotRegistered(msg)
 
     def get_storage(self, name: str) -> Storage:
         """Get a storage by its name."""
         if storage := self.storage_by_name.get(name):
             return storage
-        msg = f"No storage found with name '{name}'."
+        msg = f"No storage found with name {name!r}."
         raise NotRegistered(msg)
 
-    def infer_unpacker(self, cls: type[T]) -> Unpacker[T]:
+    def infer_unpacker(self, cls: type[S]) -> Unpacker[S]:
         """Get the first unpacker that can handle the given type or its parent classes."""
         self._check_allow_type_inference()
-        return _infer_from_type(self.unpacker_by_type, cls, "unpacker")
+        return cast("Unpacker[S]", _infer_from_type(self.unpacker_by_type, cls, "unpacker"))
 
     def infer_serializer(self, cls: type[T]) -> Serializer[T]:
         """Get the first serializer that can handle the given type or its parent classes."""
@@ -194,7 +203,7 @@ class Registry:
             raise ValueError(msg)
 
 
-def _infer_from_type(mapping: Mapping[type[T], V], cls: type[T], description: str) -> V:
+def _infer_from_type(mapping: Mapping[type, V], cls: type, description: str) -> V:
     """Get the first value from the mapping that can handle the given type or its parent classes."""
     for base in cls.mro():
         if item := mapping.get(base):
@@ -205,7 +214,7 @@ def _infer_from_type(mapping: Mapping[type[T], V], cls: type[T], description: st
 
 _DEFAULT_REGISTRY_ATTRS: _RegistryAttrs = {
     "default_storage": None,
-    "model_by_id": {},
+    "storable_by_id": {},
     "serializer_by_name": {},
     "serializer_by_type": {},
     "storage_by_name": {},
@@ -221,7 +230,7 @@ def _kwargs_to_attrs(kwargs: RegistryKwargs) -> _RegistryAttrs:
     unpacker_by_name = dict(attrs_from_kwargs["unpacker_by_name"])
     unpacker_by_type = dict(attrs_from_kwargs.get("unpacker_by_type", {}))
     default_storage = attrs_from_kwargs["default_storage"]
-    model_by_id = dict(attrs_from_kwargs["model_by_id"])
+    storable_by_id = dict(attrs_from_kwargs["storable_by_id"])
     serializer_by_name = dict(attrs_from_kwargs["serializer_by_name"])
     serializer_by_type = dict(attrs_from_kwargs["serializer_by_type"])
     storage_by_name = dict(attrs_from_kwargs["storage_by_name"])
@@ -231,8 +240,13 @@ def _kwargs_to_attrs(kwargs: RegistryKwargs) -> _RegistryAttrs:
     for unpacker in kwargs.get("unpackers", ()):
         _check_name_defined_on_class(unpacker)
         unpacker_by_name[unpacker.name] = unpacker
-    for model in kwargs.get("models", ()):
-        model_by_id[get_model_info(model).model_id] = model
+    for cls in kwargs.get("storables", ()):
+        if (cls_id := cls.storable_config.class_id) is None:
+            msg = f"The storable class {full_class_name(cls)} must have a class ID."
+            raise ValueError(msg)
+        if cls.storable_config.unpacker is not None:
+            unpacker_by_type[cls] = cls.storable_config.unpacker
+        storable_by_id[cls_id] = cls
     for serializer in reversed(tuple(kwargs.get("serializers", ()))):
         _check_name_defined_on_class(serializer)
         if isinstance(serializer, StreamSerializer):
@@ -251,7 +265,7 @@ def _kwargs_to_attrs(kwargs: RegistryKwargs) -> _RegistryAttrs:
         "unpacker_by_name": unpacker_by_name,
         "unpacker_by_type": unpacker_by_type,
         "default_storage": default_storage,
-        "model_by_id": model_by_id,
+        "storable_by_id": storable_by_id,
         "serializer_by_name": serializer_by_name,
         "serializer_by_type": serializer_by_type,
         "storage_by_name": storage_by_name,
@@ -273,7 +287,7 @@ class _RegistryAttrs(TypedDict):
     """Attributes for a registry."""
 
     default_storage: Storage | None
-    model_by_id: Mapping[UUID, type[Any]]
+    storable_by_id: Mapping[UUID, type[Storable]]
     serializer_by_name: Mapping[str, Serializer]
     serializer_by_type: Mapping[type[Any], Serializer]
     storage_by_name: Mapping[str, Storage]

@@ -103,23 +103,23 @@ class _StrMixin(BaseRecord):
 
 
 class ManifestRecord(_StrMixin, BaseRecord, kw_only=True):
-    """A record acting as a manifest for a stored model."""
+    """A record acting as a manifest for a storable object."""
 
     __abstract__ = False
     __tablename__ = "lakery_manifests"
 
     id: Mapped[UUID] = mapped_column(default_factory=uuid4, primary_key=True)
-    """The ID of the stored model."""
+    """The ID of the manifest record."""
     tags: Mapped[TagMap | None] = mapped_column(JSON_OR_JSONB)
-    """User defined tags associated with the stored model."""
-    model_id: Mapped[UUID] = mapped_column()
+    """User defined tags associated with the stored object."""
+    class_id: Mapped[UUID] = mapped_column()
     """An ID that uniquely identifies the type that was stored."""
     unpacker_name: Mapped[str] = mapped_column()
-    """The name of the unpacker used to decompose the model into its constituent parts."""
+    """The name of the unpacker used to decompose the object into its constituent parts."""
     created_at: Mapped[DateTimeTZ] = mapped_column(default=func.now())
-    """The timestamp when the model was created."""
+    """The timestamp when the manifest was created."""
     contents: Mapped[Sequence[ContentRecord]] = relationship(default=(), collection_class=list)
-    """The contents of the stored model."""
+    """The contents of the stored object."""
 
 
 class SerializerTypeEnum(IntEnum):

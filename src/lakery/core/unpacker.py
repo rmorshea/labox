@@ -13,6 +13,7 @@ from sqlalchemy.util.typing import TypedDict
 from typing_extensions import TypeVar
 
 from lakery._internal.utils import validate_versioned_class_name
+from lakery.core.model import Storable
 from lakery.core.registry import Registry
 
 if TYPE_CHECKING:
@@ -24,28 +25,29 @@ if TYPE_CHECKING:
     from lakery.core.storage import Storage
 
 
+S = TypeVar("S", bound=Storable, default=Storable)
 T = TypeVar("T", bound=Any, default=Any)
 D = TypeVar("D", bound=Mapping[str, Any], default=Mapping[str, Any])
 
 
-class Unpacker(abc.ABC, Generic[T, D]):
-    """A base for classes that decompose models into their constituent parts."""
+class Unpacker(abc.ABC, Generic[S, D]):
+    """A base for classes that decompose storable objects into their constituent parts."""
 
     name: ClassVar[LiteralString]
     """The name of the packer."""
-    types: tuple[type[T], ...]
+    types: tuple[type[S], ...]
     """The types of objects that this packer can handle."""
 
     def __init_subclass__(cls) -> None:
         validate_versioned_class_name(cls)
 
     @abc.abstractmethod
-    def unpack_object(self, obj: T, registry: Registry, /) -> D:
+    def unpack_object(self, obj: S, registry: Registry, /) -> D:
         """Return a mapping of that describes where and how to store the object's contents."""
         raise NotImplementedError
 
     @abc.abstractmethod
-    def repack_object(self, cls: type[T], contents: D, registry: Registry, /) -> T:
+    def repack_object(self, cls: type[S], contents: D, registry: Registry, /) -> S:
         """Reconstitute the object from a mapping of its unpacked contents."""
         raise NotImplementedError
 
