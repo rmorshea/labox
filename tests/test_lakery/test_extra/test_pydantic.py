@@ -3,22 +3,20 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio.session import AsyncSession
 
-from lakery.core.registry import ModelRegistry
-from lakery.core.registry import RegistryCollection
 from lakery.extra.json import JsonSerializer
 from lakery.extra.msgpack import MsgPackSerializer
 from lakery.extra.os import FileStorage
 from lakery.extra.pydantic import StorageModel
 from lakery.extra.pydantic import StorageSpec
 from tests.core_api_utils import assert_save_load_equivalence
-from tests.core_context_utils import basic_registries
+from tests.core_context_utils import basic_registry
 
-local_storage = basic_registries.storages[FileStorage.name]
-msgpack_serializer = basic_registries.serializers[MsgPackSerializer.name]
-json_serializer = basic_registries.serializers[JsonSerializer.name]
+local_storage = basic_registry.storage_by_name[FileStorage.name]
+msgpack_serializer = basic_registry.serializer_by_name[MsgPackSerializer.name]
+json_serializer = basic_registry.serializer_by_name[JsonSerializer.name]
 
 
-class PydanticStorageModel(StorageModel, Lakery(id="1e76a004")):
+class PydanticStorageModel(StorageModel, class_id="1e76a004"):
     no_spec: Any
     spec_with_serializer: Annotated[Any, StorageSpec(serializer=msgpack_serializer)]
     spec_with_storage: Annotated[Any, StorageSpec(storage=local_storage)]
@@ -28,7 +26,7 @@ class PydanticStorageModel(StorageModel, Lakery(id="1e76a004")):
 
 
 registries = RegistryCollection.merge(
-    basic_registries,
+    basic_registry,
     models=ModelRegistry([PydanticStorageModel]),
 )
 

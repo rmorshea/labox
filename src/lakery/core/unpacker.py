@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from lakery.core.storage import Storage
 
 
-S = TypeVar("S", bound=Storable, default=Storable)
+S = TypeVar("S", bound=Storable, default=Any)
 T = TypeVar("T", bound=Any, default=Any)
 D = TypeVar("D", bound=Mapping[str, Any], default=Mapping[str, Any])
 
@@ -35,7 +35,7 @@ class Unpacker(abc.ABC, Generic[S, D]):
 
     name: ClassVar[LiteralString]
     """The name of the packer."""
-    types: tuple[type[S], ...]
+    types: tuple[type[S], ...] = ()
     """The types of objects that this packer can handle."""
 
     def __init_subclass__(cls) -> None:

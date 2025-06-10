@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterable
     from collections.abc import Iterator
 
-    from lakery._internal.utils import TagMap
+    from lakery.common.types import TagMap
     from lakery.core.storage import Digest
     from lakery.core.storage import GetStreamDigest
 

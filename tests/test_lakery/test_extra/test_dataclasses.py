@@ -11,11 +11,11 @@ from lakery.extra.json import JsonSerializer
 from lakery.extra.msgpack import MsgPackSerializer
 from lakery.extra.os import FileStorage
 from tests.core_api_utils import assert_save_load_equivalence
-from tests.core_context_utils import basic_registries
+from tests.core_context_utils import basic_registry
 
-local_storage = basic_registries.storages[FileStorage.name]
-msgpack_serializer = basic_registries.serializers[MsgPackSerializer.name]
-json_serializer = basic_registries.serializers[JsonSerializer.name]
+local_storage = basic_registry.storages[FileStorage.name]
+msgpack_serializer = basic_registry.serializers[MsgPackSerializer.name]
+json_serializer = basic_registry.serializers[JsonSerializer.name]
 
 
 @dataclass
@@ -33,7 +33,7 @@ class SampleModel(StorageClass, storage_model_config={"id": "1d3cd969", "version
 
 
 registries = RegistryCollection.merge(
-    basic_registries,
+    basic_registry,
     models=ModelRegistry([SampleModel]),
 )
 

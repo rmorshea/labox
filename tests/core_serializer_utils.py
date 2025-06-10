@@ -10,8 +10,6 @@ from typing import TypeVar
 
 import pytest
 
-from lakery.core.serializer import SerializedData
-from lakery.core.serializer import SerializedDataStream
 from lakery.core.serializer import Serializer
 from lakery.core.serializer import StreamSerializer
 
@@ -58,28 +56,6 @@ def make_stream_serializer_test(
     restreamers = (_stream_random_chunks, _stream_one_chunk, _stream_one_byte_chunks)
 
     for case in cases:
-        matrix.append(
-            (
-                partial(_check_dump_value_load_value, assertion, serializer, conv=list),
-                None,
-                case,
-            )
-        )
-        matrix.extend(
-            (
-                partial(_check_dump_value_load_stream, assertion, serializer),
-                restreamer,
-                case,
-            )
-            for restreamer in restreamers
-        )
-        matrix.append(
-            (
-                partial(_check_dump_stream_load_value, assertion, serializer),
-                None,
-                case,
-            )
-        )
         matrix.extend(
             (
                 partial(_check_dump_stream_load_stream, assertion, serializer),
@@ -98,41 +74,6 @@ def make_stream_serializer_test(
     return pytest.mark.parametrize(arg_names, matrix, ids=get_id)(tester)
 
 
-async def _check_dump_value_load_stream(
-    assertion: AssertionFunc[Any],
-    serializer: StreamSerializer[Any],
-    restream: Callable[[bytes], AsyncGenerator[bytes]],
-    value: Any,
-) -> None:
-    content = serializer.dump_data(value)
-    stream_content: SerializedDataStream = {
-        "content_encoding": content["content_encoding"],
-        "content_type": content["content_type"],
-        "data_stream": restream(content["data"]),
-    }
-    loaded_stream = serializer.deserialize_json_stream(stream_content)
-
-    loaded_values = [value async for value in loaded_stream]
-
-    assertion(loaded_values, list(value))
-
-
-async def _check_dump_stream_load_value(
-    assertion: AssertionFunc[T],
-    serializer: StreamSerializer[Any],
-    restream: Any,
-    values: Sequence[Any],
-) -> None:
-    stream_content = serializer.serialize_data_stream(_to_async_iterable(values))
-    data = b"".join([chunk async for chunk in stream_content["data_stream"]])
-    value_dump: SerializedData = {
-        "content_encoding": stream_content["content_encoding"],
-        "content_type": stream_content["content_type"],
-        "data": data,
-    }
-    assertion(list(serializer.load_data(value_dump)), list(values))  # type: ignore[reportArgumentType]
-
-
 async def _check_dump_stream_load_stream(
     assertion: AssertionFunc[T],
     serializer: StreamSerializer[Any],
@@ -141,14 +82,13 @@ async def _check_dump_stream_load_stream(
 ) -> None:
     content = serializer.serialize_data_stream(_to_async_iterable(values))
     data_stream = restream(b"".join([chunk async for chunk in content["data_stream"]]))
-    loaded_stream = serializer.deserialize_json_stream({**content, "data_stream": data_stream})
+    loaded_stream = serializer.deserialize_data_stream({**content, "data_stream": data_stream})
     assertion([value async for value in loaded_stream], list(values))  # type: ignore[reportArgumentType]
 
 
 async def _check_dump_value_load_value(
     assertion: AssertionFunc[T],
-    serializer: Serializer[Any] | StreamSerializer[Any],
-    restream: None,
+    serializer: Serializer[Any],
     value: Any,
     conv: Callable[[Any], Any] = lambda x: x,
 ) -> None:

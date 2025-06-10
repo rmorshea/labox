@@ -68,7 +68,7 @@ async def data_loader(
             start_with_future(
                 tg,
                 future,
-                load_object_from_record_group,
+                load_from_manifest_record,
                 manifest,
                 contents,
                 registry=registry,
@@ -111,7 +111,7 @@ DataLoader: TypeAlias = _DataLoader
 """Defines a protocol for saving data."""
 
 
-async def load_object_from_record_group(
+async def load_from_manifest_record(
     manifest: ManifestRecord,
     contents: Sequence[ContentRecord],
     /,
@@ -127,7 +127,7 @@ async def load_object_from_record_group(
         for c in contents:
             content_futures[c.content_key] = start_future(
                 tg,
-                load_manifest_from_record,
+                load_from_content_record,
                 c,
                 registry=registry,
             )
@@ -139,7 +139,7 @@ async def load_object_from_record_group(
     )
 
 
-async def load_manifest_from_record(
+async def load_from_content_record(
     record: ContentRecord,
     *,
     registry: Registry,

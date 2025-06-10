@@ -42,7 +42,11 @@ __all__ = (
 _LOG = getLogger(__name__)
 
 
-class StorageModelUnpacker(Unpacker["StorageModel"]):
+class _StorageModelUnpacker(Unpacker["StorageModel"]):
+    """Unpacker for [`StorageModel`][lakery.extra.pydantic.StorageModel] objects."""
+
+    name = "lakery.pydantic@v1"
+
     def unpack_object(
         self,
         obj: StorageModel,
@@ -113,7 +117,7 @@ class StorageModel(
     Storable,
     BaseModel,
     arbitrary_types_allowed=True,
-    storable_unpacker=StorageModelUnpacker(),
+    storable_unpacker=_StorageModelUnpacker(),
 ):
     """A Pydantic model that can be stored by Lakery."""
 

@@ -1,10 +1,7 @@
 import shutil
 from pathlib import Path
 
-from lakery.core.registry import ModelRegistry
-from lakery.core.registry import RegistryCollection
-from lakery.core.registry import SerializerRegistry
-from lakery.core.registry import StorageRegistry
+from lakery.core.registry import Registry
 from lakery.extra.json import JsonSerializer
 from lakery.extra.json import JsonStreamSerializer
 from lakery.extra.msgpack import MsgPackSerializer
@@ -17,21 +14,15 @@ TEST_STORAGE_DIR = HERE / ".storage"
 if TEST_STORAGE_DIR.exists():  # nocov
     shutil.rmtree(TEST_STORAGE_DIR)
 
-basic_registries = RegistryCollection(
-    models=ModelRegistry.from_modules(
-        "lakery.builtin.models",
-        "lakery.extra.pydantic",
-        "lakery.extra.dataclasses",
-    ),
-    storages=StorageRegistry(
-        default=FileStorage(TEST_STORAGE_DIR, mkdir=True),
-    ),
-    serializers=SerializerRegistry(
-        [
-            JsonSerializer(),
-            JsonStreamSerializer(),
-            MsgPackSerializer(),
-            MsgPackStreamSerializer(),
-        ]
-    ),
+basic_registry = Registry.from_modules(
+    "lakery.builtin.storables",
+    "lakery.extra.pydantic",
+).merge(
+    storages=[FileStorage(TEST_STORAGE_DIR, mkdir=True)],
+    serializers=[
+        JsonSerializer(),
+        JsonStreamSerializer(),
+        MsgPackSerializer(),
+        MsgPackStreamSerializer(),
+    ],
 )
