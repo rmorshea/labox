@@ -42,7 +42,7 @@ class _ArrowTableBase:
     def __init__(
         self,
         *,
-        write_options: pa.ipc.IpcReadOptions | None = None,
+        write_options: pa.ipc.IpcWriteOptions | None = None,
         read_options: pa.ipc.IpcReadOptions | None = None,
     ) -> None:
         self._write_options = write_options

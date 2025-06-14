@@ -29,7 +29,7 @@ _LOG = logging.getLogger(__name__)
 class FileStorage(Storage[str]):
     """A storage backend for testing that saves data to local files."""
 
-    name = "lakery.os.file@v1"
+    name = "lakery.file@v1"
     version = 1
 
     def __init__(

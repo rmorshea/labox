@@ -17,6 +17,7 @@ from lakery._internal.anyio import FutureResult
 from lakery._internal.anyio import set_future_exception_forcefully
 from lakery._internal.anyio import start_future
 from lakery._internal.anyio import start_with_future
+from lakery._internal.utils import forward_warnings
 from lakery.common.exceptions import NotRegistered
 from lakery.core.database import ContentRecord
 from lakery.core.database import ManifestRecord
@@ -45,34 +46,37 @@ async def data_loader(
     session: AsyncSession,
 ) -> AsyncIterator[DataLoader]:
     """Create a context manager for saving data."""
-    requests: list[_Requests] = []
-    yield _DataLoader(requests)
+    with forward_warnings():
+        requests: list[_Requests] = []
+        yield _DataLoader(requests)
 
-    record_groups = await _load_manifest_contents(session, [m for m, _, _ in requests])
+        record_groups = await _load_manifest_contents(session, [m for m, _, _ in requests])
 
-    async with create_task_group() as tg:
-        for (manifest, contents), (_, expected_cls, future) in zip(
-            record_groups, requests, strict=False
-        ):
-            try:
-                actual_cls = registry.get_storable(manifest.class_id)
-            except NotRegistered as error:
-                set_future_exception_forcefully(future, error)
-                continue
+        async with create_task_group() as tg:
+            for (manifest, contents), (_, expected_cls, future) in zip(
+                record_groups,
+                requests,
+                strict=False,
+            ):
+                try:
+                    actual_cls = registry.get_storable(manifest.class_id)
+                except NotRegistered as error:
+                    set_future_exception_forcefully(future, error)
+                    continue
 
-            if expected_cls and not issubclass(actual_cls, expected_cls):
-                msg = f"Expected {expected_cls}, but {manifest} is {actual_cls}."
-                set_future_exception_forcefully(future, TypeError(msg))
-                continue
+                if expected_cls and not issubclass(actual_cls, expected_cls):
+                    msg = f"Expected {expected_cls}, but {manifest} is {actual_cls}."
+                    set_future_exception_forcefully(future, TypeError(msg))
+                    continue
 
-            start_with_future(
-                tg,
-                future,
-                load_from_manifest_record,
-                manifest,
-                contents,
-                registry=registry,
-            )
+                start_with_future(
+                    tg,
+                    future,
+                    load_from_manifest_record,
+                    manifest,
+                    contents,
+                    registry=registry,
+                )
 
 
 class _DataLoader:
@@ -146,7 +150,7 @@ async def load_from_content_record(
 ) -> Any:
     """Load the given content from the given record."""
     storage = registry.get_storage(record.storage_name)
-    storage_data = storage.load_json_storage_data(record.storage_data)
+    storage_data = storage.deserialize_storage_data(record.storage_data)
     match record.serializer_type:
         case SerializerTypeEnum.Serializer:
             serializer = registry.get_serializer(record.serializer_name)

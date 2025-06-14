@@ -18,6 +18,7 @@ from anysync import contextmanager
 
 from lakery._internal.anyio import FutureResult
 from lakery._internal.anyio import start_future
+from lakery._internal.utils import forward_warnings
 from lakery.core.database import ContentRecord
 from lakery.core.database import ManifestRecord
 from lakery.core.database import SerializerTypeEnum
@@ -61,27 +62,28 @@ async def data_saver(
     session: AsyncSession,
 ) -> AsyncIterator[DataSaver]:
     """Create a context manager for saving data."""
-    futures: list[FutureResult[ManifestRecord]] = []
-    try:
-        async with create_task_group() as tg:
-            yield _DataSaver(tg, futures, registry)
-    finally:
-        errors: list[BaseException] = []
-        manifests: list[ManifestRecord] = []
-        for f in futures:
-            if e := f.exception():
-                errors.append(e)
-            else:
-                m = f.result()
-                _LOG.debug("Saving manifest %s", m.id.hex)
-                manifests.append(m)
+    with forward_warnings(UserWarning):
+        futures: list[FutureResult[ManifestRecord]] = []
+        try:
+            async with create_task_group() as tg:
+                yield _DataSaver(tg, futures, registry)
+        finally:
+            errors: list[BaseException] = []
+            manifests: list[ManifestRecord] = []
+            for f in futures:
+                if e := f.exception():
+                    errors.append(e)
+                else:
+                    m = f.result()
+                    _LOG.debug("Saving manifest %s", m.id.hex)
+                    manifests.append(m)
 
-        session.add_all(manifests)
-        await session.commit()
+            session.add_all(manifests)
+            await session.commit()
 
-        if errors:
-            msg = f"Failed to save {len(errors)} out of {len(futures)} items."
-            raise BaseExceptionGroup(msg, errors)
+            if errors:
+                msg = f"Failed to save {len(errors)} out of {len(futures)} items."
+                raise BaseExceptionGroup(msg, errors)
 
 
 class _DataSaver:
@@ -216,7 +218,7 @@ async def _save_storage_value(
         manifest_id=manifest_id,
         serializer_name=serializer.name,
         serializer_type=SerializerTypeEnum.Serializer,
-        storage_data=storage.dump_json_storage_data(storage_data),
+        storage_data=storage.serialize_storage_data(storage_data),
         storage_name=storage.name,
     )
 
@@ -259,7 +261,7 @@ async def _save_storage_stream(
             manifest_id=manifest_id,
             serializer_name=serializer.name,
             serializer_type=SerializerTypeEnum.StreamSerializer,
-            storage_data=storage.dump_json_storage_data(storage_data),
+            storage_data=storage.serialize_storage_data(storage_data),
             storage_name=storage.name,
         )
     raise AssertionError  # nocov

@@ -63,11 +63,11 @@ class Storage(Generic[T], abc.ABC):
         """Load a stream of data using the given information."""
         raise NotImplementedError
 
-    def dump_json_storage_data(self, info: T) -> str:
+    def serialize_storage_data(self, info: T) -> str:
         """Dump the storage information to a JSON string."""
         return json.dumps(info)
 
-    def load_json_storage_data(self, data: str) -> T:
+    def deserialize_storage_data(self, data: str) -> T:
         """Load the storage information from a JSON string."""
         return json.loads(data)
 
