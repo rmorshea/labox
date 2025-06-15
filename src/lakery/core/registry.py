@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 from typing import Any
 from typing import Self
 from typing import TypedDict
-from typing import TypeIs
+from typing import TypeGuard
 from typing import TypeVar
 from typing import Unpack
 from typing import cast
@@ -134,16 +134,20 @@ class Registry:
         cls: type[Any],
         *,
         raise_if_missing: bool = False,
-    ) -> TypeIs[type[Storable]]:
+    ) -> TypeGuard[type[Storable]]:
         """Check if the given class is registered in this registry."""
         if not issubclass(cls, Storable):
             msg = f"The class {full_class_name(cls)} is not a storable class."
             raise TypeError(msg)
-        if (cls_id := cls.storable_config.class_id) and cls_id in self.storable_by_id:
+        if (
+            cfg := cls.get_storable_config(allow_none=True)
+        ) is not None and cfg.class_id in self.storable_by_id:
             return True
+
         if raise_if_missing:
-            msg = f"No storable class {cls} with ID {cls_id} found."
+            msg = f"No storable class {cls} not found."
             raise NotRegistered(msg)
+
         return False
 
     def get_storable(self, class_id: UUID) -> type[Any]:
@@ -241,12 +245,9 @@ def _kwargs_to_attrs(kwargs: RegistryKwargs) -> _RegistryAttrs:
         _check_name_defined_on_class(unpacker)
         unpacker_by_name[unpacker.name] = unpacker
     for cls in kwargs.get("storables", ()):
-        if (cls_id := cls.storable_config.class_id) is None:
-            msg = f"The storable class {full_class_name(cls)} must have a class ID."
-            raise ValueError(msg)
-        if cls.storable_config.unpacker is not None:
-            unpacker_by_type[cls] = cls.storable_config.unpacker
-        storable_by_id[cls_id] = cls
+        cfg = cls.get_storable_config()
+        unpacker_by_type[cls] = cfg.unpacker
+        storable_by_id[cfg.class_id] = cls
     for serializer in reversed(tuple(kwargs.get("serializers", ()))):
         _check_name_defined_on_class(serializer)
         if isinstance(serializer, StreamSerializer):

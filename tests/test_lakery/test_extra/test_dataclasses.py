@@ -4,12 +4,12 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio.session import AsyncSession
 
+from lakery.builtin.storages.file import FileStorage
 from lakery.core.registry import ModelRegistry
 from lakery.core.registry import RegistryCollection
 from lakery.extra.dataclasses import StorageClass
 from lakery.extra.json import JsonSerializer
 from lakery.extra.msgpack import MsgPackSerializer
-from lakery.extra.os import FileStorage
 from tests.core_api_utils import assert_save_load_equivalence
 from tests.core_context_utils import basic_registry
 

@@ -1,12 +1,12 @@
 import shutil
 from pathlib import Path
 
+from lakery.builtin.serializers.json import JsonSerializer
+from lakery.builtin.serializers.json import JsonStreamSerializer
+from lakery.builtin.storages.file import FileStorage
 from lakery.core.registry import Registry
-from lakery.extra.json import JsonSerializer
-from lakery.extra.json import JsonStreamSerializer
 from lakery.extra.msgpack import MsgPackSerializer
 from lakery.extra.msgpack import MsgPackStreamSerializer
-from lakery.extra.os import FileStorage
 
 HERE = Path(__file__).parent
 TEST_STORAGE_DIR = HERE / ".storage"
@@ -16,6 +16,7 @@ if TEST_STORAGE_DIR.exists():  # nocov
 
 basic_registry = Registry.from_modules(
     "lakery.builtin.storables",
+    "lakery.builtin.serializers",
     "lakery.extra.pydantic",
 ).merge(
     storages=[FileStorage(TEST_STORAGE_DIR, mkdir=True)],

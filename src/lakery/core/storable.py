@@ -3,11 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 from typing import ClassVar
+from typing import Literal
 from typing import LiteralString
 from typing import TypedDict
 from typing import TypeVar
 from typing import Unpack
 from typing import cast
+from typing import overload
 from uuid import UUID
 from uuid import uuid4
 from warnings import warn
@@ -44,24 +46,54 @@ class StorableConfigDict(LongStorableConfigDict, total=False):
 class StorableConfig:
     """Configuration for a storable class."""
 
-    class_id: UUID | None = None
-    unpacker: Unpacker | None = None
+    class_id: UUID
+    unpacker: Unpacker
 
 
 class Storable:
     """Base class for storable objects."""
 
-    storable_config: ClassVar[StorableConfig] = StorableConfig()
-    """Configuration for the storable class."""
+    _storable_class_id: ClassVar[str | None] = None
+    _storable_unpacker: ClassVar[Unpacker | None] = None
 
     def __init_subclass__(cls, **kwargs: Unpack[StorableConfigDict]) -> None:
         cfg = normalize_storable_config_dict(kwargs)
-        if (class_id := cfg.get("storable_class_id")) is not None:
-            class_id = _validate_id(cls, class_id, warn_with_stacklevel=2)
-            if class_id is not None:
-                class_id = UUID(class_id)
-        unpacker = cfg.get("storable_unpacker", cls.storable_config.unpacker)
-        cls.storable_config = StorableConfig(class_id=class_id, unpacker=unpacker)
+
+        if "storable_class_id" in cfg:
+            cls._storable_class_id = _validate_id(
+                cls, cfg["storable_class_id"], warn_with_stacklevel=2
+            )
+        else:
+            cls._storable_class_id = None
+
+        if (unpacker := cfg.get("storable_unpacker")) is not None:
+            cls._storable_unpacker = unpacker
+
+    @overload
+    @classmethod
+    def get_storable_config(cls, *, allow_none: bool) -> StorableConfig | None: ...
+
+    @overload
+    @classmethod
+    def get_storable_config(cls, *, allow_none: Literal[False] = ...) -> StorableConfig: ...
+
+    @classmethod
+    def get_storable_config(cls, *, allow_none: bool = False) -> StorableConfig | None:
+        """Get the configuration for this storable class."""
+        if cls._storable_class_id is None:
+            if allow_none:
+                return None
+            msg = f"{full_class_name(cls)} does not have a valid storable class ID."
+            raise ValueError(msg)
+        if cls._storable_unpacker is None:
+            if allow_none:
+                return None
+            msg = f"{full_class_name(cls)} does not have a storable unpacker."
+            raise ValueError(msg)
+        return StorableConfig(
+            class_id=UUID(cls._storable_class_id),
+            unpacker=cls._storable_unpacker,
+        )
 
 
 def normalize_storable_config_dict(cfg: StorableConfigDict) -> LongStorableConfigDict:
@@ -84,11 +116,14 @@ def _to_short_config_name(long_name: str) -> str:
 
 def _validate_id(
     cls: type,
-    id_str: S,
+    id_str: S | None,
     *,
     warn_with_stacklevel: int | None = None,
 ) -> S | None:
     """Validate the ID string and pad it to 16 bytes."""
+    if id_str is None:
+        _id_warning_or_error(cls, id_str, warn_with_stacklevel)
+        return None
     if len(id_str) < 8 or len(id_str) > 16:
         _id_warning_or_error(cls, id_str, warn_with_stacklevel)
         return None

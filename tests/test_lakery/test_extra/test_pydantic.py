@@ -3,9 +3,9 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio.session import AsyncSession
 
+from lakery.builtin.storages.file import FileStorage
 from lakery.extra.json import JsonSerializer
 from lakery.extra.msgpack import MsgPackSerializer
-from lakery.extra.os import FileStorage
 from lakery.extra.pydantic import StorageModel
 from lakery.extra.pydantic import StorageSpec
 from tests.core_api_utils import assert_save_load_equivalence

@@ -15,8 +15,8 @@ if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
     from collections.abc import AsyncIterable
 
-from lakery.common.jsonext import JsonStreamType
-from lakery.common.jsonext import JsonType
+from lakery.common.types import JsonStreamType
+from lakery.common.types import JsonType
 
 __all__ = (
     "JsonSerializer",

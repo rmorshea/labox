@@ -2,7 +2,6 @@ import csv
 import json
 from collections.abc import Sequence
 from io import StringIO
-from typing import Required
 from typing import TypedDict
 from typing import Unpack
 
@@ -13,7 +12,7 @@ from lakery.core.serializer import Serializer
 class CsvOptions(TypedDict, total=False):
     """Configuration for CSV serialization."""
 
-    dialect: Required[csv.Dialect]
+    dialect: csv.Dialect
     delimiter: str
     quotechar: str | None
     escapechar: str | None
@@ -28,7 +27,7 @@ class CsvSerializer(Serializer[Sequence]):
     """Serializer for CSV format."""
 
     name = "lakery.csv@v1"
-    types = (list, tuple)  # Assuming CSV will serialize lists or tuples of values
+    types = ()  # Too hard to know the data is tabular just on an object type
     content_type = "text/csv"
 
     def __init__(self, **options: Unpack[CsvOptions]) -> None:
@@ -53,3 +52,7 @@ class CsvSerializer(Serializer[Sequence]):
         options = json.loads(buffer.readline().lstrip("#").strip())
         reader = csv.reader(buffer, **options)
         return list(reader)
+
+
+csv_serializer = CsvSerializer()
+""""Default instance of the CSV serializer."""

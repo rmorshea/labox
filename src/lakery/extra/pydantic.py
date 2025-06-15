@@ -291,7 +291,7 @@ def _make_serializer_func(schema: cs.CoreSchema) -> cs.FieldPlainInfoSerializerF
     serializer_from_schema = metadata.get("serializer")
     storage_from_schema = metadata.get("storage")
 
-    def serialize(model: BaseModel, value: Any, info: cs.FieldSerializationInfo, /) -> Any:
+    def serialize(model: BaseModel, value: Any, info: cs.FieldSerializationInfo, /) -> AnyJsonExt:
         context = _get_info_context(info)
         external = context["external"]
         registry = context["registry"]

@@ -2,9 +2,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Callable
-from collections.abc import Iterator
 from collections.abc import Mapping
-from contextlib import contextmanager
 from dataclasses import dataclass
 from dataclasses import field
 from typing import TYPE_CHECKING
@@ -15,10 +13,6 @@ from typing import TypeVar
 from typing import cast
 from typing import dataclass_transform
 from typing import overload
-from warnings import catch_warnings
-from warnings import warn
-
-from lakery._internal.settings import LAKERY_FORWARD_WARNINGS
 
 T = TypeVar("T")
 D = TypeVar("D", bound=Mapping[str, Any])
@@ -29,26 +23,6 @@ UNDEFINED = cast("Any", type("UNDEFINED", (), {"__repr__": lambda _: "UNDEFINED"
 
 NON_ALPHANUMERIC = re.compile(r"[^a-z0-9]+")
 """Matches non-alphanumeric characters."""
-
-
-@contextmanager
-def forward_warnings(
-    category: type[Warning] = Warning,
-    *,
-    lineno: int = 0,
-    stacklevel: int = 1,
-) -> Iterator[None]:
-    """Forward warnings to the caller's stack frame."""
-    if not LAKERY_FORWARD_WARNINGS():
-        yield
-        return
-
-    with catch_warnings(record=True, category=category, lineno=lineno) as warnings:
-        try:
-            yield
-        finally:
-            for w in warnings:
-                warn(w.message, category, stacklevel=stacklevel + 1)
 
 
 def get_typed_dict(typed_dict: type[D], merged_dict: Mapping[str, Any], /) -> D:
