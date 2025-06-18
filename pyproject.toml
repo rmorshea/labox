@@ -56,6 +56,20 @@ imageio = ["imageio>=2,<3"]
 Source = "https://github.com/rmorshea/lakery"
 
 [dependency-groups]
+lint = [
+    { include-group = "test" },
+    "doccmd==2025.04.08",
+    "mdformat-admon @ git+https://github.com/rmorshea/mdformat-admon.git@0e513d7a2c265faf74441938ccbd1010660609f4",
+    "mdformat-mkdocs==4.1.0",
+    "mdformat-pyproject==0.0.1",
+    "mdformat-tables==1.0.0",
+    "mdformat==0.7.22",
+    "pyright==1.1.391",
+    "ruff==0.9.2",
+    "types-boto3-s3==1.35.76",
+    "types-boto3==1.35.76",
+    "yamlfix==1.17.0",
+]
 dev = [
     { include-group = "util" },
     { include-group = "docs" },
@@ -72,21 +86,7 @@ docs = [
     "mkdocs-open-in-new-tab==1.0.5",
     "mkdocs==1.6.1",
     "mkdocs-literate-nav==0.6.1",
-    "mkdocstrings-python==1.13.0",
-]
-lint = [
-    { include-group = "test" },
-    "doccmd==2025.04.08",
-    "mdformat-admon @ git+https://github.com/rmorshea/mdformat-admon.git@0e513d7a2c265faf74441938ccbd1010660609f4",
-    "mdformat-mkdocs==3.1.1",
-    "mdformat-pyproject==0.0.1",
-    "mdformat-tables==1.0.0",
-    "mdformat==0.7.19",
-    "pyright==1.1.391",
-    "ruff==0.9.2",
-    "types-boto3-s3==1.35.76",
-    "types-boto3==1.35.76",
-    "yamlfix==1.17.0",
+    "mkdocstrings-python==1.16.12",
 ]
 test = [
     { include-group = "util" },

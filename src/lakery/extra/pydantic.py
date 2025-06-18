@@ -187,9 +187,9 @@ class StorageSpec:
     ```
     """
 
-    serializer: Serializer | None = None
+    serializer: type[Serializer] | None = None
     """The serializer to use for this value."""
-    storage: Storage | None = None
+    storage: type[Storage] | None = None
     """The storage to use for this value."""
 
     def __get_pydantic_core_schema__(
@@ -203,9 +203,9 @@ class StorageSpec:
         else:
             metadata: _SchemaMetadata = {}
         if self.serializer is not None:
-            metadata["serializer"] = self.serializer
+            metadata["serializer_name"] = self.serializer.name
         if self.storage is not None:
-            metadata["storage"] = self.storage
+            metadata["storage_name"] = self.storage.name
         _set_schema_metadata(schema, metadata)
         return schema
 
@@ -262,14 +262,14 @@ def _make_validator_func() -> cs.WithInfoValidatorFunction:
 
         if json_ext["__json_ext__"] == "ref":
             ref_str = json_ext["ref"]
-            spec = context["external"][ref_str]
-            if "value" in spec:
-                return spec["value"]
-            elif "value_stream" in spec:
-                return spec["value_stream"]
-            else:  # nocov
-                msg = f"Invalid external content reference: {ref_str}."
-                raise ValueError(msg)
+            match context["external"][ref_str]:
+                case {"value": value}:
+                    return value
+                case {"value_stream": value_stream}:
+                    return value_stream
+                case _:
+                    msg = f"Invalid external content reference: {ref_str}."
+                    raise ValueError(msg)
         elif json_ext["__json_ext__"] == "content":
             serializer = registry.get_serializer(json_ext["serializer_name"])
             return serializer.deserialize_data(
@@ -288,8 +288,8 @@ def _make_validator_func() -> cs.WithInfoValidatorFunction:
 
 def _make_serializer_func(schema: cs.CoreSchema) -> cs.FieldPlainInfoSerializerFunction:
     metadata = _get_schema_metadata(schema)
-    serializer_from_schema = metadata.get("serializer")
-    storage_from_schema = metadata.get("storage")
+    serializer_name = metadata.get("serializer_name")
+    storage_name = metadata.get("storage")
 
     def serialize(model: BaseModel, value: Any, info: cs.FieldSerializationInfo, /) -> AnyJsonExt:
         context = _get_info_context(info)
@@ -297,14 +297,18 @@ def _make_serializer_func(schema: cs.CoreSchema) -> cs.FieldPlainInfoSerializerF
         registry = context["registry"]
 
         cls = type(value)
-        serializer = serializer_from_schema or registry.infer_serializer(cls)
+        serializer = (
+            registry.get_serializer(serializer_name)
+            if serializer_name is not None
+            else registry.infer_serializer(cls)
+        )
 
-        if storage_from_schema is not None:
+        if storage_name is not None:
             ref_str = _make_ref_str(type(model), info, context)
             external[ref_str] = UnpackedValue(
                 value=value,
                 serializer=serializer,
-                storage=storage_from_schema,
+                storage=registry.get_storage(storage_name),
             )
             return {"__json_ext__": "ref", "ref": ref_str}
 
@@ -358,8 +362,8 @@ def _set_schema_metadata(schema: cs.CoreSchema, metadata: _SchemaMetadata) -> No
 
 
 class _SchemaMetadata(TypedDict, total=False):
-    serializer: Serializer
-    storage: Storage
+    serializer_name: str
+    storage_name: str
 
 
 def _make_validation_context(ctx: _LakeryValidationContext) -> dict[str, Any]:

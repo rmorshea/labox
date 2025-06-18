@@ -50,7 +50,7 @@ Establish [registries](./concepts/registries.md) with the
 [models](./concepts/models.md) you want to use.
 
 ```python
-from lakery.core import Registry, SimpleUnpacker
+from lakery.core import Registry
 from lakery.extra.json import JsonSerializer
 from lakery.extra.os import FileStorage
 

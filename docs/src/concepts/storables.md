@@ -107,8 +107,8 @@ the [`BaseStorageModel`][lakery.core.model.BaseStorageModel] interface. Lakery p
 a number of integrations with existing frameworks and libraries to make this easier. For
 example:
 
--   [Dataclasses](../integrations/dataclasses.md)
--   [Pydantic](../integrations/pydantic.md)
+- [Dataclasses](../integrations/dataclasses.md)
+- [Pydantic](../integrations/pydantic.md)
 
 ### Example Custom Model
 
@@ -142,11 +142,11 @@ You'll then start to convert this into a model by first inheriting from
 `BaseStorageModel` and adding a `storage_model_config`:
 
 ```python
-from lakery.core import BaseStorageModel
 
 
 class ExperimentResults(Storable, class_id="abc123"):
     """Results from a scientific experiment."""
+
     ...
 ```
 

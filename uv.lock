@@ -851,14 +851,14 @@ wheels = [
 
 [[package]]
 name = "griffe"
-version = "1.5.1"
+version = "1.7.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "colorama" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d4/c9/8167810358ca129839156dc002526e7398b5fad4a9d7b6e88b875e802d0d/griffe-1.5.1.tar.gz", hash = "sha256:72964f93e08c553257706d6cd2c42d1c172213feb48b2be386f243380b405d4b", size = 384113, upload-time = "2024-10-18T13:40:37.466Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a9/3e/5aa9a61f7c3c47b0b52a1d930302992229d191bf4bc76447b324b731510a/griffe-1.7.3.tar.gz", hash = "sha256:52ee893c6a3a968b639ace8015bec9d36594961e156e23315c8e8e51401fa50b", size = 395137, upload-time = "2025-04-23T11:29:09.147Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ab/00/e693a155da0a2a72fd2df75b8fe338146cae59d590ad6f56800adde90cb5/griffe-1.5.1-py3-none-any.whl", hash = "sha256:ad6a7980f8c424c9102160aafa3bcdf799df0e75f7829d75af9ee5aef656f860", size = 127132, upload-time = "2024-10-18T13:40:34.353Z" },
+    { url = "https://files.pythonhosted.org/packages/58/c6/5c20af38c2a57c15d87f7f38bee77d63c1d2a3689f74fefaf35915dd12b2/griffe-1.7.3-py3-none-any.whl", hash = "sha256:c6b3ee30c2f0f17f30bcdef5068d6ab7a2a4f1b8bf1a3e74b56fffd21e1c5f75", size = 129303, upload-time = "2025-04-23T11:29:07.145Z" },
 ]
 
 [[package]]
@@ -1230,9 +1230,9 @@ dev = [
     { name = "doccmd", specifier = "==2025.4.8" },
     { name = "ipykernel", specifier = "==6.29.5" },
     { name = "lakery", extras = ["all"] },
-    { name = "mdformat", specifier = "==0.7.19" },
+    { name = "mdformat", specifier = "==0.7.22" },
     { name = "mdformat-admon", git = "https://github.com/rmorshea/mdformat-admon.git?rev=0e513d7a2c265faf74441938ccbd1010660609f4" },
-    { name = "mdformat-mkdocs", specifier = "==3.1.1" },
+    { name = "mdformat-mkdocs", specifier = "==4.1.0" },
     { name = "mdformat-pyproject", specifier = "==0.0.1" },
     { name = "mdformat-tables", specifier = "==1.0.0" },
     { name = "mkdocs", specifier = "==1.6.1" },
@@ -1240,7 +1240,7 @@ dev = [
     { name = "mkdocs-literate-nav", specifier = "==0.6.1" },
     { name = "mkdocs-material", specifier = "==9.5.39" },
     { name = "mkdocs-open-in-new-tab", specifier = "==1.0.5" },
-    { name = "mkdocstrings-python", specifier = "==1.13.0" },
+    { name = "mkdocstrings-python", specifier = "==1.16.12" },
     { name = "moto", specifier = ">=5.0.22" },
     { name = "pycobertura", specifier = "==3.3.2" },
     { name = "pyright", specifier = "==1.1.391" },
@@ -1265,7 +1265,7 @@ docs = [
     { name = "mkdocs-literate-nav", specifier = "==0.6.1" },
     { name = "mkdocs-material", specifier = "==9.5.39" },
     { name = "mkdocs-open-in-new-tab", specifier = "==1.0.5" },
-    { name = "mkdocstrings-python", specifier = "==1.13.0" },
+    { name = "mkdocstrings-python", specifier = "==1.16.12" },
     { name = "moto", specifier = ">=5.0.22" },
     { name = "pycobertura", specifier = "==3.3.2" },
     { name = "pytest", specifier = "==8.3.3" },
@@ -1281,9 +1281,9 @@ lint = [
     { name = "diff-cover", specifier = "==9.2.0" },
     { name = "doccmd", specifier = "==2025.4.8" },
     { name = "ipykernel", specifier = "==6.29.5" },
-    { name = "mdformat", specifier = "==0.7.19" },
+    { name = "mdformat", specifier = "==0.7.22" },
     { name = "mdformat-admon", git = "https://github.com/rmorshea/mdformat-admon.git?rev=0e513d7a2c265faf74441938ccbd1010660609f4" },
-    { name = "mdformat-mkdocs", specifier = "==3.1.1" },
+    { name = "mdformat-mkdocs", specifier = "==4.1.0" },
     { name = "mdformat-pyproject", specifier = "==0.0.1" },
     { name = "mdformat-tables", specifier = "==1.0.0" },
     { name = "moto", specifier = ">=5.0.22" },
@@ -1490,14 +1490,14 @@ wheels = [
 
 [[package]]
 name = "mdformat"
-version = "0.7.19"
+version = "0.7.22"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "markdown-it-py" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/1c/bc/71d461905953d1c716c30e11ca513d7b43097c2d0aa46fde838e30eefe32/mdformat-0.7.19.tar.gz", hash = "sha256:a7d22df9802383432367864da907d2d147485b5cb6872e2d66937c1333e4d58a", size = 43513, upload-time = "2024-11-18T07:01:00.053Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/fc/eb/b5cbf2484411af039a3d4aeb53a5160fae25dd8c84af6a4243bc2f3fedb3/mdformat-0.7.22.tar.gz", hash = "sha256:eef84fa8f233d3162734683c2a8a6222227a229b9206872e6139658d99acb1ea", size = 34610, upload-time = "2025-01-30T18:00:51.418Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a5/7e/a7a904ec104e21c85333a02dd54456f53d5be31bee716217a1450844a044/mdformat-0.7.19-py3-none-any.whl", hash = "sha256:5c360992adc118cf1479cbbe92bb3bd66dcd7f1a5a3a2ad6675915622c678cf1", size = 33109, upload-time = "2024-11-18T07:00:58.957Z" },
+    { url = "https://files.pythonhosted.org/packages/f2/6f/94a7344f6d634fe3563bea8b33bccedee37f2726f7807e9a58440dc91627/mdformat-0.7.22-py3-none-any.whl", hash = "sha256:61122637c9e1d9be1329054f3fa216559f0d1f722b7919b060a8c2a4ae1850e5", size = 34447, upload-time = "2025-01-30T18:00:48.708Z" },
 ]
 
 [[package]]
@@ -1526,18 +1526,17 @@ wheels = [
 
 [[package]]
 name = "mdformat-mkdocs"
-version = "3.1.1"
+version = "4.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "mdformat" },
-    { name = "mdformat-admon" },
     { name = "mdformat-gfm" },
     { name = "mdit-py-plugins" },
     { name = "more-itertools" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8c/16/efe49585fa505852f07045245dbe9fa3d07cbde7e2ad0a4c4e3549e270ee/mdformat_mkdocs-3.1.1.tar.gz", hash = "sha256:0093a9de93c7d7a57fcaeb94771c5727212c9cdafe781ab3c6948e3d029b47ce", size = 21513, upload-time = "2024-10-30T12:01:49.222Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/92/96/8fd8d1e1bf5e6d94fa9c13d6e3f8fb19c606d5082caa8b984ed85132d6b4/mdformat_mkdocs-4.1.0.tar.gz", hash = "sha256:7515e115ac6322f9edbe01fc7a0dbe2adf9dce6c3d8e5ee965d666264155c527", size = 26076, upload-time = "2024-12-17T01:54:33.794Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/29/f6/b02c2b028ea22e569c636e78de2c2088c0454ae30a5193ba9e64c2c35f08/mdformat_mkdocs-3.1.1-py3-none-any.whl", hash = "sha256:a74e5644ba44894de645b963f091663cba00476b4985e750bf6d888e5b7299c8", size = 20668, upload-time = "2024-10-30T12:01:47.713Z" },
+    { url = "https://files.pythonhosted.org/packages/e7/53/95cb29a187d91438739ead6d0e00c90bbe3d2a63d9aec10af32958a9acc1/mdformat_mkdocs-4.1.0-py3-none-any.whl", hash = "sha256:0e3e26155b49eb8f9979e20fd67cc4341790309bf11e8cdeac432adb991aef91", size = 28011, upload-time = "2024-12-17T01:54:31.408Z" },
 ]
 
 [[package]]
@@ -1621,16 +1620,16 @@ wheels = [
 
 [[package]]
 name = "mkdocs-autorefs"
-version = "1.2.0"
+version = "1.4.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "markdown" },
     { name = "markupsafe" },
     { name = "mkdocs" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/fb/ae/0f1154c614d6a8b8a36fff084e5b82af3a15f7d2060cf0dcdb1c53297a71/mkdocs_autorefs-1.2.0.tar.gz", hash = "sha256:a86b93abff653521bda71cf3fc5596342b7a23982093915cb74273f67522190f", size = 40262, upload-time = "2024-09-01T18:29:18.514Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/47/0c/c9826f35b99c67fa3a7cddfa094c1a6c43fafde558c309c6e4403e5b37dc/mkdocs_autorefs-1.4.2.tar.gz", hash = "sha256:e2ebe1abd2b67d597ed19378c0fff84d73d1dbce411fce7a7cc6f161888b6749", size = 54961, upload-time = "2025-05-20T13:09:09.886Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/71/26/4d39d52ea2219604053a4d05b98e90d6a335511cc01806436ec4886b1028/mkdocs_autorefs-1.2.0-py3-none-any.whl", hash = "sha256:d588754ae89bd0ced0c70c06f58566a4ee43471eeeee5202427da7de9ef85a2f", size = 16522, upload-time = "2024-09-01T18:29:16.605Z" },
+    { url = "https://files.pythonhosted.org/packages/87/dc/fc063b78f4b769d1956319351704e23ebeba1e9e1d6a41b4b602325fd7e4/mkdocs_autorefs-1.4.2-py3-none-any.whl", hash = "sha256:83d6d777b66ec3c372a1aad4ae0cf77c243ba5bcda5bf0c6b8a2c5e7a3d89f13", size = 24969, upload-time = "2025-05-20T13:09:08.237Z" },
 ]
 
 [[package]]
@@ -1716,35 +1715,33 @@ wheels = [
 
 [[package]]
 name = "mkdocstrings"
-version = "0.27.0"
+version = "0.29.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "click" },
     { name = "jinja2" },
     { name = "markdown" },
     { name = "markupsafe" },
     { name = "mkdocs" },
     { name = "mkdocs-autorefs" },
-    { name = "platformdirs" },
     { name = "pymdown-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e2/5a/5de70538c2cefae7ac3a15b5601e306ef3717290cb2aab11d51cbbc2d1c0/mkdocstrings-0.27.0.tar.gz", hash = "sha256:16adca6d6b0a1f9e0c07ff0b02ced8e16f228a9d65a37c063ec4c14d7b76a657", size = 94830, upload-time = "2024-11-08T17:07:41.627Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/41/e8/d22922664a627a0d3d7ff4a6ca95800f5dde54f411982591b4621a76225d/mkdocstrings-0.29.1.tar.gz", hash = "sha256:8722f8f8c5cd75da56671e0a0c1bbed1df9946c0cef74794d6141b34011abd42", size = 1212686, upload-time = "2025-03-31T08:33:11.997Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/cd/10/4c27c3063c2b3681a4b7942f8dbdeb4fa34fecb2c19b594e7345ebf4f86f/mkdocstrings-0.27.0-py3-none-any.whl", hash = "sha256:6ceaa7ea830770959b55a16203ac63da24badd71325b96af950e59fd37366332", size = 30658, upload-time = "2024-11-08T17:07:39.189Z" },
+    { url = "https://files.pythonhosted.org/packages/98/14/22533a578bf8b187e05d67e2c1721ce10e3f526610eebaf7a149d557ea7a/mkdocstrings-0.29.1-py3-none-any.whl", hash = "sha256:37a9736134934eea89cbd055a513d40a020d87dfcae9e3052c2a6b8cd4af09b6", size = 1631075, upload-time = "2025-03-31T08:33:09.661Z" },
 ]
 
 [[package]]
 name = "mkdocstrings-python"
-version = "1.13.0"
+version = "1.16.12"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "griffe" },
     { name = "mkdocs-autorefs" },
     { name = "mkdocstrings" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ab/ae/32703e35d74040051c672400fd9f5f2b48a6ea094f5071dd8a0e3be35322/mkdocstrings_python-1.13.0.tar.gz", hash = "sha256:2dbd5757e8375b9720e81db16f52f1856bf59905428fd7ef88005d1370e2f64c", size = 185697, upload-time = "2024-12-26T17:58:51.741Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/bf/ed/b886f8c714fd7cccc39b79646b627dbea84cd95c46be43459ef46852caf0/mkdocstrings_python-1.16.12.tar.gz", hash = "sha256:9b9eaa066e0024342d433e332a41095c4e429937024945fea511afe58f63175d", size = 206065, upload-time = "2025-06-03T12:52:49.276Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/51/23/d02d86553327296c3bf369d444194ea83410cce8f0e690565264f37f3261/mkdocstrings_python-1.13.0-py3-none-any.whl", hash = "sha256:b88bbb207bab4086434743849f8e796788b373bd32e7bfefbf8560ac45d88f97", size = 112254, upload-time = "2024-12-26T17:58:31.106Z" },
+    { url = "https://files.pythonhosted.org/packages/3b/dd/a24ee3de56954bfafb6ede7cd63c2413bb842cc48eb45e41c43a05a33074/mkdocstrings_python-1.16.12-py3-none-any.whl", hash = "sha256:22ded3a63b3d823d57457a70ff9860d5a4de9e8b1e482876fc9baabaf6f5f374", size = 124287, upload-time = "2025-06-03T12:52:47.819Z" },
 ]
 
 [[package]]
