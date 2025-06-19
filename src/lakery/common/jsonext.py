@@ -8,35 +8,20 @@ from collections.abc import Sequence
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Literal
-from typing import LiteralString
 from typing import TypedDict
 from typing import cast
 from typing import overload
 from uuid import UUID
 
-from lakery.core.model import AnyModeledValue
-from lakery.core.model import BaseStorageModel
-from lakery.core.model import StorageModelConfigDict
+from lakery.core.storable import Storable
 
 if TYPE_CHECKING:
-    from lakery.core.model import ModeledValue
-    from lakery.core.registries import RegistryCollection
+    from lakery.common.types import JsonType
+    from lakery.core.registry import Registry
     from lakery.core.serializer import Serializer
     from lakery.core.storage import Storage
-
-JsonType = (
-    int
-    | str
-    | float
-    | bool
-    | dict[str, "JsonType"]
-    | list["JsonType"]
-    | tuple["JsonType", ...]
-    | None
-)
-"""A type alias for JSON data."""
-JsonStreamType = dict[str, JsonType] | list[JsonType] | tuple[JsonType, ...]
-"""A type alias for a a value in a stream of JSON data."""
+    from lakery.core.unpacker import AnyUnpackedValue
+    from lakery.core.unpacker import UnpackedValue
 
 
 class RefJsonExt(TypedDict):
@@ -63,18 +48,27 @@ class ContentJsonExt(TypedDict):
     """The name of the serializer used to serialize the data."""
 
 
-class ModelJsonExt(TypedDict):
-    """A JSON extension for external storage models."""
+class ObjectConfigJsonExt(TypedDict):
+    """The configuration of the storable object."""
 
-    __json_ext__: Literal["model"]
+    class_id: str
+    """The class ID of the storable object."""
+    unpacker_name: str
+    """The name of the unpacker used to unpack the storable object."""
 
-    config: StorageModelConfigDict
-    """The configuration of the storage model."""
+
+class ObjectJsonExt(TypedDict):
+    """A JSON extension for external storable object."""
+
+    __json_ext__: Literal["object"]
+
+    config: ObjectConfigJsonExt
+    """The configuration of the storable object."""
     contents: dict[str, ContentJsonExt | RefJsonExt]
     """Content dumped by the model."""
 
 
-AnyJsonExt = RefJsonExt | ContentJsonExt | ModelJsonExt
+AnyJsonExt = RefJsonExt | ContentJsonExt | ObjectJsonExt
 """The JSON extension for external content references."""
 
 
@@ -82,21 +76,21 @@ class JsonExtDumpContext(TypedDict):
     """The context for dumping extended JSON data."""
 
     path: str
-    registries: RegistryCollection
-    external: dict[str, ModeledValue]
+    registry: Registry
+    external: dict[str, UnpackedValue]
 
 
 class JsonExtLoadContext(TypedDict):
     """The context for loading extended JSON data."""
 
-    registries: RegistryCollection
-    external: dict[str, ModeledValue]
+    registry: Registry
+    external: dict[str, UnpackedValue]
 
 
 def dump_json_ext(
     value: Any,
     context: JsonExtDumpContext,
-    default: Callable[[Any], ModeledValue | None] = lambda x: None,
+    default: Callable[[Any], UnpackedValue | None] = lambda x: None,
 ) -> JsonType:
     """Dump the given value to JSON with extensions."""
     path = context["path"]
@@ -118,7 +112,7 @@ def dump_json_ext(
                     path,
                     (
                         value
-                        if isinstance(value, BaseStorageModel)
+                        if isinstance(value, Storable)
                         else (
                             default(value) or {"value": value, "serializer": None, "storage": None}
                         )
@@ -131,7 +125,7 @@ def dump_json_ext(
 @overload
 def dump_any_json_ext(
     key: str,
-    data: ModeledValue,
+    data: UnpackedValue,
     context: JsonExtDumpContext,
 ) -> ContentJsonExt | RefJsonExt: ...
 
@@ -139,23 +133,23 @@ def dump_any_json_ext(
 @overload
 def dump_any_json_ext(
     key: str,
-    data: BaseStorageModel,
+    data: Storable,
     context: JsonExtDumpContext,
-) -> ModelJsonExt: ...
+) -> ObjectJsonExt: ...
 
 
 def dump_any_json_ext(
     key: str,
-    data: BaseStorageModel | ModeledValue,
+    data: Storable | UnpackedValue,
     context: JsonExtDumpContext,
 ) -> AnyJsonExt:
     """Dump the given value to a JSON extension."""
-    if isinstance(data, BaseStorageModel):
+    if isinstance(data, Storable):
         return dump_json_model_ext(data, context)
     return (
-        dump_json_ref_ext(key, data["value"], data["serializer"], storage, context)
-        if (storage := data["storage"]) is not None
-        else dump_json_content_ext(data["value"], data["serializer"], context)
+        dump_json_ref_ext(key, data["value"], data.get("serializer"), storage, context)
+        if (storage := data.get("storage")) is not None
+        else dump_json_content_ext(data["value"], data.get("serializer"), context)
     )
 
 
@@ -163,8 +157,8 @@ def dump_json_content_ext(
     value: Any, serializer: Serializer | None, context: JsonExtDumpContext
 ) -> ContentJsonExt:
     """Dump the given value to a JSON extension with embedded content."""
-    serializer = serializer or context["registries"].serializers.infer_from_value_type(type(value))
-    content = serializer.dump_data(value)
+    serializer = serializer or context["registry"].infer_serializer(type(value))
+    content = serializer.serialize_data(value)
     return {
         "__json_ext__": "content",
         "content_base64": b64encode(content["data"]).decode("ascii"),
@@ -174,25 +168,25 @@ def dump_json_content_ext(
     }
 
 
-def dump_json_model_ext(value: BaseStorageModel, context: JsonExtDumpContext) -> ModelJsonExt:
+def dump_json_model_ext(value: Storable, context: JsonExtDumpContext) -> ObjectJsonExt:
     """Dump the given value to a JSON extension with a storage model."""
     cls = type(value)
-    cfg = cls.storage_model_config()
-    context["registries"].models.check_registered(cls)
+    cfg = cls.get_storable_config()
+    context["registry"].has_storable(cls)
     return {
-        "__json_ext__": "model",
+        "__json_ext__": "object",
         "config": {
-            "id": cast("LiteralString", cfg.id.hex),
-            "version": cfg.version,
+            "class_id": cfg.class_id.hex,
+            "unpacker_name": cfg.unpacker.name,
         },
         "contents": {
             k: dump_any_json_ext(k, _check_is_not_stream_content(v), context)
-            for k, v in value.storage_model_dump(context["registries"]).items()
+            for k, v in cfg.unpacker.unpack_object(value, context["registry"]).items()
         },
     }
 
 
-def _check_is_not_stream_content(cont: AnyModeledValue) -> ModeledValue:
+def _check_is_not_stream_content(cont: AnyUnpackedValue) -> UnpackedValue:
     if "value_stream" in cont:
         msg = f"Stream content not supported: {cont}"
         raise ValueError(msg)
@@ -249,8 +243,8 @@ def load_any_json_ext(value: AnyJsonExt, context: JsonExtLoadContext) -> Any:
 
 def load_json_content_ext(json_ext: ContentJsonExt, context: JsonExtLoadContext) -> Any:
     """Load a value from a JSON extension with embedded content."""
-    serializer = context["registries"].serializers[json_ext["serializer_name"]]
-    return serializer.load_data(
+    serializer = context["registry"].get_serializer(json_ext["serializer_name"])
+    return serializer.deserialize_data(
         {
             "data": b64decode(json_ext["content_base64"].encode("ascii")),
             "content_encoding": json_ext["content_encoding"],
@@ -264,12 +258,14 @@ def load_json_ref_ext(value: RefJsonExt, context: JsonExtLoadContext) -> Any:
     return context["external"][value["ref"]]["value"]
 
 
-def load_json_model_ext(value: ModelJsonExt, context: JsonExtLoadContext) -> BaseStorageModel:
+def load_json_model_ext(value: ObjectJsonExt, context: JsonExtLoadContext) -> Storable:
     """Load a value from a JSON extension with a storage model."""
+    registry = context["registry"]
     cfg = value["config"]
-    cls = context["registries"].models[UUID(cfg["id"])]
+    cls = registry.get_storable(UUID(cfg["class_id"]))
+    unpacker = registry.get_unpacker(cfg["unpacker_name"])
     contents = {k: load_any_json_ext(v, context) for k, v in value["contents"].items()}
-    return cls.storage_model_load(contents, cfg["version"], context["registries"])
+    return unpacker.repack_object(cls, contents, registry)
 
 
 _load_func_by_ext = {

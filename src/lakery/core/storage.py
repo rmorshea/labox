@@ -3,17 +3,21 @@ from __future__ import annotations
 import abc
 import json
 from typing import TYPE_CHECKING
+from typing import ClassVar
 from typing import Generic
 from typing import LiteralString
 from typing import Protocol
 from typing import TypedDict
 from typing import TypeVar
 
+from lakery._internal.utils import not_implemented
+from lakery._internal.utils import validate_versioned_class_name
+
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
     from collections.abc import AsyncIterable
 
-    from lakery.common.utils import TagMap
+    from lakery.common.types import TagMap
 
 
 T = TypeVar("T")
@@ -22,11 +26,15 @@ T = TypeVar("T")
 class Storage(Generic[T], abc.ABC):
     """A protocol for storing and retrieving data."""
 
-    name: LiteralString
+    name: ClassVar[LiteralString]
     """The name of the storage."""
 
+    def __init_subclass__(cls) -> None:
+        validate_versioned_class_name(cls)
+
     @abc.abstractmethod
-    async def put_data(
+    @not_implemented
+    async def write_data(
         self,
         data: bytes,
         digest: Digest,
@@ -34,15 +42,17 @@ class Storage(Generic[T], abc.ABC):
         /,
     ) -> T:
         """Save the given data and return information that can be used to retrieve it."""
-        raise NotImplementedError
+        ...
 
     @abc.abstractmethod
-    async def get_data(self, info: T, /) -> bytes:
+    @not_implemented
+    async def read_data(self, info: T, /) -> bytes:
         """Load data using the given information."""
-        raise NotImplementedError
+        ...
 
     @abc.abstractmethod
-    async def put_data_stream(
+    @not_implemented
+    async def write_data_stream(
         self,
         data_stream: AsyncIterable[bytes],
         get_digest: GetStreamDigest,
@@ -50,18 +60,19 @@ class Storage(Generic[T], abc.ABC):
         /,
     ) -> T:
         """Save the given stream and return information that can be used to retrieve it."""
-        raise NotImplementedError
+        ...
 
     @abc.abstractmethod
-    def get_data_stream(self, info: T, /) -> AsyncGenerator[bytes]:
+    @not_implemented
+    def read_data_stream(self, info: T, /) -> AsyncGenerator[bytes]:
         """Load a stream of data using the given information."""
-        raise NotImplementedError
+        ...
 
-    def dump_json_storage_data(self, info: T) -> str:
+    def serialize_storage_data(self, info: T) -> str:
         """Dump the storage information to a JSON string."""
         return json.dumps(info)
 
-    def load_json_storage_data(self, data: str) -> T:
+    def deserialize_storage_data(self, data: str) -> T:
         """Load the storage information from a JSON string."""
         return json.loads(data)
 

@@ -50,18 +50,15 @@ Establish [registries](./concepts/registries.md) with the
 [models](./concepts/models.md) you want to use.
 
 ```python
-from lakery.core import ModelRegistry
-from lakery.core import RegistryCollection
-from lakery.core import SerializerRegistry
-from lakery.core import StorageRegistry
+from lakery.core import Registry
 from lakery.extra.json import JsonSerializer
 from lakery.extra.os import FileStorage
 
-serializers = SerializerRegistry([JsonSerializer()])
-storages = StorageRegistry(default=FileStorage("temp", mkdir=True))
-models = ModelRegistry.from_modules("lakery.builtin.models")
-
-registries = RegistryCollection(serializers=serializers, storages=storages, models=models)
+registry = Registry(
+    serializers=[JsonSerializer()],
+    storages=[FileStorage("temp", mkdir=True)],
+    use_default_storage=True,
+)
 ```
 
 ## Basic Usage

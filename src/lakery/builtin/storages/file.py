@@ -8,7 +8,7 @@ from uuid import uuid4
 
 from anyio import create_task_group
 
-from lakery.common.anyio import start_as_async_iterator
+from lakery._internal.anyio import start_as_async_iterator
 from lakery.core.storage import Storage
 from lakery.extra._utils import make_path_parts_from_digest
 
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterable
     from collections.abc import Iterator
 
-    from lakery.common.utils import TagMap
+    from lakery.common.types import TagMap
     from lakery.core.storage import Digest
     from lakery.core.storage import GetStreamDigest
 
@@ -29,7 +29,7 @@ _LOG = logging.getLogger(__name__)
 class FileStorage(Storage[str]):
     """A storage backend for testing that saves data to local files."""
 
-    name = "lakery.os.local_file"
+    name = "lakery.file@v1"
     version = 1
 
     def __init__(
@@ -45,7 +45,7 @@ class FileStorage(Storage[str]):
         self.chunk_size = chunk_size
         (self.path / "temp").mkdir()
 
-    async def put_data(
+    async def write_data(
         self,
         data: bytes,
         digest: Digest,
@@ -59,13 +59,13 @@ class FileStorage(Storage[str]):
             content_path.write_bytes(data)
         return _path_to_str(content_path)
 
-    async def get_data(self, location: str) -> bytes:
+    async def read_data(self, location: str) -> bytes:
         """Load data from the given location."""
         path = _str_to_path(location)
         _LOG.debug("Loading data from %s", path)
         return path.read_bytes()
 
-    async def put_data_stream(
+    async def write_data_stream(
         self,
         data_stream: AsyncIterable[bytes],
         get_digest: GetStreamDigest,
@@ -89,7 +89,7 @@ class FileStorage(Storage[str]):
             temp_path.unlink(missing_ok=True)
         return _path_to_str(content_path)
 
-    async def get_data_stream(self, location: str) -> AsyncGenerator[bytes]:
+    async def read_data_stream(self, location: str) -> AsyncGenerator[bytes]:
         """Load a stream of data from the given location."""
         path = _str_to_path(location)
         _LOG.debug("Loading data stream from %s", path)

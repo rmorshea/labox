@@ -8,30 +8,28 @@ from collections.abc import MutableMapping
 from logging import getLogger
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Self
 from typing import TypedDict
 from typing import Unpack
 from typing import cast
 from typing import overload
 
 from pydantic import BaseModel
-from pydantic import ConfigDict
+from pydantic import ConfigDict as _ConfigDict
 from pydantic import GetCoreSchemaHandler
 from pydantic_core import core_schema as cs
 from pydantic_walk_core_schema import walk_core_schema
 
-from lakery.common.utils import frozenclass
-from lakery.core.model import AnyModeledValue
-from lakery.core.model import AnyModeledValueMap
-from lakery.core.model import BaseStorageModel
-from lakery.core.model import ModeledValue
-from lakery.core.model import StorageModelConfig
+from lakery._internal.utils import frozenclass
+from lakery._internal.utils import get_typed_dict
+from lakery.core.storable import Storable
+from lakery.core.storable import StorableConfigDict
+from lakery.core.unpacker import AnyUnpackedValue
+from lakery.core.unpacker import UnpackedValue
+from lakery.core.unpacker import Unpacker
 
 if TYPE_CHECKING:
     from lakery.common.jsonext import AnyJsonExt
-    from lakery.core.registries import RegistryCollection
-    from lakery.core.registries import SerializerRegistry
-    from lakery.core.registries import StorageRegistry
+    from lakery.core.registry import Registry
     from lakery.core.serializer import Serializer
     from lakery.core.storage import Storage
 
@@ -44,22 +42,90 @@ __all__ = (
 _LOG = getLogger(__name__)
 
 
+class _StorageModelUnpacker(Unpacker["StorageModel"]):
+    """Unpacker for [`StorageModel`][lakery.extra.pydantic.StorageModel] objects."""
+
+    name = "lakery.pydantic@v1"
+
+    def unpack_object(
+        self,
+        obj: StorageModel,
+        registry: Registry,
+    ) -> Mapping[str, AnyUnpackedValue]:
+        """Dump the model to storage content."""
+        external: dict[str, AnyUnpackedValue] = {}
+
+        next_external_id = 0
+
+        def get_next_external_id() -> int:
+            nonlocal next_external_id
+            next_external_id += 1
+            return next_external_id
+
+        data = obj.model_dump(
+            mode="python",
+            context=_make_serialization_context(
+                _LakerySerializationContext(
+                    external=external,
+                    get_next_external_id=get_next_external_id,
+                    registry=registry,
+                )
+            ),
+            serialize_as_any=True,
+        )
+
+        return {
+            "data": {
+                "value": data,
+                "serializer": obj.storage_model_body_serializer(registry),
+                "storage": obj.storage_model_body_storage(registry),
+            },
+            **external,
+        }
+
+    def repack_object(
+        self,
+        cls: type[StorageModel],
+        contents: Mapping[str, AnyUnpackedValue],
+        registry: Registry,
+    ) -> StorageModel:
+        """Load the model from storage content."""
+        contents = dict(contents)
+        try:
+            data_content = contents["data"]
+            data = data_content["value"]  # type: ignore[reportGeneralTypeIssues]
+        except KeyError:
+            msg = "Missing or malformed 'data' key in model contents."
+            raise ValueError(msg) from None
+        return cls.model_validate(
+            data,
+            context=_make_validation_context(
+                _LakeryValidationContext(external=contents, registry=registry)
+            ),
+        )
+
+
+class ConfigDict(StorableConfigDict, _ConfigDict):
+    """Configuration for a storage model.
+
+    See [`StorableConfigDict`][lakery.core.storable.StorableConfigDict] and
+    [`pydantic.ConfigDict`][pydantic.ConfigDict] for more details.
+    """
+
+
 class StorageModel(
+    Storable,
     BaseModel,
-    BaseStorageModel[AnyModeledValueMap],
-    storage_model_config=None,
     arbitrary_types_allowed=True,
+    storable_unpacker=_StorageModelUnpacker(),
 ):
     """A Pydantic model that can be stored by Lakery."""
 
-    if TYPE_CHECKING:
-
-        def __init_subclass__(
-            cls,
-            *,
-            storage_model_config: StorageModelConfig | None,
-            **kwargs: Unpack[ConfigDict],
-        ) -> None: ...
+    def __init_subclass__(cls, **kwargs: Unpack[ConfigDict]) -> None:
+        storable_config = get_typed_dict(StorableConfigDict, kwargs)
+        pydantic_config = get_typed_dict(_ConfigDict, kwargs)
+        super().__init_subclass__(**storable_config)
+        super(Storable).__init_subclass__(**pydantic_config)
 
     @classmethod
     def __get_pydantic_core_schema__(
@@ -76,73 +142,21 @@ class StorageModel(
             # we're defining the schema for a subclass
             return _adapt_third_party_types(handler(source), handler)
 
-    def storage_model_dump(self, registries: RegistryCollection) -> AnyModeledValueMap:
-        """Dump the model to storage content."""
-        external: dict[str, AnyModeledValue] = {}
+    def storage_model_body_storage(self, registry: Registry) -> Storage:
+        """Return the storage for the "body" of this model.
 
-        next_external_id = 0
-
-        def get_next_external_id() -> int:
-            nonlocal next_external_id
-            next_external_id += 1
-            return next_external_id
-
-        data = self.model_dump(
-            mode="python",
-            context=_make_serialization_context(
-                _LakerySerializationContext(
-                    external=external,
-                    get_next_external_id=get_next_external_id,
-                    registries=registries,
-                )
-            ),
-            serialize_as_any=True,
-        )
-
-        return {
-            "data": {
-                "value": data,
-                "serializer": self.storage_model_internal_serializer(registries.serializers),
-                "storage": self.storage_model_internal_storage(registries.storages),
-            },
-            **external,
-        }
-
-    @classmethod
-    def storage_model_load(
-        cls, contents: AnyModeledValueMap, _version: int, registries: RegistryCollection
-    ) -> Self:
-        """Load the model from storage content."""
-        contents = dict(contents)
-        try:
-            data_content = contents["data"]
-            data = data_content["value"]  # type: ignore[reportGeneralTypeIssues]
-        except KeyError:
-            msg = "Missing or malformed 'data' key in model contents."
-            raise ValueError(msg) from None
-        return cls.model_validate(
-            data,
-            context=_make_validation_context(
-                _LakeryValidationContext(external=contents, registries=registries)
-            ),
-        )
-
-    def storage_model_internal_storage(self, storages: StorageRegistry) -> Storage:
-        """Return the storage for "internal data" for this model.
-
-        "Internal data" refers to the data that Pydantic was able to
-        dump without needing to use a serializer supplied by Lakery.
+        "Body" refers to the data that Pydantic was able to dump
+        without needing to use a serializer supplied by Lakery.
         """
-        return storages.default
+        return registry.get_default_storage()
 
-    def storage_model_internal_serializer(self, serializers: SerializerRegistry) -> Serializer:
-        """Return the serializer for "internal data" friom this model.
+    def storage_model_body_serializer(self, registry: Registry) -> Serializer:
+        """Return a JSON serializer for the "body" of this model.
 
-        "Internal data" refers to the data that Pydantic was able to
-        dump without needing to use a serializer supplied by Lakery.
-        In short this method should return a JSON serializer.
+        "Body" refers to the data that Pydantic was able to dump
+        without needing to use a serializer supplied by Lakery.
         """
-        return serializers.infer_from_value_type(dict)
+        return registry.infer_serializer(dict)
 
 
 @frozenclass
@@ -173,9 +187,9 @@ class StorageSpec:
     ```
     """
 
-    serializer: Serializer | None = None
+    serializer: type[Serializer] | None = None
     """The serializer to use for this value."""
-    storage: Storage | None = None
+    storage: type[Storage] | None = None
     """The storage to use for this value."""
 
     def __get_pydantic_core_schema__(
@@ -189,9 +203,9 @@ class StorageSpec:
         else:
             metadata: _SchemaMetadata = {}
         if self.serializer is not None:
-            metadata["serializer"] = self.serializer
+            metadata["serializer_name"] = self.serializer.name
         if self.storage is not None:
-            metadata["storage"] = self.storage
+            metadata["storage_name"] = self.storage.name
         _set_schema_metadata(schema, metadata)
         return schema
 
@@ -236,7 +250,7 @@ def _make_validator_func() -> cs.WithInfoValidatorFunction:
             return maybe_json_ext
 
         context = _get_info_context(info)
-        registries = context["registries"]
+        registry = context["registry"]
 
         if not isinstance(maybe_json_ext, Mapping):
             return maybe_json_ext
@@ -248,17 +262,17 @@ def _make_validator_func() -> cs.WithInfoValidatorFunction:
 
         if json_ext["__json_ext__"] == "ref":
             ref_str = json_ext["ref"]
-            spec = context["external"][ref_str]
-            if "value" in spec:
-                return spec["value"]
-            elif "value_stream" in spec:
-                return spec["value_stream"]
-            else:  # nocov
-                msg = f"Invalid external content reference: {ref_str}."
-                raise ValueError(msg)
+            match context["external"][ref_str]:
+                case {"value": value}:
+                    return value
+                case {"value_stream": value_stream}:
+                    return value_stream
+                case _:
+                    msg = f"Invalid external content reference: {ref_str}."
+                    raise ValueError(msg)
         elif json_ext["__json_ext__"] == "content":
-            serializer = registries.serializers[json_ext["serializer_name"]]
-            return serializer.load_data(
+            serializer = registry.get_serializer(json_ext["serializer_name"])
+            return serializer.deserialize_data(
                 {
                     "data": b64decode(json_ext["content_base64"].encode("ascii")),
                     "content_encoding": json_ext["content_encoding"],
@@ -274,27 +288,30 @@ def _make_validator_func() -> cs.WithInfoValidatorFunction:
 
 def _make_serializer_func(schema: cs.CoreSchema) -> cs.FieldPlainInfoSerializerFunction:
     metadata = _get_schema_metadata(schema)
-    serializer_from_schema = metadata.get("serializer")
-    storage_from_schema = metadata.get("storage")
+    serializer_name = metadata.get("serializer_name")
+    storage_name = metadata.get("storage_name")
 
-    def serialize(model: BaseModel, value: Any, info: cs.FieldSerializationInfo, /) -> Any:
+    def serialize(model: BaseModel, value: Any, info: cs.FieldSerializationInfo, /) -> AnyJsonExt:
         context = _get_info_context(info)
         external = context["external"]
-        registries = context["registries"]
+        registry = context["registry"]
 
         cls = type(value)
-        serializer = serializer_from_schema or registries.serializers.infer_from_value_type(cls)
-
-        if storage_from_schema is not None:
+        serializer = (
+            registry.get_serializer(serializer_name)
+            if serializer_name is not None
+            else registry.infer_serializer(cls)
+        )
+        if storage_name is not None:
             ref_str = _make_ref_str(type(model), info, context)
-            external[ref_str] = ModeledValue(
+            external[ref_str] = UnpackedValue(
                 value=value,
                 serializer=serializer,
-                storage=storage_from_schema,
+                storage=registry.get_storage(storage_name),
             )
             return {"__json_ext__": "ref", "ref": ref_str}
 
-        content = serializer.dump_data(value)
+        content = serializer.serialize_data(value)
         return {
             "__json_ext__": "content",
             "content_base64": b64encode(content["data"]).decode("ascii"),
@@ -344,8 +361,8 @@ def _set_schema_metadata(schema: cs.CoreSchema, metadata: _SchemaMetadata) -> No
 
 
 class _SchemaMetadata(TypedDict, total=False):
-    serializer: Serializer
-    storage: Storage
+    serializer_name: str
+    storage_name: str
 
 
 def _make_validation_context(ctx: _LakeryValidationContext) -> dict[str, Any]:
@@ -382,11 +399,11 @@ def _get_info_context(
 
 
 class _LakerySerializationContext(TypedDict):
-    external: dict[str, AnyModeledValue]
+    external: dict[str, AnyUnpackedValue]
     get_next_external_id: Callable[[], int]
-    registries: RegistryCollection
+    registry: Registry
 
 
 class _LakeryValidationContext(TypedDict):
-    external: dict[str, AnyModeledValue]
-    registries: RegistryCollection
+    external: dict[str, AnyUnpackedValue]
+    registry: Registry

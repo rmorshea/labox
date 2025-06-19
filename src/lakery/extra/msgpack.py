@@ -68,10 +68,9 @@ class _MsgPackBase:
 class MsgPackSerializer(_MsgPackBase, Serializer[MsgPackType]):
     """A serializer for MessagePack data."""
 
-    name = "lakery.msgpack.value"
-    version = 1
+    name = "lakery.msgpack.value@v1"
 
-    def dump_data(self, value: MsgPackType) -> SerializedData:
+    def serialize_data(self, value: MsgPackType) -> SerializedData:
         """Serialize the given value to MessagePack."""
         return {
             "content_encoding": None,
@@ -79,7 +78,7 @@ class MsgPackSerializer(_MsgPackBase, Serializer[MsgPackType]):
             "data": self._pack(value),
         }
 
-    def load_data(self, content: SerializedData) -> MsgPackType:
+    def deserialize_data(self, content: SerializedData) -> MsgPackType:
         """Deserialize the given MessagePack data."""
         return self._unpack(content["data"])
 
@@ -87,8 +86,7 @@ class MsgPackSerializer(_MsgPackBase, Serializer[MsgPackType]):
 class MsgPackStreamSerializer(_MsgPackBase, StreamSerializer[MsgPackType]):
     """A serializer for MessagePack data."""
 
-    name = "lakery.msgpack.stream"
-    version = 1
+    name = "lakery.msgpack.stream@v1"
 
     def dump_data(self, value: Iterable[MsgPackType]) -> SerializedData:
         """Serialize the given value to MessagePack."""
@@ -108,7 +106,7 @@ class MsgPackStreamSerializer(_MsgPackBase, StreamSerializer[MsgPackType]):
         unpacker.feed(content["data"])
         return list(unpacker)
 
-    def dump_data_stream(self, stream: AsyncIterable[MsgPackType]) -> SerializedDataStream:
+    def serialize_data_stream(self, stream: AsyncIterable[MsgPackType]) -> SerializedDataStream:
         """Serialize the given stream of MessagePack data."""
         return {
             "content_encoding": None,
@@ -116,7 +114,9 @@ class MsgPackStreamSerializer(_MsgPackBase, StreamSerializer[MsgPackType]):
             "content_type": self.content_type,
         }
 
-    def load_data_stream(self, content: SerializedDataStream, /) -> AsyncGenerator[MsgPackType]:
+    def deserialize_data_stream(
+        self, content: SerializedDataStream, /
+    ) -> AsyncGenerator[MsgPackType]:
         """Deserialize the given stream of MessagePack data."""
         return _load_stream(self._unpacker(), content["data_stream"])
 

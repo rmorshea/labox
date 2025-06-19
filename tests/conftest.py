@@ -5,7 +5,7 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from lakery.core.schema import BaseRecord
+from lakery.core.database import BaseRecord
 
 
 @pytest.fixture

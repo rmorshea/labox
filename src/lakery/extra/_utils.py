@@ -4,7 +4,7 @@ from mimetypes import guess_extension
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
-from lakery.common.utils import slugify
+from lakery._internal.utils import slugify
 
 if TYPE_CHECKING:
     from collections.abc import Sequence

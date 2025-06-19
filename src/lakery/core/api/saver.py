@@ -16,11 +16,12 @@ from uuid import uuid4
 from anyio import create_task_group
 from anysync import contextmanager
 
-from lakery.common.anyio import FutureResult
-from lakery.common.anyio import start_future
-from lakery.core.schema import ContentRecord
-from lakery.core.schema import ManifestRecord
-from lakery.core.schema import SerializerTypeEnum
+from lakery._internal.anyio import FutureResult
+from lakery._internal.anyio import start_future
+from lakery.core.database import ContentRecord
+from lakery.core.database import ManifestRecord
+from lakery.core.database import SerializerTypeEnum
+from lakery.core.storable import Storable
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
@@ -31,10 +32,8 @@ if TYPE_CHECKING:
     from anyio.abc import TaskGroup
     from sqlalchemy.ext.asyncio import AsyncSession
 
-    from lakery.common.utils import TagMap
-    from lakery.core.model import BaseStorageModel
-    from lakery.core.registries import RegistryCollection
-    from lakery.core.registries import SerializerRegistry
+    from lakery.common.types import TagMap
+    from lakery.core.registry import Registry
     from lakery.core.serializer import SerializedData
     from lakery.core.serializer import SerializedDataStream
     from lakery.core.serializer import Serializer
@@ -43,9 +42,11 @@ if TYPE_CHECKING:
     from lakery.core.storage import GetStreamDigest
     from lakery.core.storage import Storage
     from lakery.core.storage import StreamDigest
+    from lakery.core.unpacker import Unpacker
 
 
-T = TypeVar("T")
+T = TypeVar("T", default=Any)
+S = TypeVar("S", bound=Storable)
 P = ParamSpec("P")
 D = TypeVar("D", bound=ManifestRecord)
 
@@ -56,14 +57,14 @@ _LOG = getLogger(__name__)
 @contextmanager
 async def data_saver(
     *,
-    registries: RegistryCollection,
+    registry: Registry,
     session: AsyncSession,
 ) -> AsyncIterator[DataSaver]:
     """Create a context manager for saving data."""
     futures: list[FutureResult[ManifestRecord]] = []
     try:
         async with create_task_group() as tg:
-            yield _DataSaver(tg, futures, registries)
+            yield _DataSaver(tg, futures, registry)
     finally:
         errors: list[BaseException] = []
         manifests: list[ManifestRecord] = []
@@ -88,27 +89,29 @@ class _DataSaver:
         self,
         task_group: TaskGroup,
         futures: list[FutureResult[ManifestRecord]],
-        registries: RegistryCollection,
+        registry: Registry,
     ):
         self._futures = futures
         self._task_group = task_group
-        self._registries = registries
+        self._registry = registry
 
     def save_soon(
         self,
-        model: BaseStorageModel,
+        obj: S,
         *,
+        unpacker: Unpacker[S] | None = None,
         tags: Mapping[str, str] | None = None,
     ) -> FutureResult[ManifestRecord]:
-        """Schedule the given model to be saved."""
-        self._registries.models.check_registered(type(model))
+        """Schedule the object to be saved."""
+        self._registry.has_storable(type(obj), raise_if_missing=True)
 
         future = start_future(
             self._task_group,
-            _save_model,
-            model,
+            _save_object,
+            obj,
+            unpacker,
             tags or {},
-            self._registries,
+            self._registry,
         )
         self._futures.append(future)
 
@@ -119,19 +122,22 @@ DataSaver: TypeAlias = _DataSaver
 """Defines a protocol for saving data."""
 
 
-async def _save_model(
-    model: BaseStorageModel,
+async def _save_object(
+    obj: Storable,
+    unpacker: Unpacker[Any] | None,
     tags: TagMap,
-    registries: RegistryCollection,
+    registry: Registry,
 ) -> ManifestRecord:
     """Save the given data to the database."""
-    model_cfg = model.storage_model_config()
-    model_contents = model.storage_model_dump(registries)
+    cls = obj.__class__
+    cfg = cls.get_storable_config()
+    unpacker = unpacker or cfg.unpacker or registry.infer_unpacker(cls)
+    obj_contents = unpacker.unpack_object(obj, registry)
 
     manifest_id = uuid4()
     data_record_futures: list[FutureResult[ContentRecord]] = []
     async with create_task_group() as tg:
-        for content_key, content in model_contents.items():
+        for content_key, content in obj_contents.items():
             _LOG.debug("Saving %s in manifest %s", content_key, manifest_id.hex)
             if "value" in content:
                 data_record_futures.append(
@@ -144,7 +150,7 @@ async def _save_model(
                         content["value"],
                         content.get("serializer"),
                         content.get("storage"),
-                        registries,
+                        registry,
                     )
                 )
             elif "value_stream" in content:
@@ -158,15 +164,15 @@ async def _save_model(
                         content["value_stream"],
                         content.get("serializer"),
                         content.get("storage"),
-                        registries,
+                        registry,
                     )
                 )
             else:
-                msg = f"Invalid manifest {content_key!r} in {model!r} - {content}"
+                msg = f"Invalid manifest {content_key!r} in {obj!r} - {content}"
                 raise AssertionError(msg)
 
     contents: list[ContentRecord] = []
-    for k, f in zip(model_contents, data_record_futures, strict=False):
+    for k, f in zip(obj_contents, data_record_futures, strict=False):
         if exc := f.exception():
             _LOG.error(
                 "Failed to save %s in manifest %s",
@@ -179,9 +185,9 @@ async def _save_model(
     return ManifestRecord(
         id=manifest_id,
         tags=tags,
-        model_id=model_cfg.id,
-        model_version=model_cfg.version,
+        class_id=cfg.class_id,
         contents=contents,
+        unpacker_name=unpacker.name,
     )
 
 
@@ -192,13 +198,13 @@ async def _save_storage_value(
     value: Any,
     serializer: Serializer | None,
     storage: Storage | None,
-    registries: RegistryCollection,
+    registry: Registry,
 ) -> ContentRecord:
-    storage = storage or registries.storages.default
-    serializer = serializer or registries.serializers.infer_from_value_type(type(value))
-    content = serializer.dump_data(value)
+    storage = storage or registry.get_default_storage()
+    serializer = serializer or registry.infer_serializer(type(value))
+    content = serializer.serialize_data(value)
     digest = _make_value_dump_digest(content)
-    storage_data = await storage.put_data(content["data"], digest, tags)
+    storage_data = await storage.write_data(content["data"], digest, tags)
     return ContentRecord(
         content_encoding=content["content_encoding"],
         content_hash_algorithm=digest["content_hash_algorithm"],
@@ -209,7 +215,7 @@ async def _save_storage_value(
         manifest_id=manifest_id,
         serializer_name=serializer.name,
         serializer_type=SerializerTypeEnum.Serializer,
-        storage_data=storage.dump_json_storage_data(storage_data),
+        storage_data=storage.serialize_storage_data(storage_data),
         storage_name=storage.name,
     )
 
@@ -221,9 +227,9 @@ async def _save_storage_stream(
     stream: AsyncIterable[Any],
     serializer: StreamSerializer | None,
     storage: Storage | None,
-    registries: RegistryCollection,
+    registry: Registry,
 ) -> ContentRecord:
-    storage = storage or registries.storages.default
+    storage = storage or registry.get_default_storage()
     async with AsyncExitStack() as stack:
         if isasyncgen(stream):
             await stack.enter_async_context(aclosing(stream))
@@ -231,12 +237,12 @@ async def _save_storage_stream(
         if serializer is None:
             stream_iter = aiter(stream)
             first_value = await anext(stream_iter)
-            serializer = registries.serializers.infer_from_stream_type(type(first_value))
+            serializer = registry.infer_stream_serializer(type(first_value))
             stream = _continue_stream(first_value, stream_iter)
 
-        content = serializer.dump_data_stream(stream)
+        content = serializer.serialize_data_stream(stream)
         byte_stream, get_digest = _wrap_stream_dump(content)
-        storage_data = await storage.put_data_stream(byte_stream, get_digest, tags)
+        storage_data = await storage.write_data_stream(byte_stream, get_digest, tags)
         try:
             digest = get_digest()
         except ValueError:
@@ -252,7 +258,7 @@ async def _save_storage_stream(
             manifest_id=manifest_id,
             serializer_name=serializer.name,
             serializer_type=SerializerTypeEnum.StreamSerializer,
-            storage_data=storage.dump_json_storage_data(storage_data),
+            storage_data=storage.serialize_storage_data(storage_data),
             storage_name=storage.name,
         )
     raise AssertionError  # nocov
@@ -302,33 +308,6 @@ def _make_value_dump_digest(archive: SerializedData) -> Digest:
         "content_size": len(data),
         "content_type": archive["content_type"],
     }
-
-
-class _SerializationHelper:
-    def __init__(self, serializers: SerializerRegistry) -> None:
-        self._serializers = serializers
-
-    def dump(
-        self,
-        value: Any,
-        serializer: Serializer | None,
-    ) -> SerializedData:
-        if serializer is None:
-            serializer = self._serializers.infer_from_value_type(type(value))
-        return serializer.dump_data(value)
-
-    async def dump_stream(
-        self,
-        stream: AsyncIterable,
-        serializer: StreamSerializer | None,
-    ) -> SerializedDataStream:
-        if serializer is not None:
-            return serializer.dump_data_stream(stream)
-
-        stream_iter = aiter(stream)
-        first_value = await anext(stream_iter)
-        serializer = self._serializers.infer_from_stream_type(type(first_value))
-        return serializer.dump_data_stream(_continue_stream(first_value, stream_iter))
 
 
 async def _continue_stream(first_value: Any, stream: AsyncIterable[Any]) -> AsyncGenerator[Any]:

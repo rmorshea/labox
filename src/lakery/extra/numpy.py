@@ -19,8 +19,7 @@ __all__ = (
 class NpySerializer(Serializer[np.ndarray]):
     """Serializer for Pandas DataFrames using Arrow."""
 
-    name = "lakery.numpy.npy"
-    version = 1
+    name = "lakery.numpy.npy@v1"
     types = (np.ndarray,)
 
     def __init__(
@@ -32,7 +31,7 @@ class NpySerializer(Serializer[np.ndarray]):
         self._dump_args = dump_args or {}
         self._load_args = load_args or {}
 
-    def dump_data(self, value: np.ndarray, /) -> SerializedData:
+    def serialize_data(self, value: np.ndarray, /) -> SerializedData:
         """Serialize the given DataFrame."""
         buffer = BytesIO()
         np.save(buffer, value, **self._dump_args)
@@ -42,7 +41,7 @@ class NpySerializer(Serializer[np.ndarray]):
             "data": buffer.getvalue(),
         }
 
-    def load_data(self, content: SerializedData, /) -> np.ndarray:
+    def deserialize_data(self, content: SerializedData, /) -> np.ndarray:
         """Deserialize the given DataFrame."""
         return np.load(BytesIO(content["data"]), **self._load_args)
 

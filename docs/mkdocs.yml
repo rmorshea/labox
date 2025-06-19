@@ -5,117 +5,121 @@ site_name: Lakery
 docs_dir: src
 repo_url: https://github.com/rmorshea/lakery
 nav:
-  - Home: index.md
-  - Usage:
-      - Overview: usage/index.md
-      - Patterns: usage/patterns.md
-  - Concepts:
-      - Overview: concepts/index.md
-      - Models: concepts/models.md
-      - Registries: concepts/registries.md
-      - Schema: concepts/schema.md
-      - Serializers: concepts/serializers.md
-      - Storages: concepts/storages.md
-  - Integrations:
-      - Overview: integrations/index.md
-      - Standard Library:
-          - Dataclasses: integrations/dataclasses.md
-          - Datetime: integrations/datetime.md
-          - JSON: integrations/json.md
-          - OS: integrations/os.md
-      - Third Party:
-          - AWS: integrations/aws.md
-          - Azure: integrations/azure.md
-          - Google: integrations/google.md
-          - MessagePack: integrations/msgpack.md
-          - NumPy: integrations/numpy.md
-          - Pandas: integrations/pandas.md
-          - Plotly: integrations/plotly.md
-          - Polars: integrations/polars.md
-          - PyArrow: integrations/pyarrow.md
-          - Pydantic: integrations/pydantic.md
-  - Reference: reference/
-  - Contributing: contributing.md
+    - Home: index.md
+    - Usage:
+          - Overview: usage/index.md
+          - Patterns: usage/patterns.md
+    - Concepts:
+          - Overview: concepts/index.md
+          - Storables: concepts/storables.md
+          - Unpackers: concepts/unpackers.md
+          - Serializers: concepts/serializers.md
+          - Storages: concepts/storages.md
+          - Registries: concepts/registries.md
+          - Database: concepts/schema.md
+    - Integrations:
+          - Overview: integrations/index.md
+          - Standard Library:
+                - Dataclasses: integrations/dataclasses.md
+                - Datetime: integrations/datetime.md
+                - JSON: integrations/json.md
+                - OS: integrations/os.md
+          - Third Party:
+                - AWS: integrations/aws.md
+                - Azure: integrations/azure.md
+                - Google: integrations/google.md
+                - MessagePack: integrations/msgpack.md
+                - NumPy: integrations/numpy.md
+                - Pandas: integrations/pandas.md
+                - Plotly: integrations/plotly.md
+                - Polars: integrations/polars.md
+                - PyArrow: integrations/pyarrow.md
+                - Pydantic: integrations/pydantic.md
+    - Reference: reference/
+    - Contributing: contributing.md
 theme:
-  name: material
-  icon:
-    repo: fontawesome/brands/git-alt
-  logo: logo.svg
-  favicon: logo.svg
-  features:
-    - content.code.copy
-    - toc.integrate
-    - content.code.annotate
-    - navigation.tabs
-    - navigation.sections
-  palette:
+    name: material
+    icon:
+        repo: fontawesome/brands/git-alt
+    logo: logo.svg
+    favicon: logo.svg
+    features:
+        - content.code.copy
+        - toc.integrate
+        - content.code.annotate
+        - navigation.tabs
+        - navigation.sections
+    palette:
         # Palette toggle for automatic mode
-    - media: (prefers-color-scheme)
-      toggle:
-        icon: material/brightness-auto
-        name: Switch to light mode
+        - media: (prefers-color-scheme)
+          toggle:
+              icon: material/brightness-auto
+              name:
+                  Switch to light mode
                   # Palette toggle for light mode
-    - media: '(prefers-color-scheme: light)'
-      scheme: default
-      toggle:
-        icon: material/brightness-7
-        name: Switch to dark mode
+        - media: "(prefers-color-scheme: light)"
+          scheme: default
+          toggle:
+              icon: material/brightness-7
+              name:
+                  Switch to dark mode
                   # Palette toggle for dark mode
-    - media: '(prefers-color-scheme: dark)'
-      scheme: slate
-      toggle:
-        icon: material/brightness-4
-        name: Switch to system preference
+        - media: "(prefers-color-scheme: dark)"
+          scheme: slate
+          toggle:
+              icon: material/brightness-4
+              name: Switch to system preference
 plugins:
-  - search
-  - open-in-new-tab
-  - mkdocstrings:
-      handlers:
-        python:
-          import: [https://docs.python.org/3/objects.inv]
-          paths: [src]
-          options:
-            docstring_options:
-              ignore_init_summary: true
-            docstring_section_style: list
-            filters: ['!^_']
-            heading_level: 1
-            inherited_members: true
-            merge_init_into_class: true
-            parameter_headings: true
-            separate_signature: true
-            show_root_heading: true
-            show_root_full_path: false
-            show_signature_annotations: true
-            show_source: false
-            show_symbol_type_heading: true
-            show_symbol_type_toc: true
-            signature_crossrefs: true
-            summary: true
-  - literate-nav:
-      nav_file: SUMMARY.md
-  - gen-files:
-      scripts: [gen_reference.py]
+    - search
+    - open-in-new-tab
+    - mkdocstrings:
+          handlers:
+              python:
+                  import: [https://docs.python.org/3/objects.inv]
+                  paths: [src]
+                  options:
+                      docstring_options:
+                          ignore_init_summary: true
+                      docstring_section_style: list
+                      filters: ["!^_"]
+                      heading_level: 1
+                      inherited_members: true
+                      merge_init_into_class: true
+                      parameter_headings: true
+                      separate_signature: true
+                      show_root_heading: true
+                      show_root_full_path: false
+                      show_signature_annotations: true
+                      show_source: false
+                      show_symbol_type_heading: true
+                      show_symbol_type_toc: true
+                      signature_crossrefs: true
+                      summary: true
+    - literate-nav:
+          nav_file: SUMMARY.md
+    - gen-files:
+          scripts: [gen_reference.py]
 markdown_extensions:
-  - def_list
-  - pymdownx.highlight:
-      anchor_linenums: true
-      line_spans: __span
-      pygments_lang_class: true
-  - pymdownx.inlinehilite
-  - pymdownx.snippets
-  - pymdownx.superfences:
-      custom_fences:
-        - name: mermaid
-          class: mermaid
-          format: !!python/name:pymdownx.superfences.fence_code_format
-  - admonition
-  - pymdownx.details
-  - pymdownx.superfences
-  - pymdownx.emoji:
-      emoji_index: !!python/name:material.extensions.emoji.twemoji
-      emoji_generator: !!python/name:material.extensions.emoji.to_svg
-  - pymdownx.saneheaders
-  - pymdownx.extra
-watch: [gen_reference.py, ../src]
+    - def_list
+    - pymdownx.highlight:
+          anchor_linenums: true
+          line_spans: __span
+          pygments_lang_class: true
+    - pymdownx.inlinehilite
+    - pymdownx.snippets:
+          check_paths: true
+    - pymdownx.superfences:
+          custom_fences:
+              - name: mermaid
+                class: mermaid
+                format: !!python/name:pymdownx.superfences.fence_code_format
+    - admonition
+    - pymdownx.details
+    - pymdownx.superfences
+    - pymdownx.emoji:
+          emoji_index: !!python/name:material.extensions.emoji.twemoji
+          emoji_generator: !!python/name:material.extensions.emoji.to_svg
+    - pymdownx.saneheaders
+    - pymdownx.extra
+watch: [gen_reference.py, ../src, ../CHANGELOG.md]
 extra_css: [custom-styles.css]

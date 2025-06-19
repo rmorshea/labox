@@ -13,16 +13,14 @@ from anysync import contextmanager
 from sqlalchemy import inspect as orm_inspect
 from sqlalchemy import select
 
-from lakery.common.anyio import FutureResult
-from lakery.common.anyio import set_future_exception_forcefully
-from lakery.common.anyio import start_future
-from lakery.common.anyio import start_with_future
+from lakery._internal.anyio import FutureResult
+from lakery._internal.anyio import set_future_exception_forcefully
+from lakery._internal.anyio import start_future
+from lakery._internal.anyio import start_with_future
 from lakery.common.exceptions import NotRegistered
-from lakery.core.model import AnyModeledValue
-from lakery.core.model import BaseStorageModel
-from lakery.core.schema import ContentRecord
-from lakery.core.schema import ManifestRecord
-from lakery.core.schema import SerializerTypeEnum
+from lakery.core.database import ContentRecord
+from lakery.core.database import ManifestRecord
+from lakery.core.database import SerializerTypeEnum
 from lakery.core.serializer import StreamSerializer
 
 if TYPE_CHECKING:
@@ -31,21 +29,19 @@ if TYPE_CHECKING:
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
-    from lakery.core.registries import RegistryCollection
-    from lakery.core.registries import SerializerRegistry
-    from lakery.core.registries import StorageRegistry
+    from lakery.core.registry import Registry
 
 
-M = TypeVar("M", bound=BaseStorageModel)
+M = TypeVar("M")
 
-_Requests = tuple[ManifestRecord, type[BaseStorageModel] | None, FutureResult[BaseStorageModel]]
+_Requests = tuple[ManifestRecord, type[Any] | None, FutureResult[Any]]
 _RecordGroup = tuple[ManifestRecord, Sequence[ContentRecord]]
 
 
 @contextmanager
 async def data_loader(
     *,
-    registries: RegistryCollection,
+    registry: Registry,
     session: AsyncSession,
 ) -> AsyncIterator[DataLoader]:
     """Create a context manager for saving data."""
@@ -55,27 +51,29 @@ async def data_loader(
     record_groups = await _load_manifest_contents(session, [m for m, _, _ in requests])
 
     async with create_task_group() as tg:
-        for (manifest, contents), (_, expected_model_type, future) in zip(
-            record_groups, requests, strict=False
+        for (manifest, contents), (_, expected_cls, future) in zip(
+            record_groups,
+            requests,
+            strict=False,
         ):
             try:
-                actual_model_type = registries.models[manifest.model_id]
+                actual_cls = registry.get_storable(manifest.class_id)
             except NotRegistered as error:
                 set_future_exception_forcefully(future, error)
                 continue
 
-            if expected_model_type and not issubclass(actual_model_type, expected_model_type):
-                msg = f"Expected {expected_model_type}, but {manifest} is {actual_model_type}."
+            if expected_cls and not issubclass(actual_cls, expected_cls):
+                msg = f"Expected {expected_cls}, but {manifest} is {actual_cls}."
                 set_future_exception_forcefully(future, TypeError(msg))
                 continue
 
             start_with_future(
                 tg,
                 future,
-                load_model_from_record_group,
+                load_from_manifest_record,
                 manifest,
                 contents,
-                registries=registries,
+                registry=registry,
             )
 
 
@@ -87,7 +85,7 @@ class _DataLoader:
     def load_soon(
         self,
         manifest: ManifestRecord,
-        model_type: type[M],
+        cls: type[M],
         /,
     ) -> FutureResult[M]: ...
 
@@ -95,19 +93,19 @@ class _DataLoader:
     def load_soon(
         self,
         manifest: ManifestRecord,
-        model_type: None = ...,
+        cls: None = ...,
         /,
-    ) -> FutureResult[BaseStorageModel]: ...
+    ) -> FutureResult[Any]: ...
 
     def load_soon(
         self,
         manifest: ManifestRecord,
-        model_type: type[BaseStorageModel] | None = None,
+        cls: type[Any] | None = None,
         /,
     ) -> FutureResult[Any]:
-        """Load the given model soon."""
+        """Load an object from the given manifest record."""
         future = FutureResult()
-        self._requests.append((manifest, model_type, future))
+        self._requests.append((manifest, cls, future))
         return future
 
 
@@ -115,63 +113,63 @@ DataLoader: TypeAlias = _DataLoader
 """Defines a protocol for saving data."""
 
 
-async def load_model_from_record_group(
+async def load_from_manifest_record(
     manifest: ManifestRecord,
     contents: Sequence[ContentRecord],
     /,
     *,
-    registries: RegistryCollection,
-) -> BaseStorageModel:
-    """Load the given model from the given record."""
-    model_type = registries.models[manifest.model_id]
+    registry: Registry,
+) -> Any:
+    """Load an object from the given manifest record."""
+    unpacker = registry.get_unpacker(manifest.unpacker_name)
+    cls = registry.get_storable(manifest.class_id)
 
-    content_futures: dict[str, FutureResult[AnyModeledValue]] = {}
+    content_futures: dict[str, FutureResult[Any]] = {}
     async with create_task_group() as tg:
         for c in contents:
             content_futures[c.content_key] = start_future(
                 tg,
-                load_manifest_from_record,
+                load_from_content_record,
                 c,
-                serializers=registries.serializers,
-                storages=registries.storages,
+                registry=registry,
             )
 
-    return model_type.storage_model_load(
+    return unpacker.repack_object(
+        cls,
         {i: f.result() for i, f in content_futures.items()},
-        manifest.model_version,
-        registries,
+        registry,
     )
 
 
-async def load_manifest_from_record(
+async def load_from_content_record(
     record: ContentRecord,
     *,
-    serializers: SerializerRegistry,
-    storages: StorageRegistry,
-) -> AnyModeledValue:
+    registry: Registry,
+) -> Any:
     """Load the given content from the given record."""
-    serializer = serializers[record.serializer_name]
-    storage = storages[record.storage_name]
-    storage_data = storage.load_json_storage_data(record.storage_data)
+    storage = registry.get_storage(record.storage_name)
+    storage_data = storage.deserialize_storage_data(record.storage_data)
     match record.serializer_type:
         case SerializerTypeEnum.Serializer:
-            value = serializer.load_data(
+            serializer = registry.get_serializer(record.serializer_name)
+            value = serializer.deserialize_data(
                 {
                     "content_encoding": record.content_encoding,
                     "content_type": record.content_type,
-                    "data": await storage.get_data(storage_data),
+                    "data": await storage.read_data(storage_data),
                 }
             )
             return {"value": value, "serializer": serializer, "storage": storage}
         case SerializerTypeEnum.StreamSerializer:
+            serializer = registry.get_stream_serializer(record.serializer_name)
             if not isinstance(serializer, StreamSerializer):
                 msg = f"Content {record.id} expects a stream serializer, got {serializer}."
                 raise TypeError(msg)
-            stream = serializer.load_data_stream(
+            stream = serializer.deserialize_data_stream(
                 {
                     "content_encoding": record.content_encoding,
                     "content_type": record.content_type,
-                    "data_stream": storage.get_data_stream(storage_data),
+                    "data_stream": storage.read_data_stream(storage_data),
                 }
             )
             return {
@@ -186,12 +184,12 @@ async def load_manifest_from_record(
 
 async def _load_manifest_contents(
     session: AsyncSession,
-    records: Sequence[ManifestRecord],
+    manifests: Sequence[ManifestRecord],
 ) -> Sequence[_RecordGroup]:
-    """Load the content records for the given model records."""
+    """Load the content records for the given manifest records."""
     missing: list[ManifestRecord] = []
     present: list[_RecordGroup] = []
-    for m in records:
+    for m in manifests:
         if "contents" in orm_inspect(m).unloaded:
             missing.append(m)
         else:

@@ -142,10 +142,9 @@ You'll then start to convert this into a model by first inheriting from
 `BaseStorageModel` and adding a `storage_model_config`:
 
 ```python
-from lakery.core import BaseStorageModel
 
 
-class ExperimentResults(BaseStorageModel, storage_model_config={"id": "abc123", "version": 1}):
+class ExperimentResults(Storable, class_id="abc123"):
     """Results from a scientific experiment."""
 
     ...

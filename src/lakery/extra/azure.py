@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
     from azure.storage.blob.aio import ContainerClient
 
-    from lakery.common.utils import TagMap
+    from lakery._internal.utils import TagMap
 
 
 __all__ = ("BlobStorage",)
@@ -31,8 +31,7 @@ _LOG = logging.getLogger(__name__)
 class BlobStorage(Storage[str]):
     """Storage for Azure Blob data."""
 
-    name = "lakery.azure.blob"
-    version = 1
+    name = "lakery.azure.blob@v1"
 
     def __init__(
         self,
@@ -45,7 +44,7 @@ class BlobStorage(Storage[str]):
         self._path_prefix = path_prefix
         self._limiter = CapacityLimiter(max_concurrency) if max_concurrency else None
 
-    async def put_data(
+    async def write_data(
         self,
         data: bytes,
         digest: Digest,
@@ -65,7 +64,7 @@ class BlobStorage(Storage[str]):
         )
         return location
 
-    async def get_data(self, location: str) -> bytes:
+    async def read_data(self, location: str) -> bytes:
         """Load data from the given location."""
         _LOG.debug("Loading data from %s", location)
         blob_client = self._container_client.get_blob_client(blob=location)
@@ -76,7 +75,7 @@ class BlobStorage(Storage[str]):
             raise NoStorageData(msg) from exc
         return await blob_reader.readall()
 
-    async def put_data_stream(
+    async def write_data_stream(
         self,
         data_stream: AsyncIterable[bytes],
         get_digest: GetStreamDigest,
@@ -107,7 +106,7 @@ class BlobStorage(Storage[str]):
 
         return final_location
 
-    async def get_data_stream(self, location: str) -> AsyncGenerator[bytes]:
+    async def read_data_stream(self, location: str) -> AsyncGenerator[bytes]:
         """Load a data stream from the given location."""
         _LOG.debug("Loading data stream from %s", location)
         blob_client = self._container_client.get_blob_client(blob=location)
