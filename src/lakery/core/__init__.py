@@ -1,7 +1,9 @@
 from lakery.core.api.loader import DataLoader
 from lakery.core.api.loader import data_loader
+from lakery.core.api.loader import load_one
 from lakery.core.api.saver import DataSaver
 from lakery.core.api.saver import data_saver
+from lakery.core.api.saver import save_one
 from lakery.core.database import BaseRecord
 from lakery.core.database import ContentRecord
 from lakery.core.database import ManifestRecord
@@ -39,4 +41,7 @@ __all__ = (
     "Unpacker",
     "data_loader",
     "data_saver",
+    "save_oneload_one",
+    "load_one",
+    "save_one",
 )

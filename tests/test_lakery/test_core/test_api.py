@@ -2,6 +2,8 @@ from sqlalchemy.ext.asyncio.session import AsyncSession
 
 from lakery.builtin.storables import StorableStream
 from lakery.builtin.storables import StorableValue
+from lakery.core import load_one
+from lakery.core import save_one
 from tests.core_api_utils import assert_save_load_equivalence
 from tests.core_api_utils import assert_save_load_stream_equivalence
 from tests.core_registry_utils import basic_registry
@@ -32,3 +34,13 @@ async def test_simple_stream_data_saver_and_loader_usage(session: AsyncSession):
         session,
         assert_streamed_equal,
     )
+
+
+async def test_save_load_one(session: AsyncSession):
+    model = StorableValue(SAMPLE_DATA)
+    record = await save_one(model, registry=basic_registry, session=session)
+    loaded_model = await load_one(record, type(model), registry=basic_registry, session=session)
+
+    assert loaded_model == model
+    assert isinstance(loaded_model, StorableValue)
+    assert loaded_model.value == SAMPLE_DATA

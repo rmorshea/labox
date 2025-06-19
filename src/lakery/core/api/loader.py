@@ -38,9 +38,21 @@ _Requests = tuple[ManifestRecord, type[Any] | None, FutureResult[Any]]
 _RecordGroup = tuple[ManifestRecord, Sequence[ContentRecord]]
 
 
+async def load_one(
+    manifest: ManifestRecord,
+    cls: type[M],
+    *,
+    registry: Registry,
+    session: AsyncSession,
+) -> M:
+    """Load a single object from the given manifest record."""
+    async with data_loader(registry, session) as loader:
+        future = loader.load_soon(manifest, cls)
+    return future.result()
+
+
 @contextmanager
 async def data_loader(
-    *,
     registry: Registry,
     session: AsyncSession,
 ) -> AsyncIterator[DataLoader]:

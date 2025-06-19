@@ -21,7 +21,6 @@ from lakery._internal.anyio import start_future
 from lakery.core.database import ContentRecord
 from lakery.core.database import ManifestRecord
 from lakery.core.database import SerializerTypeEnum
-from lakery.core.storable import Storable
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
@@ -38,14 +37,13 @@ if TYPE_CHECKING:
     from lakery.core.serializer import SerializedDataStream
     from lakery.core.serializer import Serializer
     from lakery.core.serializer import StreamSerializer
+    from lakery.core.storable import Storable
     from lakery.core.storage import Digest
     from lakery.core.storage import GetStreamDigest
     from lakery.core.storage import Storage
     from lakery.core.storage import StreamDigest
 
 
-T = TypeVar("T", default=Any)
-S = TypeVar("S", bound=Storable)
 P = ParamSpec("P")
 D = TypeVar("D", bound=ManifestRecord)
 
@@ -53,9 +51,21 @@ D = TypeVar("D", bound=ManifestRecord)
 _LOG = getLogger(__name__)
 
 
+async def save_one(
+    obj: Storable,
+    *,
+    tags: Mapping[str, str] | None = None,
+    registry: Registry,
+    session: AsyncSession,
+) -> ManifestRecord:
+    """Save a single object to the database."""
+    async with data_saver(registry, session) as saver:
+        future = saver.save_soon(obj, tags=tags)
+    return future.result()
+
+
 @contextmanager
 async def data_saver(
-    *,
     registry: Registry,
     session: AsyncSession,
 ) -> AsyncIterator[DataSaver]:

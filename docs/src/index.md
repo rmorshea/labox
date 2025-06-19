@@ -82,42 +82,33 @@ Save the data and return a record of it:
 ```python
 import asyncio
 
-from lakery.core import data_saver
+from lakery.core import save_one
 
 
 async def save():
-    async with (
-        new_async_session() as session,
-        data_saver(session=session, registry=registry) as saver,
-    ):
-        future_record = saver.save_soon(obj)
-    return future_record.result()
+    async with new_async_session() as session
+        return save_one(obj, session=session, registry=registry)
 
 
 record = asyncio.run(main())
 ```
 
-Load the data later using the record:
+Behind the scenes Lakery inferred an appropriate serializer and default storage from the
+registry you created in the [setup](#basic-setup) section. Where and how the data was
+stored is recorded in the the [database](./concepts/database.md) so you can retrieve it
+later:
 
 ```python
 import asyncio
 
-from lakery.core import data_loader
+from lakery.core import load_one
 
 
-async def load():
-    async with (
-        new_async_session() as session,
-        data_loader(session=session, registry=registry) as loader,
-    ):
-        future_data = loader.load_soon(record)
-    return future_data.result()
+async def load(record):
+    async with new_async_session() as session:
+        return load_one(record, session=session, registry=registry)
 
 
-loaded_obj = asyncio.run(load())
-
+loaded_obj = asyncio.run(load(record))
 assert loaded_obj == obj
 ```
-
-Behind the scenes Lakery has automatically inferred an appropriate serializer and used
-the default storage to save the data.
