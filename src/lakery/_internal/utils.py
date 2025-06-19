@@ -106,7 +106,7 @@ def validate_versioned_class_name(cls: type) -> None:
 
 
 def not_implemented(f: F) -> F:
-    """Return a wrapper that raises NotImplementedError with a standard message."""
+    """Return a method wrapper that raises NotImplementedError with a standard message."""
 
     @wraps(f)
     def wrapper(obj: Any, *args: P.args, **kwargs: P.kwargs) -> T:
