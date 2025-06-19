@@ -85,12 +85,12 @@ import asyncio
 from lakery.core import save_one
 
 
-async def save():
+async def save(obj):
     async with new_async_session() as session
         return save_one(obj, session=session, registry=registry)
 
 
-record = asyncio.run(main())
+record = asyncio.run(save(obj))
 ```
 
 Behind the scenes Lakery inferred an appropriate serializer and default storage from the
