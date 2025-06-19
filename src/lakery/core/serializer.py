@@ -10,6 +10,7 @@ from typing import TypeVar
 
 from typing_extensions import AsyncGenerator
 
+from lakery._internal.utils import not_implemented
 from lakery._internal.utils import validate_versioned_class_name
 
 if TYPE_CHECKING:
@@ -31,14 +32,16 @@ class Serializer(Generic[T]):
         validate_versioned_class_name(cls)
 
     @abc.abstractmethod
+    @not_implemented
     def serialize_data(self, value: T, /) -> SerializedData:
         """Serialize the given value."""
-        raise NotImplementedError
+        ...
 
     @abc.abstractmethod
+    @not_implemented
     def deserialize_data(self, content: SerializedData, /) -> T:
         """Deserialize the given value."""
-        raise NotImplementedError
+        ...
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.name!r})"
@@ -53,14 +56,16 @@ class StreamSerializer(Generic[T]):
     """The types that the serializer can handle."""
 
     @abc.abstractmethod
+    @not_implemented
     def serialize_data_stream(self, stream: AsyncIterable[T], /) -> SerializedDataStream:
         """Serialize the given stream."""
-        raise NotImplementedError
+        ...
 
     @abc.abstractmethod
+    @not_implemented
     def deserialize_data_stream(self, content: SerializedDataStream, /) -> AsyncGenerator[T]:
         """Deserialize the given stream."""
-        raise NotImplementedError
+        ...
 
 
 class SerializedData(TypedDict):

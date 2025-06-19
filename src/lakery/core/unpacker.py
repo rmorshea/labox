@@ -12,8 +12,8 @@ from typing import Required
 from sqlalchemy.util.typing import TypedDict
 from typing_extensions import TypeVar
 
+from lakery._internal.utils import not_implemented
 from lakery._internal.utils import validate_versioned_class_name
-from lakery.core.registry import Registry
 from lakery.core.storable import Storable
 
 if TYPE_CHECKING:
@@ -42,14 +42,16 @@ class Unpacker(abc.ABC, Generic[S, D]):
         validate_versioned_class_name(cls)
 
     @abc.abstractmethod
+    @not_implemented
     def unpack_object(self, obj: S, registry: Registry, /) -> D:
         """Return a mapping of that describes where and how to store the object's contents."""
-        raise NotImplementedError
+        ...
 
     @abc.abstractmethod
+    @not_implemented
     def repack_object(self, cls: type[S], contents: D, registry: Registry, /) -> S:
         """Reconstitute the object from a mapping of its unpacked contents."""
-        raise NotImplementedError
+        ...
 
 
 class UnpackedValue(Generic[T], TypedDict, total=False):

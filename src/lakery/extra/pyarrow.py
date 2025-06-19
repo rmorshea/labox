@@ -4,8 +4,6 @@ import io
 from collections.abc import AsyncGenerator
 from collections.abc import AsyncIterable
 from collections.abc import AsyncIterator
-from collections.abc import Iterable
-from collections.abc import Iterator
 from collections.abc import Mapping
 from collections.abc import Sequence
 from contextlib import ExitStack
@@ -52,7 +50,7 @@ class _ArrowTableBase:
 class ArrowTableSerializer(_ArrowTableBase, Serializer[pa.Table]):
     """Serialize a PyArrow table to the arrow file format."""
 
-    name = "lakery.pyarrow.arrow.file"
+    name = "lakery.pyarrow.arrow.file@v1"
     version = 1
     types = (pa.Table,)
 
@@ -82,25 +80,6 @@ class ArrowRecordBatchStreamSerializer(_ArrowTableBase, StreamSerializer[pa.Reco
     version = 1
     types = (pa.RecordBatch,)
 
-    def dump_data(self, value: Iterable[pa.RecordBatch]) -> SerializedData:
-        """Serialize the given stream of Arrow record batches."""
-        buffer = io.BytesIO()
-        value_iter = iter(value)
-        item = next(value_iter)
-        with pa.ipc.new_stream(buffer, item.schema, options=self._write_options) as writer:
-            writer.write_batch(item)
-            for item in value_iter:
-                writer.write_batch(item)
-        return {
-            "content_encoding": None,
-            "content_type": self.content_type,
-            "data": buffer.getvalue(),
-        }
-
-    def load_data(self, content: SerializedData) -> Iterator[pa.RecordBatch]:
-        """Deserialize the given stream of Arrow record batches."""
-        return pa.ipc.open_stream(content["data"], options=self._read_options)
-
     def serialize_data_stream(self, stream: AsyncIterable[pa.RecordBatch]) -> SerializedDataStream:
         """Serialize the given stream of Arrow record batches."""
         return {
@@ -109,7 +88,7 @@ class ArrowRecordBatchStreamSerializer(_ArrowTableBase, StreamSerializer[pa.Reco
             "content_type": self.content_type,
         }
 
-    def deserialize_json_stream(
+    def deserialize_data_stream(
         self, content: SerializedDataStream
     ) -> AsyncGenerator[pa.RecordBatch]:
         """Deserialize the given stream of Arrow record batches."""
@@ -218,33 +197,6 @@ class ParquetRecordBatchStreamSerializer(StreamSerializer[pa.RecordBatch]):
         self.write_option_extras = write_option_extras or {}
         self.read_options = read_options or {}
 
-    def dump_data(self, value: Iterable[pa.RecordBatch]) -> SerializedData:
-        """Serialize the given stream of Arrow record batches."""
-        buffer = io.BytesIO()
-        value_iter = iter(value)
-        item = next(value_iter)
-        with pq.ParquetWriter(
-            buffer,
-            item.schema,
-            **self.write_options,  # type: ignore[reportArgumentType]
-            **self.write_option_extras,
-        ) as writer:
-            writer.write_batch(item)
-            for item in value_iter:
-                writer.write_batch(item)
-        return {
-            "content_encoding": None,
-            "content_type": self.content_type,
-            "data": buffer.getvalue(),
-        }
-
-    def load_data(self, content: SerializedData) -> Iterator[pa.RecordBatch]:
-        """Deserialize the given stream of Arrow record batches."""
-        with pq.ParquetFile(pa.BufferReader(content["data"]), **self.read_options) as reader:
-            for row_group_index in range(reader.num_row_groups):
-                row_group: pa.Table = reader.read_row_group(row_group_index)
-                yield from row_group.to_batches()
-
     def serialize_data_stream(self, stream: AsyncIterable[pa.RecordBatch]) -> SerializedDataStream:
         """Serialize the given stream of Arrow record batches."""
         return {
@@ -257,7 +209,7 @@ class ParquetRecordBatchStreamSerializer(StreamSerializer[pa.RecordBatch]):
             ),
         }
 
-    def deserialize_json_stream(
+    def deserialize_data_stream(
         self, content: SerializedDataStream
     ) -> AsyncGenerator[pa.RecordBatch]:
         """Deserialize the given stream of Arrow record batches."""

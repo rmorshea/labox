@@ -5,6 +5,7 @@ from collections.abc import Callable
 from collections.abc import Mapping
 from dataclasses import dataclass
 from dataclasses import field
+from functools import wraps
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import ParamSpec
@@ -17,6 +18,7 @@ from typing import overload
 T = TypeVar("T")
 D = TypeVar("D", bound=Mapping[str, Any])
 P = ParamSpec("P")
+F = TypeVar("F", bound=Callable)
 
 UNDEFINED = cast("Any", type("UNDEFINED", (), {"__repr__": lambda _: "UNDEFINED"})())
 """A sentinel value representing an undefined value."""
@@ -50,7 +52,6 @@ def slugify(string: str) -> str:
 
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
 
     @overload
     def frozenclass(cls: type[T]) -> type[T]: ...
@@ -102,3 +103,14 @@ def validate_versioned_class_name(cls: type) -> None:
             f"of the form '<name>@v<version>', but got {name!r}."
         )
         raise ValueError(msg)
+
+
+def not_implemented(f: F) -> F:
+    """Return a wrapper that raises NotImplementedError with a standard message."""
+
+    @wraps(f)
+    def wrapper(obj: Any, *args: P.args, **kwargs: P.kwargs) -> T:
+        msg = f"{obj.__class__.__name__}.{f.__name__}"
+        raise NotImplementedError(msg)
+
+    return cast("F", wrapper)

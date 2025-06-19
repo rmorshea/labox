@@ -23,6 +23,10 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 
+__all__ = (
+    "StorableStream",
+    "StorableValue",
+)
 
 _SimpleStorable: TypeAlias = "StorableValue | StorableStream"
 
@@ -47,7 +51,7 @@ class _SimpleUnpacker(Unpacker[_SimpleStorable]):
 
 
 @dataclass(frozen=True)
-class StorableValue(Storable, Generic[T], class_id="...", unpacker=_SimpleUnpacker()):
+class StorableValue(Storable, Generic[T], class_id="5a044e9f", unpacker=_SimpleUnpacker()):
     """A storable object that contains a single value."""
 
     value: T
@@ -62,7 +66,7 @@ class StorableValue(Storable, Generic[T], class_id="...", unpacker=_SimpleUnpack
 
 
 @dataclass(frozen=True)
-class StorableStream(Storable, Generic[T], class_id="...", unpacker=_SimpleUnpacker()):
+class StorableStream(Storable, Generic[T], class_id="31198cfb", unpacker=_SimpleUnpacker()):
     """A storable object that contains a stream of values."""
 
     value_stream: AsyncIterable[T]

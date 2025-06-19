@@ -114,7 +114,7 @@ class MsgPackStreamSerializer(_MsgPackBase, StreamSerializer[MsgPackType]):
             "content_type": self.content_type,
         }
 
-    def deserialize_json_stream(
+    def deserialize_data_stream(
         self, content: SerializedDataStream, /
     ) -> AsyncGenerator[MsgPackType]:
         """Deserialize the given stream of MessagePack data."""

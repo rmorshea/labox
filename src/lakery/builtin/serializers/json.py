@@ -80,7 +80,7 @@ class JsonStreamSerializer(StreamSerializer[JsonStreamType], _JsonSerializerBase
             "data_stream": _dump_json_stream(self.encoder, stream),
         }
 
-    def deserialize_json_stream(
+    def deserialize_data_stream(
         self, content: SerializedDataStream
     ) -> AsyncGenerator[JsonStreamType]:
         """Deserialize the given stream of JSON data."""

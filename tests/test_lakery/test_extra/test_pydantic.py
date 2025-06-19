@@ -9,7 +9,7 @@ from lakery.extra.msgpack import MsgPackSerializer
 from lakery.extra.pydantic import StorageModel
 from lakery.extra.pydantic import StorageSpec
 from tests.core_api_utils import assert_save_load_equivalence
-from tests.core_context_utils import basic_registry
+from tests.core_registry_utils import basic_registry
 
 
 class PydanticStorageModel(StorageModel, class_id="1e76a004"):
@@ -46,17 +46,17 @@ def test_dump_load_storage_model():
             "value": {
                 "no_spec": {
                     "__json_ext__": "content",
-                    "content_base64": "gqVoZWxsb6V3b3JsZKZhbnN3ZXIq",
+                    "content_base64": "eyJoZWxsbyI6IndvcmxkIiwiYW5zd2VyIjo0Mn0=",
                     "content_encoding": None,
-                    "content_type": "application/msgpack",
-                    "serializer_name": "lakery.msgpack.value",
+                    "content_type": JsonSerializer.content_type,
+                    "serializer_name": JsonSerializer.name,
                 },
                 "spec_with_serializer": {
                     "__json_ext__": "content",
                     "content_base64": "gqVoZWxsb6V3b3JsZKZhbnN3ZXIq",
                     "content_encoding": None,
-                    "content_type": "application/msgpack",
-                    "serializer_name": "lakery.msgpack.value",
+                    "content_type": MsgPackSerializer.content_type,
+                    "serializer_name": MsgPackSerializer.name,
                 },
                 "spec_with_storage": {
                     "__json_ext__": "ref",
@@ -67,16 +67,16 @@ def test_dump_load_storage_model():
                     "ref": "ref.PydanticStorageModel.spec_with_serializer_and_storage.2",
                 },
             },
-            "serializer": msgpack_serializer,
+            "serializer": json_serializer,
             "storage": local_storage,
         },
         "ref.PydanticStorageModel.spec_with_storage.1": {
-            "serializer": msgpack_serializer,
+            "serializer": json_serializer,
             "storage": local_storage,
             "value": {"answer": 42, "hello": "world"},
         },
         "ref.PydanticStorageModel.spec_with_serializer_and_storage.2": {
-            "serializer": json_serializer,
+            "serializer": msgpack_serializer,
             "storage": local_storage,
             "value": {"answer": 42, "hello": "world"},
         },

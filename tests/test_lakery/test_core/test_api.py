@@ -4,7 +4,7 @@ from lakery.builtin.storables import StorableStream
 from lakery.builtin.storables import StorableValue
 from tests.core_api_utils import assert_save_load_equivalence
 from tests.core_api_utils import assert_save_load_stream_equivalence
-from tests.core_context_utils import basic_registry
+from tests.core_registry_utils import basic_registry
 
 SAMPLE_DATA = [{"message": "Hello, Alice!"}, {"message": "Goodbye, Alice!"}]
 

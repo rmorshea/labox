@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
+from copy import deepcopy
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Self
@@ -22,7 +24,6 @@ from lakery.core.unpacker import Unpacker
 if TYPE_CHECKING:
     from collections.abc import Iterable
     from collections.abc import Iterator
-    from collections.abc import Mapping
     from collections.abc import Sequence
     from types import ModuleType
     from uuid import UUID
@@ -98,7 +99,10 @@ class Registry:
                 case Unpacker():
                     unpackers.append(value)
                 case type():
-                    if issubclass(value, Storable):
+                    if (
+                        issubclass(value, Storable)
+                        and value.get_storable_config(allow_none=True) is not None
+                    ):
                         storables.append(value)
 
         return cls(
@@ -114,17 +118,17 @@ class Registry:
         kwargs["_normalized_attributes"] = _merge_attrs_with_descending_priority(
             [
                 {
-                    "default_storage": o._default_storage,  # noqa: SLF001
-                    "storable_by_id": o.storable_by_id,
-                    "serializer_by_name": o.serializer_by_name,
-                    "serializer_by_type": o.serializer_by_type,
-                    "storage_by_name": o.storage_by_name,
-                    "stream_serializer_by_name": o.stream_serializer_by_name,
-                    "stream_serializer_by_type": o.stream_serializer_by_type,
-                    "unpacker_by_name": o.unpacker_by_name,
-                    "unpacker_by_type": o.unpacker_by_type,
+                    "default_storage": reg._default_storage,  # noqa: SLF001
+                    "storable_by_id": reg.storable_by_id,
+                    "serializer_by_name": reg.serializer_by_name,
+                    "serializer_by_type": reg.serializer_by_type,
+                    "storage_by_name": reg.storage_by_name,
+                    "stream_serializer_by_name": reg.stream_serializer_by_name,
+                    "stream_serializer_by_type": reg.stream_serializer_by_type,
+                    "unpacker_by_name": reg.unpacker_by_name,
+                    "unpacker_by_type": reg.unpacker_by_type,
                 }
-                for o in (*others, self)
+                for reg in (self, *others)
             ]
         )
         return self.__class__(**kwargs)
@@ -247,6 +251,7 @@ def _kwargs_to_attrs(kwargs: RegistryKwargs) -> _RegistryAttrs:
     for cls in kwargs.get("storables", ()):
         cfg = cls.get_storable_config()
         unpacker_by_type[cls] = cfg.unpacker
+        unpacker_by_name[cfg.unpacker.name] = cfg.unpacker
         storable_by_id[cfg.class_id] = cls
     for serializer in reversed(tuple(kwargs.get("serializers", ()))):
         _check_name_defined_on_class(serializer)
@@ -277,10 +282,13 @@ def _kwargs_to_attrs(kwargs: RegistryKwargs) -> _RegistryAttrs:
 
 def _merge_attrs_with_descending_priority(attrs: Sequence[_RegistryAttrs]) -> _RegistryAttrs:
     """Merge multiple registry attributes into a single one."""
-    merged: dict[str, dict] = {k: dict(cast("Any", v)) for k, v in _DEFAULT_REGISTRY_ATTRS.items()}
+    merged = deepcopy(_DEFAULT_REGISTRY_ATTRS)
     for r in attrs:
         for k, v in r.items():
-            merged[k].update(cast("Any", v))
+            if isinstance(v, Mapping) and isinstance((merged_v := merged[k]), dict):
+                merged_v.update(v)
+            else:
+                merged[k] = v
     return cast("_RegistryAttrs", merged)
 
 

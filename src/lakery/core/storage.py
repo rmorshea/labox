@@ -10,6 +10,7 @@ from typing import Protocol
 from typing import TypedDict
 from typing import TypeVar
 
+from lakery._internal.utils import not_implemented
 from lakery._internal.utils import validate_versioned_class_name
 
 if TYPE_CHECKING:
@@ -32,6 +33,7 @@ class Storage(Generic[T], abc.ABC):
         validate_versioned_class_name(cls)
 
     @abc.abstractmethod
+    @not_implemented
     async def write_data(
         self,
         data: bytes,
@@ -40,14 +42,16 @@ class Storage(Generic[T], abc.ABC):
         /,
     ) -> T:
         """Save the given data and return information that can be used to retrieve it."""
-        raise NotImplementedError
+        ...
 
     @abc.abstractmethod
+    @not_implemented
     async def read_data(self, info: T, /) -> bytes:
         """Load data using the given information."""
-        raise NotImplementedError
+        ...
 
     @abc.abstractmethod
+    @not_implemented
     async def write_data_stream(
         self,
         data_stream: AsyncIterable[bytes],
@@ -56,12 +60,13 @@ class Storage(Generic[T], abc.ABC):
         /,
     ) -> T:
         """Save the given stream and return information that can be used to retrieve it."""
-        raise NotImplementedError
+        ...
 
     @abc.abstractmethod
+    @not_implemented
     def read_data_stream(self, info: T, /) -> AsyncGenerator[bytes]:
         """Load a stream of data using the given information."""
-        raise NotImplementedError
+        ...
 
     def serialize_storage_data(self, info: T) -> str:
         """Dump the storage information to a JSON string."""

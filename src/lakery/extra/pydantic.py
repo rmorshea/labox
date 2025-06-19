@@ -124,7 +124,7 @@ class StorageModel(
     def __init_subclass__(cls, **kwargs: Unpack[ConfigDict]) -> None:
         storable_config = get_typed_dict(StorableConfigDict, kwargs)
         pydantic_config = get_typed_dict(_ConfigDict, kwargs)
-        super(StorageModel).__init_subclass__(**storable_config)
+        super().__init_subclass__(**storable_config)
         super(Storable).__init_subclass__(**pydantic_config)
 
     @classmethod
@@ -289,7 +289,7 @@ def _make_validator_func() -> cs.WithInfoValidatorFunction:
 def _make_serializer_func(schema: cs.CoreSchema) -> cs.FieldPlainInfoSerializerFunction:
     metadata = _get_schema_metadata(schema)
     serializer_name = metadata.get("serializer_name")
-    storage_name = metadata.get("storage")
+    storage_name = metadata.get("storage_name")
 
     def serialize(model: BaseModel, value: Any, info: cs.FieldSerializationInfo, /) -> AnyJsonExt:
         context = _get_info_context(info)
@@ -302,7 +302,6 @@ def _make_serializer_func(schema: cs.CoreSchema) -> cs.FieldPlainInfoSerializerF
             if serializer_name is not None
             else registry.infer_serializer(cls)
         )
-
         if storage_name is not None:
             ref_str = _make_ref_str(type(model), info, context)
             external[ref_str] = UnpackedValue(
