@@ -42,7 +42,6 @@ if TYPE_CHECKING:
     from lakery.core.storage import GetStreamDigest
     from lakery.core.storage import Storage
     from lakery.core.storage import StreamDigest
-    from lakery.core.unpacker import Unpacker
 
 
 T = TypeVar("T", default=Any)
@@ -97,9 +96,8 @@ class _DataSaver:
 
     def save_soon(
         self,
-        obj: S,
+        obj: Storable,
         *,
-        unpacker: Unpacker[S] | None = None,
         tags: Mapping[str, str] | None = None,
     ) -> FutureResult[ManifestRecord]:
         """Schedule the object to be saved."""
@@ -109,7 +107,6 @@ class _DataSaver:
             self._task_group,
             _save_object,
             obj,
-            unpacker,
             tags or {},
             self._registry,
         )
@@ -124,14 +121,13 @@ DataSaver: TypeAlias = _DataSaver
 
 async def _save_object(
     obj: Storable,
-    unpacker: Unpacker[Any] | None,
     tags: TagMap,
     registry: Registry,
 ) -> ManifestRecord:
     """Save the given data to the database."""
     cls = obj.__class__
     cfg = cls.get_storable_config()
-    unpacker = unpacker or cfg.unpacker or registry.infer_unpacker(cls)
+    unpacker = cfg.unpacker or registry.infer_unpacker(cls)
     obj_contents = unpacker.unpack_object(obj, registry)
 
     manifest_id = uuid4()

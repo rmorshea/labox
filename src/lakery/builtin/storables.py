@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import KW_ONLY
 from dataclasses import dataclass
+from dataclasses import field
 from dataclasses import fields
 from typing import TYPE_CHECKING
 from typing import Any
@@ -59,9 +60,9 @@ class StorableValue(Storable, Generic[T], class_id="5a044e9f", unpacker=_SimpleU
 
     _: KW_ONLY
 
-    serializer: Serializer[T] | None = None
+    serializer: Serializer[T] | None = field(default=None, compare=False)
     """The serializer to use for the value."""
-    storage: Storage | None = None
+    storage: Storage | None = field(default=None, compare=False)
     """The storage to use for the value."""
 
 
@@ -74,7 +75,7 @@ class StorableStream(Storable, Generic[T], class_id="31198cfb", unpacker=_Simple
 
     _: KW_ONLY
 
-    serializer: StreamSerializer[T] | None = None
+    serializer: StreamSerializer[T] | None = field(default=None, compare=False)
     """The serializer to use for the stream."""
-    storage: Storage | None = None
+    storage: Storage | None = field(default=None, compare=False)
     """The storage to use for the stream."""

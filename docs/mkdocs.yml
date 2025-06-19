@@ -19,8 +19,7 @@ nav:
           - Database: concepts/schema.md
     - Integrations:
           - Overview: integrations/index.md
-          - Standard Library:
-                - Dataclasses: integrations/dataclasses.md
+          - Built-in:
                 - Datetime: integrations/datetime.md
                 - JSON: integrations/json.md
                 - OS: integrations/os.md
@@ -35,6 +34,7 @@ nav:
                 - Polars: integrations/polars.md
                 - PyArrow: integrations/pyarrow.md
                 - Pydantic: integrations/pydantic.md
+                - ImageIO: integrations/imageio.md
     - Reference: reference/
     - Contributing: contributing.md
 theme:

@@ -21,7 +21,7 @@ class PydanticStorageModel(StorageModel, class_id="1e76a004"):
     ]
 
 
-registry = basic_registry.merge(storables=[PydanticStorageModel])
+registry = basic_registry.merge(storables=[PydanticStorageModel], use_default_storage=True)
 
 
 def test_dump_load_storage_model():

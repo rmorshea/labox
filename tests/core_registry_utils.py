@@ -11,13 +11,12 @@ if TEST_STORAGE_DIR.exists():  # nocov
     shutil.rmtree(TEST_STORAGE_DIR)
 
 
-basic_registry = Registry.from_modules(
+basic_registry = Registry(
     # order matters for infering serializes/unpackers
-    "lakery.builtin.storables",
-    "lakery.builtin.serializers",
     "lakery.extra.pydantic",
     "lakery.extra.msgpack",
-).merge(
+    "lakery.builtin.storables",
+    "lakery.builtin.serializers",
     storages=[FileStorage(TEST_STORAGE_DIR, mkdir=True)],
     use_default_storage=True,
 )

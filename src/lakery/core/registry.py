@@ -38,13 +38,13 @@ D = TypeVar("D", bound="Mapping[str, Mapping]")
 class RegistryKwargs(TypedDict, total=False):
     """Arguments for creating a registry."""
 
-    storables: Iterable[type[Storable]]
+    storables: Sequence[type[Storable]]
     """Storable classes to register."""
-    unpackers: Iterable[Unpacker]
+    unpackers: Sequence[Unpacker]
     """Decomposers to register."""
-    serializers: Iterable[Serializer | StreamSerializer]
+    serializers: Sequence[Serializer | StreamSerializer]
     """Serializers to register."""
-    storages: Iterable[Storage]
+    storages: Sequence[Storage]
     """Storages to register."""
     use_type_inference: bool
     """Whether to use type inference when looking up serializers and unpackers (default: True)."""
@@ -58,8 +58,11 @@ class RegistryKwargs(TypedDict, total=False):
 class Registry:
     """A registry of storage schemes, serializers, and readers."""
 
-    def __init__(self, **kwargs: Unpack[RegistryKwargs]) -> None:
-        attrs = _kwargs_to_attrs(kwargs)
+    def __init__(self, *modules: str | ModuleType, **kwargs: Unpack[RegistryKwargs]) -> None:
+        module_kwargs = _kwargs_from_modules(modules)
+        module_attrs = _kwargs_to_attrs(module_kwargs)
+        explicit_attrs = _kwargs_to_attrs(kwargs)
+        attrs = _merge_attrs_with_ascending_priority([module_attrs, explicit_attrs])
         self._default_storage = attrs["default_storage"]
         self.storable_by_id = attrs["storable_by_id"]
         self.serializer_by_name = attrs["serializer_by_name"]
@@ -78,44 +81,9 @@ class Registry:
             raise ValueError(msg)
         return self._default_storage
 
-    @classmethod
-    def from_modules(
-        cls,
-        *modules: str | ModuleType,
-        use_default_storage: bool = False,
-    ) -> Self:
-        """Create a registry from the given modules."""
-        storables: list[type[Any]] = []
-        unpackers: list[Unpacker] = []
-        serializers: list[Serializer | StreamSerializer] = []
-        storages: list[Storage] = []
-
-        for value in _iter_module_exports(modules):
-            match value:
-                case Storage():
-                    storages.append(value)
-                case Serializer() | StreamSerializer():
-                    serializers.append(value)
-                case Unpacker():
-                    unpackers.append(value)
-                case type():
-                    if (
-                        issubclass(value, Storable)
-                        and value.get_storable_config(allow_none=True) is not None
-                    ):
-                        storables.append(value)
-
-        return cls(
-            storables=storables,
-            unpackers=unpackers,
-            serializers=serializers,
-            storages=storages,
-            use_default_storage=use_default_storage,
-        )
-
     def merge(self, *others: Registry, **kwargs: Unpack[RegistryKwargs]) -> Self:
         """Return a new registry that merges this one with the given ones."""
-        kwargs["_normalized_attributes"] = _merge_attrs_with_descending_priority(
+        kwargs["_normalized_attributes"] = _merge_attrs_with_ascending_priority(
             [
                 {
                     "default_storage": reg._default_storage,  # noqa: SLF001
@@ -233,6 +201,38 @@ _DEFAULT_REGISTRY_ATTRS: _RegistryAttrs = {
 }
 
 
+def _kwargs_from_modules(
+    modules: Iterable[ModuleType | str],
+) -> RegistryKwargs:
+    """Extract registry kwargs from the given modules."""
+    unpackers: list[Unpacker] = []
+    storables: list[type[Storable]] = []
+    serializers: list[Serializer | StreamSerializer] = []
+    storages: list[Storage] = []
+
+    for value in _iter_module_exports(modules):
+        match value:
+            case Storage():
+                storages.append(value)
+            case Serializer() | StreamSerializer():
+                serializers.append(value)
+            case Unpacker():
+                unpackers.append(value)
+            case type():
+                if (
+                    issubclass(value, Storable)
+                    and value.get_storable_config(allow_none=True) is not None
+                ):
+                    storables.append(value)
+
+    return {
+        "storables": storables,
+        "unpackers": unpackers,
+        "serializers": serializers,
+        "storages": storages,
+    }
+
+
 def _kwargs_to_attrs(kwargs: RegistryKwargs) -> _RegistryAttrs:
     attrs_from_kwargs = kwargs.get("_normalized_attributes") or _DEFAULT_REGISTRY_ATTRS
     unpacker_by_name = dict(attrs_from_kwargs["unpacker_by_name"])
@@ -253,7 +253,7 @@ def _kwargs_to_attrs(kwargs: RegistryKwargs) -> _RegistryAttrs:
         unpacker_by_type[cls] = cfg.unpacker
         unpacker_by_name[cfg.unpacker.name] = cfg.unpacker
         storable_by_id[cfg.class_id] = cls
-    for serializer in reversed(tuple(kwargs.get("serializers", ()))):
+    for serializer in kwargs.get("serializers", ()):
         _check_name_defined_on_class(serializer)
         if isinstance(serializer, StreamSerializer):
             stream_serializer_by_name[serializer.name] = serializer
@@ -261,11 +261,16 @@ def _kwargs_to_attrs(kwargs: RegistryKwargs) -> _RegistryAttrs:
         else:
             serializer_by_name[serializer.name] = serializer
             serializer_by_type.update(dict.fromkeys(serializer.types, serializer))
-    for storage in reversed(tuple(kwargs.get("storages", ()))):  # reverse to make first the default
+
+    for storage in tuple(kwargs.get("storages", ())):
         _check_name_defined_on_class(storage)
         storage_by_name[storage.name] = storage
-        if kwargs.get("use_default_storage"):
-            default_storage = storage
+        default_storage = storage
+
+    print(default_storage)
+
+    if not kwargs.get("use_default_storage"):
+        default_storage = None
 
     return {
         "unpacker_by_name": unpacker_by_name,
@@ -280,7 +285,7 @@ def _kwargs_to_attrs(kwargs: RegistryKwargs) -> _RegistryAttrs:
     }
 
 
-def _merge_attrs_with_descending_priority(attrs: Sequence[_RegistryAttrs]) -> _RegistryAttrs:
+def _merge_attrs_with_ascending_priority(attrs: Sequence[_RegistryAttrs]) -> _RegistryAttrs:
     """Merge multiple registry attributes into a single one."""
     merged = deepcopy(_DEFAULT_REGISTRY_ATTRS)
     for r in attrs:
