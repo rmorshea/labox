@@ -75,7 +75,20 @@ plugins:
     - mkdocstrings:
           handlers:
               python:
-                  import: [https://docs.python.org/3/objects.inv]
+                  inventories:
+                      # azure objects.inv is not available: https://github.com/Azure/azure-sdk-for-python/issues/39316
+                      - https://arrow.apache.org/docs/objects.inv
+                      - https://boto3.amazonaws.com/v1/documentation/api/latest/objects.inv
+                      - https://docs.pydantic.dev/latest/objects.inv
+                      - https://docs.python.org/3/objects.inv
+                      - https://googleapis.dev/python/storage/latest/objects.inv
+                      - https://googleapis.dev/python/storage/latest/objects.inv
+                      - https://imageio.readthedocs.io/en/stable/objects.inv
+                      - https://msgpack-python.readthedocs.io/en/latest/objects.inv
+                      - https://numpy.org/doc/stable/objects.inv
+                      - https://pandas.pydata.org/pandas-docs/stable/objects.inv
+                      - https://plotly.com/python-api-reference/objects.inv
+                      - https://pola-rs.github.io/polars/py-polars/html/objects.inv
                   paths: [src]
                   options:
                       docstring_options:
