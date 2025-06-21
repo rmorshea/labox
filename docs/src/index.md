@@ -56,8 +56,7 @@ from lakery.extra.os import FileStorage
 
 registry = Registry(
     modules=["lakery.builtin"],
-    storages=[FileStorage("temp", mkdir=True)],
-    use_default_storage=True,
+    default_storage=FileStorage("temp", mkdir=True),
 )
 ```
 

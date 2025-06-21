@@ -31,7 +31,10 @@ def get_typed_dict(typed_dict: type[D], merged_dict: Mapping[str, Any], /) -> D:
     """Partition a merged dictionary into typed dictionaries."""
     extracted: dict[str, Any] = {}
 
-    typed_dict_cls = TypedDict if TYPE_CHECKING else typed_dict
+    if TYPE_CHECKING:
+        typed_dict_cls = TypedDict
+    else:
+        typed_dict_cls = typed_dict
 
     for k in typed_dict_cls.__required_keys__:
         if k in merged_dict:
@@ -44,6 +47,30 @@ def get_typed_dict(typed_dict: type[D], merged_dict: Mapping[str, Any], /) -> D:
             extracted[k] = merged_dict[k]
 
     return cast("D", extracted)
+
+
+def validate_typed_dict(typed_dict: type[D], raw_dict: Mapping[str, Any]) -> None:
+    """Validate a dictionary against a TypedDict type."""
+    if TYPE_CHECKING:
+        typed_dict_cls = TypedDict
+    else:
+        typed_dict_cls = typed_dict
+
+    req_keys = set(typed_dict_cls.__required_keys__)
+    opt_keys = set(typed_dict_cls.__optional_keys__)
+
+    extra_keys = set(raw_dict) - (req_keys | opt_keys)
+    if extra_keys:
+        msg = f"Unexpected keys in {typed_dict_cls.__name__}: {', '.join(sorted(extra_keys))}."
+        raise KeyError(msg)
+
+    missing_keys = req_keys - set(raw_dict)
+    if missing_keys:
+        msg = (
+            f"Missing required keys in {typed_dict_cls.__name__}: "
+            f"{', '.join(sorted(missing_keys))}."
+        )
+        raise KeyError(msg)
 
 
 def slugify(string: str) -> str:

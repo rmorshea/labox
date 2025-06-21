@@ -5,7 +5,6 @@ from copy import deepcopy
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import NotRequired
-from typing import Self
 from typing import TypedDict
 from typing import TypeGuard
 from typing import TypeVar
@@ -15,6 +14,7 @@ from typing import cast
 from ruyaml import import_module
 
 from lakery._internal.utils import full_class_name
+from lakery._internal.utils import validate_typed_dict
 from lakery.common.exceptions import NotRegistered
 from lakery.core.serializer import Serializer
 from lakery.core.serializer import StreamSerializer
@@ -39,6 +39,10 @@ D = TypeVar("D", bound="Mapping[str, Mapping]")
 class RegistryKwargs(TypedDict, total=False):
     """Arguments for creating a registry."""
 
+    modules: Sequence[str | ModuleType] | None
+    """Modules to import and extract registry attributes from."""
+    registries: Sequence[Registry] | None
+    """Other registries to merge with this one."""
     storables: Sequence[type[Storable]] | None
     """Storable classes to register."""
     unpackers: Sequence[Unpacker] | None
@@ -53,8 +57,6 @@ class RegistryKwargs(TypedDict, total=False):
     """Whether to infer serializers from the type of the storable (default: True)."""
     infer_unpackers: bool
     """Whether to infer unpackers from the type of the storable (default: True)."""
-    modules: Sequence[str | ModuleType] | None
-    """Modules to import and extract registry attributes from."""
 
     _normalized_attributes: _RegistryAttrs
     """Normalized attributes for the registry, used for merging."""
@@ -64,6 +66,8 @@ class Registry:
     """A registry of storage schemes, serializers, and readers."""
 
     def __init__(self, **kwargs: Unpack[RegistryKwargs]) -> None:
+        validate_typed_dict(RegistryKwargs, kwargs)
+
         attrs = _kwargs_to_attrs(kwargs)
         self._default_storage = attrs.get("default_storage")
         self.storable_by_id = attrs["storable_by_id"]
@@ -83,29 +87,6 @@ class Registry:
             msg = "No default storage is set for this registry."
             raise ValueError(msg)
         return self._default_storage
-
-    def merge(self, *others: Registry) -> Self:
-        """Return a new registry that merges this one with the given ones."""
-        return self.__class__(
-            _normalized_attributes=_merge_attrs_with_ascending_priority(
-                [
-                    {
-                        "default_storage": reg._default_storage,  # noqa: SLF001
-                        "storable_by_id": reg.storable_by_id,
-                        "serializer_by_name": reg.serializer_by_name,
-                        "serializer_by_type": reg.serializer_by_type,
-                        "storage_by_name": reg.storage_by_name,
-                        "stream_serializer_by_name": reg.stream_serializer_by_name,
-                        "stream_serializer_by_type": reg.stream_serializer_by_type,
-                        "unpacker_by_name": reg.unpacker_by_name,
-                        "unpacker_by_type": reg.unpacker_by_type,
-                        "infer_serializers": reg.infer_serializers,
-                        "infer_unpackers": reg.infer_unpackers,
-                    }
-                    for reg in (self, *others)
-                ]
-            )
-        )
 
     def has_storable(
         self,
@@ -241,7 +222,6 @@ def _kwargs_from_modules(
 
 
 def _kwargs_to_attrs(kwargs: RegistryKwargs) -> _RegistryAttrs:
-    default_storage: Storage | None = None
     infer_serializers = kwargs.get("infer_serializers", True)
     infer_unpackers = kwargs.get("infer_unpackers", True)
     serializer_by_name: dict[str, Serializer] = {}
@@ -277,27 +257,39 @@ def _kwargs_to_attrs(kwargs: RegistryKwargs) -> _RegistryAttrs:
     for storage in kwargs.get("storages") or ():
         _check_name_defined_on_class(storage)
         storage_by_name[storage.name] = storage
-        default_storage = storage
-
-    match kwargs.get("default_storage", True):
-        case Storage() as default_storage:
-            pass  # use the provided storage as default
-        case True:
-            pass  # use the last storage as default
-        case None:
-            default_storage = None  # no default storage
-        case _:
-            msg = "The 'default_storage' must be a Storage instance, True, or None."
-            raise TypeError(msg)
 
     attrs_to_merge: list[_RegistryAttrs] = []
 
+    # normalized attributes have lowest priority
     if "_normalized_attributes" in kwargs:
         attrs_to_merge.append(kwargs["_normalized_attributes"])
 
+    # next are modules exports
+    if (modules := kwargs.get("modules")) is not None:
+        attrs_to_merge.append(_kwargs_to_attrs(_kwargs_from_modules(modules)))
+
+    # then other registries
+    if (registries := kwargs.get("registries")) is not None:
+        attrs_to_merge.extend(
+            {
+                "default_storage": reg._default_storage,  # noqa: SLF001
+                "storable_by_id": reg.storable_by_id,
+                "serializer_by_name": reg.serializer_by_name,
+                "serializer_by_type": reg.serializer_by_type,
+                "storage_by_name": reg.storage_by_name,
+                "stream_serializer_by_name": reg.stream_serializer_by_name,
+                "stream_serializer_by_type": reg.stream_serializer_by_type,
+                "unpacker_by_name": reg.unpacker_by_name,
+                "unpacker_by_type": reg.unpacker_by_type,
+                "infer_serializers": reg.infer_serializers,
+                "infer_unpackers": reg.infer_unpackers,
+            }
+            for reg in registries
+        )
+
+    # then highest priority are explicitly given attributes
     attrs_to_merge.append(
         {
-            "default_storage": default_storage,
             "infer_serializers": infer_serializers,
             "infer_unpackers": infer_unpackers,
             "serializer_by_name": serializer_by_name,
@@ -311,10 +303,24 @@ def _kwargs_to_attrs(kwargs: RegistryKwargs) -> _RegistryAttrs:
         }
     )
 
-    if (modules := kwargs.get("modules")) is not None:
-        attrs_to_merge.append(_kwargs_to_attrs(_kwargs_from_modules(modules)))
+    attrs = _merge_attrs_with_ascending_priority(attrs_to_merge)
 
-    return _merge_attrs_with_ascending_priority(attrs_to_merge)
+    # deal with default storage
+    match kwargs.get("default_storage", True):
+        case Storage() as storage:
+            # use the given storage as default and register it
+            attrs["default_storage"] = storage
+            storage_by_name[storage.name] = storage
+        case True:
+            if attrs["storage_by_name"]:
+                attrs["default_storage"] = tuple(attrs["storage_by_name"].values())[-1]
+        case None:
+            attrs["default_storage"] = None
+        case _:
+            msg = "The 'default_storage' must be a Storage instance, True, or None."
+            raise TypeError(msg)
+
+    return attrs
 
 
 def _merge_attrs_with_ascending_priority(attrs: Sequence[_RegistryAttrs]) -> _RegistryAttrs:

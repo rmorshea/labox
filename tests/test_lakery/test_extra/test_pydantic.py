@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio.session import AsyncSession
 
 from lakery.builtin.serializers.json import JsonSerializer
 from lakery.builtin.storages import FileStorage
+from lakery.core.registry import Registry
 from lakery.extra.msgpack import MsgPackSerializer
 from lakery.extra.pydantic import StorageModel
 from lakery.extra.pydantic import StorageSpec
@@ -21,7 +22,12 @@ class PydanticStorageModel(StorageModel, class_id="1e76a004"):
     ]
 
 
-registry = basic_registry.merge(storables=[PydanticStorageModel], default_storage=True)
+registry = Registry(
+    registries=[basic_registry],
+    storables=[PydanticStorageModel],
+    default_storage=True,
+)
+assert registry.get_default_storage()
 
 
 def test_dump_load_storage_model():

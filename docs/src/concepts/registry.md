@@ -119,8 +119,9 @@ you to control which components are loaded from a module.
 
 ## Merging Registries
 
-One or more registries can be merged together using the `merge` method of the
-[`Registry`][lakery.core.registry.Registry] class.
+One or more registries can be merged together using the `registries` argument of the
+[`Registry`][lakery.core.registry.Registry] constructor. This allows you to combine
+multiple registries into a single one.
 
 ```python
 from lakery import Registry
@@ -129,7 +130,11 @@ reg1: Registry
 reg2: Registry
 reg3: Registry
 
-reg4 = reg1.merge(reg2, reg3)
+reg4 = Registry(
+    registries=[reg1, reg2, reg3],
+    serializers=[my_serializer],  # Optional additional serializers
+    storables=[my_storable],      # Optional additional storables
+)
 ```
 
 ## Type Inference
@@ -164,3 +169,11 @@ When multiple serializers, storages or unpackers are registered, the last one in
 list will take precedence. This means that if you register a serializer, storage or
 unpacker with the same name as an existing one, it will override the existing one. This
 is also true for [type inference](#type-inference) where the last serializer
+
+The order of precedence amongst modules, registries, and explicitly provided keyword
+arguments is, in increasing order of priority:
+
+1. Modules loaded from the `modules` argument.
+2. Registries merged from the `registries` argument.
+3. Explicitly provided serializers, storages, unpackers, or storables in the
+   `serializers`, `storages`, `unpackers`, or `storables` arguments.
