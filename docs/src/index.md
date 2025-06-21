@@ -55,7 +55,7 @@ from lakery.extra.json import JsonSerializer
 from lakery.extra.os import FileStorage
 
 registry = Registry(
-    "lakery.builtin",
+    modules=["lakery.builtin"],
     storages=[FileStorage("temp", mkdir=True)],
     use_default_storage=True,
 )

@@ -12,29 +12,29 @@ nav:
     - Concepts:
           - Overview: concepts/index.md
           - Storables: concepts/storables.md
-          - Unpackers: concepts/unpackers.md
           - Serializers: concepts/serializers.md
           - Storages: concepts/storages.md
-          - Registries: concepts/registries.md
+          - Registry: concepts/registry.md
           - Database: concepts/schema.md
     - Integrations:
-          - Overview: integrations/index.md
+          - Overview: integrations/built-ins/index.md
           - Built-in:
-                - Datetime: integrations/datetime.md
-                - JSON: integrations/json.md
-                - OS: integrations/os.md
+                - CSV: integrations/built-ins/csv.md
+                - Datetime: integrations/built-ins/datetime.md
+                - JSON: integrations/built-ins/json.md
+                - OS: integrations/built-ins/os.md
           - Third Party:
-                - AWS: integrations/aws.md
-                - Azure: integrations/azure.md
-                - Google: integrations/google.md
-                - MessagePack: integrations/msgpack.md
-                - NumPy: integrations/numpy.md
-                - Pandas: integrations/pandas.md
-                - Plotly: integrations/plotly.md
-                - Polars: integrations/polars.md
-                - PyArrow: integrations/pyarrow.md
-                - Pydantic: integrations/pydantic.md
-                - ImageIO: integrations/imageio.md
+                - AWS: integrations/3rd-party/aws.md
+                - Azure: integrations/3rd-party/azure.md
+                - Google: integrations/3rd-party/google.md
+                - ImageIO: integrations/3rd-party/imageio.md
+                - MessagePack: integrations/3rd-party/msgpack.md
+                - NumPy: integrations/3rd-party/numpy.md
+                - Pandas: integrations/3rd-party/pandas.md
+                - Plotly: integrations/3rd-party/plotly.md
+                - Polars: integrations/3rd-party/polars.md
+                - PyArrow: integrations/3rd-party/pyarrow.md
+                - Pydantic: integrations/3rd-party/pydantic.md
     - Reference: reference/
     - Contributing: contributing.md
 theme:

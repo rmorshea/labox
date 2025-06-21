@@ -4,6 +4,7 @@ from collections.abc import Mapping
 from copy import deepcopy
 from typing import TYPE_CHECKING
 from typing import Any
+from typing import NotRequired
 from typing import Self
 from typing import TypedDict
 from typing import TypeGuard
@@ -38,18 +39,22 @@ D = TypeVar("D", bound="Mapping[str, Mapping]")
 class RegistryKwargs(TypedDict, total=False):
     """Arguments for creating a registry."""
 
-    storables: Sequence[type[Storable]]
+    storables: Sequence[type[Storable]] | None
     """Storable classes to register."""
-    unpackers: Sequence[Unpacker]
+    unpackers: Sequence[Unpacker] | None
     """Decomposers to register."""
-    serializers: Sequence[Serializer | StreamSerializer]
+    serializers: Sequence[Serializer | StreamSerializer] | None
     """Serializers to register."""
-    storages: Sequence[Storage]
+    storages: Sequence[Storage] | None
     """Storages to register."""
-    use_type_inference: bool
-    """Whether to use type inference when looking up serializers and unpackers (default: True)."""
-    use_default_storage: bool
+    default_storage: bool | Storage
     """Whether to set a default storage used when saving (default: False)."""
+    infer_serializers: bool
+    """Whether to infer serializers from the type of the storable (default: True)."""
+    infer_unpackers: bool
+    """Whether to infer unpackers from the type of the storable (default: True)."""
+    modules: Sequence[str | ModuleType] | None
+    """Modules to import and extract registry attributes from."""
 
     _normalized_attributes: _RegistryAttrs
     """Normalized attributes for the registry, used for merging."""
@@ -58,12 +63,9 @@ class RegistryKwargs(TypedDict, total=False):
 class Registry:
     """A registry of storage schemes, serializers, and readers."""
 
-    def __init__(self, *modules: str | ModuleType, **kwargs: Unpack[RegistryKwargs]) -> None:
-        module_kwargs = _kwargs_from_modules(modules)
-        module_attrs = _kwargs_to_attrs(module_kwargs)
-        explicit_attrs = _kwargs_to_attrs(kwargs)
-        attrs = _merge_attrs_with_ascending_priority([module_attrs, explicit_attrs])
-        self._default_storage = attrs["default_storage"]
+    def __init__(self, **kwargs: Unpack[RegistryKwargs]) -> None:
+        attrs = _kwargs_to_attrs(kwargs)
+        self._default_storage = attrs.get("default_storage")
         self.storable_by_id = attrs["storable_by_id"]
         self.serializer_by_name = attrs["serializer_by_name"]
         self.serializer_by_type = attrs["serializer_by_type"]
@@ -72,7 +74,8 @@ class Registry:
         self.stream_serializer_by_type = attrs["stream_serializer_by_type"]
         self.unpacker_by_name = attrs["unpacker_by_name"]
         self.unpacker_by_type = attrs["unpacker_by_type"]
-        self.use_type_inference = kwargs.get("use_type_inference", True)
+        self.infer_serializers = kwargs.get("infer_serializers", True)
+        self.infer_unpackers = kwargs.get("infer_unpackers", True)
 
     def get_default_storage(self) -> Storage:
         """Return the default storage for this registry."""
@@ -81,25 +84,28 @@ class Registry:
             raise ValueError(msg)
         return self._default_storage
 
-    def merge(self, *others: Registry, **kwargs: Unpack[RegistryKwargs]) -> Self:
+    def merge(self, *others: Registry) -> Self:
         """Return a new registry that merges this one with the given ones."""
-        kwargs["_normalized_attributes"] = _merge_attrs_with_ascending_priority(
-            [
-                {
-                    "default_storage": reg._default_storage,  # noqa: SLF001
-                    "storable_by_id": reg.storable_by_id,
-                    "serializer_by_name": reg.serializer_by_name,
-                    "serializer_by_type": reg.serializer_by_type,
-                    "storage_by_name": reg.storage_by_name,
-                    "stream_serializer_by_name": reg.stream_serializer_by_name,
-                    "stream_serializer_by_type": reg.stream_serializer_by_type,
-                    "unpacker_by_name": reg.unpacker_by_name,
-                    "unpacker_by_type": reg.unpacker_by_type,
-                }
-                for reg in (self, *others)
-            ]
+        return self.__class__(
+            _normalized_attributes=_merge_attrs_with_ascending_priority(
+                [
+                    {
+                        "default_storage": reg._default_storage,  # noqa: SLF001
+                        "storable_by_id": reg.storable_by_id,
+                        "serializer_by_name": reg.serializer_by_name,
+                        "serializer_by_type": reg.serializer_by_type,
+                        "storage_by_name": reg.storage_by_name,
+                        "stream_serializer_by_name": reg.stream_serializer_by_name,
+                        "stream_serializer_by_type": reg.stream_serializer_by_type,
+                        "unpacker_by_name": reg.unpacker_by_name,
+                        "unpacker_by_type": reg.unpacker_by_type,
+                        "infer_serializers": reg.infer_serializers,
+                        "infer_unpackers": reg.infer_unpackers,
+                    }
+                    for reg in (self, *others)
+                ]
+            )
         )
-        return self.__class__(**kwargs)
 
     def has_storable(
         self,
@@ -159,24 +165,24 @@ class Registry:
 
     def infer_unpacker(self, cls: type[S]) -> Unpacker[S]:
         """Get the first unpacker that can handle the given type or its parent classes."""
-        self._check_allow_type_inference()
+        if not self.infer_unpackers:
+            msg = "Type inference for unpackers is disabled for this registry."
+            raise ValueError(msg)
         return cast("Unpacker[S]", _infer_from_type(self.unpacker_by_type, cls, "unpacker"))
 
     def infer_serializer(self, cls: type[T]) -> Serializer[T]:
         """Get the first serializer that can handle the given type or its parent classes."""
-        self._check_allow_type_inference()
+        if not self.infer_serializers:
+            msg = "Type inference for serializers is disabled for this registry."
+            raise ValueError(msg)
         return _infer_from_type(self.serializer_by_type, cls, "serializer")
 
     def infer_stream_serializer(self, cls: type[T]) -> StreamSerializer[T]:
         """Get the first stream serializer that can handle the given type or its base classes."""
-        self._check_allow_type_inference()
-        return _infer_from_type(self.stream_serializer_by_type, cls, "stream serializer")
-
-    def _check_allow_type_inference(self) -> None:
-        """Check if type inference is allowed."""
-        if not self.use_type_inference:
-            msg = "Type inference is disabled for this registry."
+        if not self.infer_serializers:
+            msg = "Type inference for serializers is disabled for this registry."
             raise ValueError(msg)
+        return _infer_from_type(self.stream_serializer_by_type, cls, "stream serializer")
 
 
 def _infer_from_type(mapping: Mapping[type, V], cls: type, description: str) -> V:
@@ -189,7 +195,6 @@ def _infer_from_type(mapping: Mapping[type, V], cls: type, description: str) -> 
 
 
 _DEFAULT_REGISTRY_ATTRS: _RegistryAttrs = {
-    "default_storage": None,
     "storable_by_id": {},
     "serializer_by_name": {},
     "serializer_by_type": {},
@@ -198,6 +203,8 @@ _DEFAULT_REGISTRY_ATTRS: _RegistryAttrs = {
     "stream_serializer_by_type": {},
     "unpacker_by_name": {},
     "unpacker_by_type": {},
+    "infer_serializers": True,
+    "infer_unpackers": True,
 }
 
 
@@ -234,26 +241,31 @@ def _kwargs_from_modules(
 
 
 def _kwargs_to_attrs(kwargs: RegistryKwargs) -> _RegistryAttrs:
-    attrs_from_kwargs = kwargs.get("_normalized_attributes") or _DEFAULT_REGISTRY_ATTRS
-    unpacker_by_name = dict(attrs_from_kwargs["unpacker_by_name"])
-    unpacker_by_type = dict(attrs_from_kwargs.get("unpacker_by_type", {}))
-    default_storage = attrs_from_kwargs["default_storage"]
-    storable_by_id = dict(attrs_from_kwargs["storable_by_id"])
-    serializer_by_name = dict(attrs_from_kwargs["serializer_by_name"])
-    serializer_by_type = dict(attrs_from_kwargs["serializer_by_type"])
-    storage_by_name = dict(attrs_from_kwargs["storage_by_name"])
-    stream_serializer_by_name = dict(attrs_from_kwargs["stream_serializer_by_name"])
-    stream_serializer_by_type = dict(attrs_from_kwargs["stream_serializer_by_type"])
+    default_storage: Storage | None = None
+    infer_serializers = kwargs.get("infer_serializers", True)
+    infer_unpackers = kwargs.get("infer_unpackers", True)
+    serializer_by_name: dict[str, Serializer] = {}
+    serializer_by_type: dict[type[Any], Serializer] = {}
+    storable_by_id: dict[UUID, type[Storable]] = {}
+    storage_by_name: dict[str, Storage] = {}
+    stream_serializer_by_name: dict[str, StreamSerializer] = {}
+    stream_serializer_by_type: dict[type[Any], StreamSerializer] = {}
+    unpacker_by_name: dict[str, Unpacker] = {}
+    unpacker_by_type: dict[type[Any], Unpacker] = {}
 
-    for unpacker in kwargs.get("unpackers", ()):
-        _check_name_defined_on_class(unpacker)
-        unpacker_by_name[unpacker.name] = unpacker
-    for cls in kwargs.get("storables", ()):
+    for cls in kwargs.get("storables") or ():
         cfg = cls.get_storable_config()
         unpacker_by_type[cls] = cfg.unpacker
         unpacker_by_name[cfg.unpacker.name] = cfg.unpacker
         storable_by_id[cfg.class_id] = cls
-    for serializer in kwargs.get("serializers", ()):
+
+    for unpacker in kwargs.get("unpackers") or ():
+        _check_name_defined_on_class(unpacker)
+        unpacker_by_name[unpacker.name] = unpacker
+        for cls in unpacker.types:
+            unpacker_by_type[cls] = unpacker
+
+    for serializer in kwargs.get("serializers") or ():
         _check_name_defined_on_class(serializer)
         if isinstance(serializer, StreamSerializer):
             stream_serializer_by_name[serializer.name] = serializer
@@ -262,27 +274,47 @@ def _kwargs_to_attrs(kwargs: RegistryKwargs) -> _RegistryAttrs:
             serializer_by_name[serializer.name] = serializer
             serializer_by_type.update(dict.fromkeys(serializer.types, serializer))
 
-    for storage in tuple(kwargs.get("storages", ())):
+    for storage in kwargs.get("storages") or ():
         _check_name_defined_on_class(storage)
         storage_by_name[storage.name] = storage
         default_storage = storage
 
-    print(default_storage)
+    match kwargs.get("default_storage", True):
+        case Storage() as default_storage:
+            pass  # use the provided storage as default
+        case True:
+            pass  # use the last storage as default
+        case None:
+            default_storage = None  # no default storage
+        case _:
+            msg = "The 'default_storage' must be a Storage instance, True, or None."
+            raise TypeError(msg)
 
-    if not kwargs.get("use_default_storage"):
-        default_storage = None
+    attrs_to_merge: list[_RegistryAttrs] = []
 
-    return {
-        "unpacker_by_name": unpacker_by_name,
-        "unpacker_by_type": unpacker_by_type,
-        "default_storage": default_storage,
-        "storable_by_id": storable_by_id,
-        "serializer_by_name": serializer_by_name,
-        "serializer_by_type": serializer_by_type,
-        "storage_by_name": storage_by_name,
-        "stream_serializer_by_name": stream_serializer_by_name,
-        "stream_serializer_by_type": stream_serializer_by_type,
-    }
+    if "_normalized_attributes" in kwargs:
+        attrs_to_merge.append(kwargs["_normalized_attributes"])
+
+    attrs_to_merge.append(
+        {
+            "default_storage": default_storage,
+            "infer_serializers": infer_serializers,
+            "infer_unpackers": infer_unpackers,
+            "serializer_by_name": serializer_by_name,
+            "serializer_by_type": serializer_by_type,
+            "storable_by_id": storable_by_id,
+            "storage_by_name": storage_by_name,
+            "stream_serializer_by_name": stream_serializer_by_name,
+            "stream_serializer_by_type": stream_serializer_by_type,
+            "unpacker_by_name": unpacker_by_name,
+            "unpacker_by_type": unpacker_by_type,
+        }
+    )
+
+    if (modules := kwargs.get("modules")) is not None:
+        attrs_to_merge.append(_kwargs_to_attrs(_kwargs_from_modules(modules)))
+
+    return _merge_attrs_with_ascending_priority(attrs_to_merge)
 
 
 def _merge_attrs_with_ascending_priority(attrs: Sequence[_RegistryAttrs]) -> _RegistryAttrs:
@@ -300,10 +332,12 @@ def _merge_attrs_with_ascending_priority(attrs: Sequence[_RegistryAttrs]) -> _Re
 class _RegistryAttrs(TypedDict):
     """Attributes for a registry."""
 
-    default_storage: Storage | None
-    storable_by_id: Mapping[UUID, type[Storable]]
+    default_storage: NotRequired[Storage | None]
+    infer_serializers: bool
+    infer_unpackers: bool
     serializer_by_name: Mapping[str, Serializer]
     serializer_by_type: Mapping[type[Any], Serializer]
+    storable_by_id: Mapping[UUID, type[Storable]]
     storage_by_name: Mapping[str, Storage]
     stream_serializer_by_name: Mapping[str, StreamSerializer]
     stream_serializer_by_type: Mapping[type[Any], StreamSerializer]

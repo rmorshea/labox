@@ -13,10 +13,12 @@ if TEST_STORAGE_DIR.exists():  # nocov
 
 basic_registry = Registry(
     # order matters for infering serializes/unpackers
-    "lakery.extra.pydantic",
-    "lakery.extra.msgpack",
-    "lakery.builtin.storables",
-    "lakery.builtin.serializers",
+    modules=[
+        "lakery.extra.pydantic",
+        "lakery.extra.msgpack",
+        "lakery.builtin.storables",
+        "lakery.builtin.serializers",
+    ],
     storages=[FileStorage(TEST_STORAGE_DIR, mkdir=True)],
-    use_default_storage=True,
+    default_storage=True,
 )

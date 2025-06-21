@@ -1,383 +1,183 @@
-# Models
+# Storables
 
-Lakery relies on "models" to define where and how to store your data.
+Storables define the shape of the data that's saved and loaded by Lakery.
 
-## Built-in Models
+Third party integrations:
 
-### Simple Value
+-   [`Pydantic`](../integrations/pydantic.md)
 
-The [`SimpleValue`][lakery.builtin.models.SimpleValue] model can be used to save any
-single value for which there is a [serializer](./serializers.md). For example, you might
-have a `pandas.DataFrame` that you want to save as a Parquet file. All you need to do is
-wrap it in a `SimpleValue` instance:
+Built-in implementations:
 
-```python
-import pandas as pd
+-   [`StorableValue`][lakery.builtin.storables.StorableValue] for simple values.
+-   [`StorableStream`][lakery.builtin.storables.StorableStream] for streaming data.
 
-from lakery.builtin.models import SimpleValue
+## Defining Storables
 
-my_df = pd.DataFrame({"hello": ["world"]})
-modeled_df = SimpleValue(my_df)
-```
+To define a storable class you need to inherit from
+[`Storable`][lakery.core.storable.Storable] and provide
 
-While not required, it's recommended to explicitly declare a serializer as well.
+-   A [`class_id`](#class-id) that uniquely and permanently identifies the class.
+-   An [`Unpacker`](#unpackers) that defines how to destructure the class into its
+    constituent parts.
 
 ```python
-from lakery.extra.pandas import ParquetDataFrameSerializer
+from lakery import Storable, Unpacker
 
-parquet_df_serializer = ParquetDataFrameSerializer()
-modeled_df = SimpleValue(df, serializer=parquet_df_serializer)
-```
-
-If you don't declare a serializer as part of the `SimpleValue` model, Lakery will search
-for on in the [serializer registry](./registries.md#serializer-registry) passed to
-[`data_saver`](../usage/index.md#saving) later on. Similarly, if a storage has not been
-explicitely declared, the [default storage](registries.md#default-storage) will be used.
-If your [storage registry](./registries.md#storage-registry) does not have a default,
-declaring an explicit storage is required.
-
-```python
-from lakery.extra.os import FileStorage
-
-file_storage = FileStorage("temp", mkdir=True)
-modeled_df = SimpleValue(df, storage=file_storage)
-```
-
-### Simple Value Stream
-
-The [`SimpleValueStream`][lakery.builtin.models.SimpleValueStream] model can be used to
-save data that is asynchronously generated. For example, you might have a function that
-generates data you want to save as a Parquet file. You can wrap that asynchronous
-generator in a `SimpleValueStream` instance:
-
-```python
-import pyarrow as pa
-
-from lakery.builtin.models import SimpleValueStream
-from lakery.extra.pyarrow import ParquetRecordBatchStreamSerializer
+my_unpacker: Unpacker
 
 
-async def generate_data():
-    for i in range(10):
-        batch = pa.RecordBatch.from_pydict({"count": [i]})
-        yield batch
-
-
-parquet_stream_serializer = ParquetRecordBatchStreamSerializer()
-stream = SimpleValueStream(generate_data(), serializer=parquet_stream_serializer)
-```
-
-!!! warning
-
-    Unlike with `SimpleValue`, passing an explicit serializer to `SimpleValueStream` is
-    **highly recommended**. This is because determine what serializer to use involves
-    waiting for the first element of the stream to be generated. This means will you
-    will get a late error when a serializer cannot be found.
-
-As above, if you're storage registry does not have a
-[default storage](registries.md#default-storage) then declaring one here is required.
-
-```python
-import pyarrow as pa
-
-from lakery.builtin.models import SimpleValueStream
-from lakery.extra.os import FileStorage
-from lakery.extra.pyarrow import ParquetRecordBatchStreamSerializer
-
-
-async def generate_data():
-    for i in range(10):
-        batch = pa.RecordBatch.from_pydict({"count": [i]})
-        yield batch
-
-
-file_storage = FileStorage("temp", mkdir=True)
-parquet_stream_serializer = ParquetRecordBatchStreamSerializer()
-streamed_data = SimpleValueStream(
-    generate_data(),
-    serializer=parquet_stream_serializer,
-    storage=file_storage,
-)
-```
-
-## Custom Models
-
-To save more complicated objects you can define your own custom models by implementing
-the [`BaseStorageModel`][lakery.core.model.BaseStorageModel] interface. Lakery provides
-a number of integrations with existing frameworks and libraries to make this easier. For
-example:
-
-- [Dataclasses](../integrations/dataclasses.md)
-- [Pydantic](../integrations/pydantic.md)
-
-### Example Custom Model
-
-Consider the case of class that holds heterogeneous data from a scientific experiment:
-
-```python
-from datetime import datetime
-
-import numpy as np
-import pandas as pd
-import plotly.graph_objects as go
-
-
-class ExperimentResults:
-    """Results from a scientific experiment."""
-
-    def __init__(
-        self,
-        timestamp: datetime,
-        timeseries_data: pd.DataFrame,
-        camera_image: np.ndarray,
-        analysis: go.Figure,
-    ):
-        self.timestamp = timestamp
-        self.timeseries_data = timeseries_data
-        self.camera_image = camera_image
-        self.analysis = analysis
-```
-
-You'll then start to convert this into a model by first inheriting from
-`BaseStorageModel` and adding a `storage_model_config`:
-
-```python
-
-
-class ExperimentResults(Storable, class_id="abc123"):
-    """Results from a scientific experiment."""
-
+class MyStorable(Storable, class_id="abc123", unpacker=my_unpacker):
+    """A storable class that can be saved and loaded by Lakery."""
     ...
 ```
 
-You'll then need to the set of serializers that are required to encode each type of data
-in your model. In this case you could use:
+### Backwards Compatibility
+
+When you define a `Storable` class, much like defining a table in an ORM (e.g.
+SQLAlchemy) you are creating a contract for how data will be serialized and
+deserialized. This means that you must be careful when changing the structure of a
+`Storable` class after it has been used to save data.
+
+Ultimately whether a change is or isn't compatible is constrained by the `Unpacker`
+associated with the class so each `Storable` and `Unpacker` pairing/implementation must
+document what types of changes are compatible and which are not.
+
+In general, you should avoid:
+
+-   Removing fields from the class.
+-   Changing the type of fields (though converting or adding to a union type is
+    generally safe).
+-   Renaming fields if there is no way to provide an alias for the old name.
+
+If you must make a change that is not compatible with existing data, you should create a
+new `Storable` class with a new `class_id`. This will ensure that existing data remains
+accessible while allowing you to create new data with the updated.
+
+## Unpackers
+
+Unpackers define how to destructure a `Storable` class into its constituent parts as
+well as how to reconstitute it from those parts. Unpackers are typically specialized for
+a specific set of `Storable` subclasses that share a common framework. For example, all
+[Pydantic](../integrations/pydantic.md) classes use the same unpacker, which understand
+how to convert Pydantic models into a dictionary of fields and values.
+
+### Defining Unpackers
+
+To define an unpacker you need to first decide what types of `Storable` classes it
+should handle. Then you can implement the `Unpacker` interface, which requires you to
+provide the following:
+
+-   A `name` that uniquely and permanently identifies the unpacker.
+-   An `unpack_object` method that takes a `Storable` instance and returns a dictionary
+    of fields with their values as well as where and how to store them.
+-   A `repack_object` method that takes a `Storable` class and the aforementioned
+    dictionary, and returns a new instance of the `Storable` class.
+
+In the simplest case, this might look something like the following:
 
 ```python
-from lakery.extra.datetime import Iso8601Serializer
-from lakery.extra.numpy import NpySerializer
-from lakery.extra.pandas import ParquetDataFrameSerializer
-from lakery.extra.plotly import FigureSerializer
+from lakery import Unpacker, Storable, UnpackedValue
 
-iso8601_serializer = Iso8601Serializer()
-parquet_df_serializer = ParquetDataFrameSerializer()
-npy_serializer = NpySerializer()
-figure_serializer = FigureSerializer()
+
+class MyUnpacker(Unpacker):
+    name = "my-unpacker@v1"
+
+    def unpack_object(self, obj, registry):
+        return {k: UnpackedValue(value=v) for k, v in obj.__dict__.items()}
+
+    def repack_object(self, cls, contents, registry):
+        return cls(**{k: u["value"] for k, u in contents.items()})
 ```
 
-Next you'll then need to implement the `storage_model_dump` method. To do so you'll need
-to return a [`Content`][lakery.core.model.Content] dictionary for each field in your
-model given a [`RegistryCollection`](registries.md):
+Then in your `Storable` class you can use this unpacker:
 
 ```python
-from lakery.core.model import ModeledValueMap
+from lakery import Storable
 
 
-class ExperimentResults(BaseStorageModel, storage_model_config={"id": "abc123", "version": 1}):
-    """Results from a scientific experiment."""
-
+class MyStorable(Storable, class_id="abc123", unpacker=MyUnpacker()):
     ...
-
-    def storage_model_dump(self, registries: RegistryCollection) -> ModeledValueMap:
-        return {
-            "timestamp": {
-                "value": self.timestamp,
-                "serializer": iso8601_serializer,
-                "storage": None,
-            },
-            "timeseries_data": {
-                "value": self.timeseries_data,
-                "serializer": parquet_df_serializer,
-                "storage": None,
-            },
-            "camera_image": {
-                "value": self.camera_image,
-                "serializer": npy_serializer,
-                "storage": None,
-            },
-            "analysis": {
-                "value": self.analysis,
-                "serializer": figure_serializer,
-                "storage": None,
-            },
-        }
 ```
 
-And finally you'll need to implement the `storage_model_load` method which accepts the
-same `Content` dictionary as the `storage_model_dump` method in addition to the
-[model version](#storage-model-version) that saved the data and a
-[`RegistryCollection`](registries.md):
+All subclasses of `MyStorable` will now use the `MyUnpacker` to unpack and repack their
+data.
 
-```python
-from typing import Self
+### Unpacked Values
 
+When you unpack a `Storable` class, the values are returned as
+[`UnpackedValue`][lakery.core.storable.UnpackedValue] dicts. These values contain the
+following information:
 
-class ExperimentResults(BaseStorageModel, storage_model_config={"id": "abc123", "version": 1}):
-    """Results from a scientific experiment."""
+-   `value`: The actual value of the field.
+-   `serializer` (optional): The serializer to use when saving the value.
+-   `storage` (optional): The storage to use when saving the value.
 
-    ...
+If you do not specify a serializer. One will be inferred based on the type of the value.
+If you do not specify a storage, the default storage in the given
+[registry](./registries.md) will be used.
 
-    @classmethod
-    def storage_model_load(
-        cls,
-        content: ModeledValueMap,
-        version: int,
-        registries: RegistryCollection,
-    ) -> Self:
-        return cls(
-            timestamp=content["timestamp"]["value"],
-            timeseries_data=content["timeseries_data"]["value"],
-            camera_image=content["camera_image"]["value"],
-            analysis=content["analysis"]["value"],
-        )
-```
+### Unpacked Streams
 
-Putting this all together, you get:
+In addition to unpacked values, you can also unpack the fields of a `Storable` class
+into `UnpackedValueStream` dicts. This is useful when you can't or don't want to load
+large amounts of data into memory at once. An `UnpackedValueStream` contains the
+following information:
 
-```python
-from datetime import datetime
-from typing import Self
+-   `value_stream`: An async iterable that yields the values of the fields.
+-   `serializer` (recommended): The serializer to use when saving the values.
+-   `storage` (optional): The storage to use when saving the values.
 
-import numpy as np
-import pandas as pd
-import plotly.graph_objects as go
+In this case providing an explicit serializer is recommended because attempting to infer
+the appropriate serializer will raise a late error since the first value from the stream
+must be inspected. As before, if you do not specify a storage, the default storage in
+the [registry](./registries.md) will be used.
 
-from lakery.core import BaseStorageModel
-from lakery.core.model import ModeledValueMap
-from lakery.core.registries import RegistryCollection
-from lakery.extra.datetime import Iso8601Serializer
-from lakery.extra.numpy import NpySerializer
-from lakery.extra.pandas import ParquetDataFrameSerializer
-from lakery.extra.plotly import FigureSerializer
+Unpacked values and value streams may be mixed within the same unpacked dictionary,
+allowing you to unpack some fields into memory while streaming others.
 
-iso8601_serializer = Iso8601Serializer()
-parquet_df_serializer = ParquetDataFrameSerializer()
-npy_serializer = NpySerializer()
-figure_serializer = FigureSerializer()
+## Class IDs
 
-
-class ExperimentResults(BaseStorageModel, storage_model_config={"id": "abc123", "version": 1}):
-    """Results from a scientific experiment."""
-
-    def __init__(
-        self,
-        timestamp: datetime,
-        timeseries_data: pd.DataFrame,
-        camera_image: np.ndarray,
-        analysis: go.Figure,
-    ):
-        self.timestamp = timestamp
-        self.timeseries_data = timeseries_data
-        self.camera_image = camera_image
-        self.analysis = analysis
-
-    def storage_model_dump(self, registries: RegistryCollection) -> ModeledValueMap:
-        return {
-            "timestamp": {
-                "value": self.timestamp,
-                "serializer": iso8601_serializer,
-                "storage": None,
-            },
-            "timeseries_data": {
-                "value": self.timeseries_data,
-                "serializer": parquet_df_serializer,
-                "storage": None,
-            },
-            "camera_image": {
-                "value": self.camera_image,
-                "serializer": npy_serializer,
-                "storage": None,
-            },
-            "analysis": {
-                "value": self.analysis,
-                "serializer": figure_serializer,
-                "storage": None,
-            },
-        }
-
-    @classmethod
-    def storage_model_load(
-        cls,
-        content: ModeledValueMap,
-        version: int,
-        registries: RegistryCollection,
-    ) -> Self:
-        return cls(
-            timestamp=content["timestamp"]["value"],
-            timeseries_data=content["timeseries_data"]["value"],
-            camera_image=content["camera_image"]["value"],
-            analysis=content["analysis"]["value"],
-        )
-```
-
-## Storage Model Config
-
-Every model type must declare a `storage_model_config` when it's defined.
-
-```python
-from lakery.core.model import BaseStorageModel
-
-
-class MyModel(BaseStorageModel, storage_model_config={"id": "abc123", "version": 1}):
-    pass
-```
-
-### Storage Model ID
-
-The `id` within the config for a storage model uniquely identify it when saving and
-loading data. This is important because it's how Lakery knows which class to use when
-reconstituting data. That means you should **never copy or change this value** once it's
-been used to save data. On the other hand you are free to rename the class or move it to
-a different module without any issues since the `id`, rather than an "import path", is
-used to identify the model.
-
-#### Generating IDs
-
-Whenever you inherit from [`BaseStorageModel`][lakery.core.model.BaseStorageModel] you
-must declare a `storage_model_id` as part of the class definition. However, since these
-IDs should be randomly generated, when you first define your model you can use a
-placeholder value like `"..."`:
-
-```python
-from lakery.core.model import BaseStorageModel
-
-
-class MyModel(BaseStorageModel, storage_model_config={"id": "...", "version": 1}):
-    pass
-```
-
-Later, when you run this code, Lakery will issue a `UserWarning`:
-
-```txt
-Ignoring storage model config for '__main__.MyModel' - '...' is not a valid storage
-model ID. Expected 8-16 character hexadecimal string. Try adding '<generated-id>' to
-your class definition instead.
-```
-
-You can then use the `'<generated-id>'` value in place of `'...'` to make it unique.
+The `class_id` within the [config][lakery.core.storable.Storable.get_storable_config] of
+a `Storable` class uniquely identify it when saving and loading data. This is important
+because it's how Lakery knows which class to use when reconstituting data. That means
+you should **never copy or change this value** once it's been used to save production
+data. On the other hand you are free to rename the class or move it to a different
+module without any issues since the `class_id`, rather than an "import path", is what
+identifies it.
 
 !!! note
 
-    In the future, Lakery come with a linter that automatically generates unique storage model IDs
-    for you as you work.
+    You may omit a `class_id` if you are defining an abstract class that is not intended
+    to be saved or loaded directly.
 
-### Storage Model Version
+#### Generating IDs
 
-The `version` within the config for a storage model is saved with a model's data. Later,
-when that data is reconstituted, the version will be passed to the model's
-`storage_model_load` method. This allows the author of the model to handle any changes
-to the model definition that may have occurred since the data was saved. For example,
-you might have changed the name of a field.
-
-### Abstract Models
-
-If your class is "abstract" (i.e. direct instances of that class will never be saved)
-then you can declare the storage model config to be `None`:
+When defining a `Storable` class you plan to save and load data with you can declare a
+placeholder `class_id` value like `"..."`. This is a signal to Lakery that you intend to
+generate a unique ID later. Lakery will then issue a warning when you run the code,
+prompting you to replace the placeholder with a unique ID it suggests.
 
 ```python
-from lakery.core.model import BaseStorageModel
+from lakery import Storable
 
-
-class MyAbstractModel(BaseStorageModel, storage_model_config=None):
+class MyStorable(Storable, class_id="..."):
     pass
 ```
+
+This will generate a warning like:
+
+```txt
+MyStorable does not have a valid storable class ID. Got '...'. Consider using 'abc123'.
+```
+
+!!! note
+
+    In the future, Lakery will come with a linter that automatically generates unique
+    class IDs as you work.
+
+#### Class ID Format
+
+The `class_id` should be a unique, 8-32 character hexadecimal string. Ultimately the
+`class_id` is normalized as a UUID so it can be used in a variety of contexts, such as
+URLs or database keys. This means that class ID's with less than 32 characters will be
+padded with zeroes until it is the standard 16 bytes long.
