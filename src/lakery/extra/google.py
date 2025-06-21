@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     from google.cloud.storage import Blob
     from google.cloud.storage import Bucket
 
-    from lakery._internal.utils import TagMap
+    from lakery.common.types import TagMap
 
 __all__ = (
     "BlobStorage",

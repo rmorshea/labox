@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
     from azure.storage.blob.aio import ContainerClient
 
-    from lakery._internal.utils import TagMap
+    from lakery.common.types import TagMap
 
 
 @parametrize_storage_assertions

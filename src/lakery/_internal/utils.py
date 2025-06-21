@@ -136,7 +136,7 @@ def not_implemented(f: F) -> F:
     """Return a method wrapper that raises NotImplementedError with a standard message."""
 
     @wraps(f)
-    def wrapper(obj: Any, *args: P.args, **kwargs: P.kwargs) -> T:
+    def wrapper(obj: Any, *args: Any, **kwargs: Any) -> Any:
         msg = f"{obj.__class__.__name__}.{f.__name__}"
         raise NotImplementedError(msg)
 

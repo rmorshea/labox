@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     from types_boto3_s3.type_defs import CreateMultipartUploadRequestRequestTypeDef
     from types_boto3_s3.type_defs import PutObjectRequestRequestTypeDef
 
-    from lakery._internal.utils import TagMap
+    from lakery.common.types import TagMap
 
 __all__ = ("S3Storage",)
 
