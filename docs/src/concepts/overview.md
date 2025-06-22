@@ -15,23 +15,18 @@ flowchart LR
     S1 -- SerializedData --> R1[Storage]
     S2 -- SerializedData --> R2[Storage]
     S3 --> R3[...]
-    R1 -- bytes --> C1[(Remote Backend)]
-    R2 -- bytes --> C2[(Remote Backend)]
-    R3 --> C3:::hidden
-    classDef hidden display: none;
 </pre>
 
-To faciliate loading a `Storable`, Lakery preserves metadata about the components (i.e.
-unpacker, serializers and storages) that were used when it was originally saved. That
-metadata lives in several [PostgreSQL database](./database.md) tables. Then, in
-conjunction with that metadata, Lakery is able to access those components via a
-[registry](./registries.md).
+To faciliate loading a `Storable`, Lakery uses a [PostgreSQL database](./database.md) to
+preserve metadata about the components that were used when it was originally saved (i.e.
+the unpackers, serializers and storages). Lakery then uses that metadata to pick the
+component instance out of a [registry](./registries.md) when needed.
 
 In the diagram below, the necessary input to load a `Storable` is a
-[`ManifestRecord`](./database.md#manifest-record) which can be used to query the Lakery
-database for associated [`ContentRecord`](./database.md#content-record)s. Each
-[`ContentRecord`](./database.md#content-record) contains the serialized data for one of
-the constituent parts of the `Storable` object.
+[`ManifestRecord`](./database.md#manifest-records) which can be used to query the Lakery
+database for associated [`ContentRecord`](./database.md#content-records)s. Each
+`ContentRecord` is a pointer to a piece of data that was part of the original
+`Storable`.
 
 <pre class="mermaid">
 flowchart LR
