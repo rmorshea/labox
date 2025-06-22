@@ -51,7 +51,6 @@ Establish a [registry](./concepts/registries.md) with the
 
 ```python
 from lakery.core import Registry
-from lakery.extra.json import JsonSerializer
 from lakery.extra.os import FileStorage
 
 registry = Registry(
@@ -85,7 +84,7 @@ from lakery.core import save_one
 
 
 async def save(obj):
-    async with new_async_session() as session
+    async with new_async_session() as session:
         return save_one(obj, session=session, registry=registry)
 
 

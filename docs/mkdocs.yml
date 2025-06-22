@@ -6,23 +6,20 @@ docs_dir: src
 repo_url: https://github.com/rmorshea/lakery
 nav:
     - Home: index.md
-    - Usage:
-          - Overview: usage/index.md
-          - Patterns: usage/patterns.md
+    - Usage: usage.md
     - Concepts:
-          - Overview: concepts/index.md
+          - Overview: concepts/overview.md
           - Storables: concepts/storables.md
+          - Unpackers: concepts/unpackers.md
           - Serializers: concepts/serializers.md
           - Storages: concepts/storages.md
           - Registry: concepts/registry.md
-          - Database: concepts/schema.md
+          - Database: concepts/database.md
     - Integrations:
-          - Overview: integrations/built-ins/index.md
           - Built-in:
-                - CSV: integrations/built-ins/csv.md
-                - Datetime: integrations/built-ins/datetime.md
-                - JSON: integrations/built-ins/json.md
-                - OS: integrations/built-ins/os.md
+                - Serializers: integrations/built-ins/serializers.md
+                - Storables: integrations/built-ins/storables.md
+                - Storages: integrations/built-ins/storages.md
           - Third Party:
                 - AWS: integrations/3rd-party/aws.md
                 - Azure: integrations/3rd-party/azure.md
@@ -49,6 +46,7 @@ theme:
         - content.code.annotate
         - navigation.tabs
         - navigation.sections
+        - navigation.instant
     palette:
         # Palette toggle for automatic mode
         - media: (prefers-color-scheme)
@@ -121,14 +119,9 @@ markdown_extensions:
     - pymdownx.inlinehilite
     - pymdownx.snippets:
           check_paths: true
-    - pymdownx.superfences:
-          custom_fences:
-              - name: mermaid
-                class: mermaid
-                format: !!python/name:pymdownx.superfences.fence_code_format
+    - pymdownx.superfences
     - admonition
     - pymdownx.details
-    - pymdownx.superfences
     - pymdownx.emoji:
           emoji_index: !!python/name:material.extensions.emoji.twemoji
           emoji_generator: !!python/name:material.extensions.emoji.to_svg

@@ -15,12 +15,11 @@ You can add [storables](./storages.md) to a registry by passing a list of them t
 from lakery import Registry
 from lakery import StorableValue
 
-
 reg = Registry(storables=[StorableValue])
 ```
 
-When you add a storable its associated [unpacker](./storables.md#unpackers) is also
-added to the registry.
+When you add a storable its associated [unpacker](./unpackers.md) is also added to the
+registry.
 
 ## Adding Unpackers
 
@@ -28,7 +27,8 @@ If an unpacker is not already registered for a storable, you can add it to the r
 by passing it to the [`Registry`][lakery.core.registry.Registry] constructor:
 
 ```python
-from lakery import Registry, Unpacker
+from lakery import Registry
+from lakery import Unpacker
 
 my_unpacker: Unpacker
 reg = Registry(unpackers=[my_unpacker])
@@ -47,11 +47,10 @@ through the `serializers` argument:
 
 ```python
 from lakery import Registry
-from lakery.builtin import iso8601_serializer, json_serializer
+from lakery.builtin import iso8601_serializer
+from lakery.builtin import json_serializer
 
-reg = Registry(
-    serializers=[iso8601_serializer, json_serializer]
-)
+reg = Registry(serializers=[iso8601_serializer, json_serializer])
 ```
 
 If no serializer is specified when saving a value, Lakery will infer the appropriate one
@@ -133,7 +132,7 @@ reg3: Registry
 reg4 = Registry(
     registries=[reg1, reg2, reg3],
     serializers=[my_serializer],  # Optional additional serializers
-    storables=[my_storable],      # Optional additional storables
+    storables=[my_storable],  # Optional additional storables
 )
 ```
 
@@ -148,6 +147,7 @@ def infer_serializer(cls: type, serializers: dict[type, Serializer]) -> Serializ
         if base in serializers:
             return serializers[base]
     raise ValueError
+
 
 def infer_unpacker(cls: type, unpackers: dict[type, Unpacker]) -> Unpacker:
     for base in cls.__mro__:
@@ -174,6 +174,6 @@ The order of precedence amongst modules, registries, and explicitly provided key
 arguments is, in increasing order of priority:
 
 1. Modules loaded from the `modules` argument.
-2. Registries merged from the `registries` argument.
-3. Explicitly provided serializers, storages, unpackers, or storables in the
+1. Registries merged from the `registries` argument.
+1. Explicitly provided serializers, storages, unpackers, or storables in the
    `serializers`, `storages`, `unpackers`, or `storables` arguments.

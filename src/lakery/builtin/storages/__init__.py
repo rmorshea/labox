@@ -1,9 +1,9 @@
+from lakery.builtin.storages.database import DatabaseStorage
+from lakery.builtin.storages.database import database_storage
 from lakery.builtin.storages.file import FileStorage
-from lakery.builtin.storages.native import NativeStorage
-from lakery.builtin.storages.native import native_storage
 
 __all__ = (
+    "DatabaseStorage",
     "FileStorage",
-    "NativeStorage",
-    "native_storage",
+    "database_storage",
 )

@@ -5,20 +5,26 @@ from lakery.common.types import TagMap
 from lakery.core.storage import Digest
 from lakery.core.storage import Storage
 
-__all__ = ("NativeStorage", "native_storage")
+__all__ = ("DatabaseStorage", "database_storage")
 
 WARN_SIZE_DEFAULT = 10 * 1024  # 10 KB
 ERROR_SIZE_DEFAULT = 100 * 1024  # 100 KB
 JSON_CONTENT_TYPE_PATTERN = re.compile(r"^application/.*\+?json$")
 
 
-class NativeStorage(Storage):
+class DatabaseStorage(Storage):
     """Stores data directly in the database instead of remotely.
 
-    Generally limited to small data sizes.
+    Is constrained to:
+
+    - JSON content types (e.g., `application/json`, `application/vnd.api+json`)
+    - No data streams, only single JSON strings
+    - A maximum size. By default it warns at 10 KB and raises an error at 100 KB.
+
+    Is most useful in cases where
     """
 
-    name = "lakery.native@v1"
+    name = "lakery.json_storage_data@v1"
 
     def __init__(self, *, warn_size: int = WARN_SIZE_DEFAULT, error_size: int = ERROR_SIZE_DEFAULT):
         super().__init__()
@@ -75,5 +81,5 @@ class NativeStorage(Storage):
         return data
 
 
-native_storage = NativeStorage()
-"""NativeStorage with default settings."""
+database_storage = DatabaseStorage()
+"""A singleton instance of DatabaseStorage for convenience."""
