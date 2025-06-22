@@ -7,10 +7,18 @@ back into values or streams of values.
 ## Basic Serializers
 
 Basic serializers are used to convert singular values to and from binary data. To define
-one you must inherit from the [`Serializer`][lakery.core.serializer.Serializer] class,
-define a [globally unique name](#serializer-names), as well as implement
-`deserialize_data` and `serialize_data` methods. The code below shows a serializer that
-turns UTF-8 strings into binary data and back.
+one you must inherit from the [`Serializer`][lakery.core.serializer.Serializer] class
+and provide the following:
+
+-   `name` - a string that uniquely and permanently identifies the serializer.
+-   `types` - a tuple of types that this serializer can handle. This is used for
+    serializer type inference.
+-   `serialize_data` - a method that takes a value and returns a dictionary of
+    serialized data.
+-   `deserialize_data` - a method that takes serialized data and returns the original
+    value.
+
+The code below shows a serializer that turns UTF-8 strings into binary data and back.
 
 ```python
 from lakery.core.serializer import SerializedData
@@ -38,13 +46,21 @@ class Utf8Serializer(Serializer[str]):
 
 Stream serializers are used to asynchronsouly convert streams of values to and from
 streams of binary data. To define one you must inherit from the
-[`StreamSerializer`][lakery.core.serializer.StreamSerializer] class. you must implement
-the `serialize_data_stream` and `deserialize_data_stream` methods. To demonstrate what
-this looks like the code samples below will walk you though defining a stream serializer
-that converts a stream of UTF-8 strings into a stream of binary data and back. It's
-usually easiest to start with the `serialize_data_stream` method, which takes an
-[`AsyncIterator`][collections.abc.AsyncIterator] of strings and returns a
-[`SerializedDataStream`][lakery.core.serializer.SerializedDataStream].
+[`StreamSerializer`][lakery.core.serializer.StreamSerializer] class and provide the
+following:
+
+-   `name` - a string that uniquely and permanently identifies the serializer.
+-   `types` - a tuple of types that this serializer can handle. This is used for
+    serializer type inference.
+-   `serialize_data_stream` - a method that takes an
+    [`AsyncIterator`][collections.abc.AsyncIterator] of values and returns a
+    [`SerializedDataStream`][lakery.core.serializer.SerializedDataStream].
+-   `deserialize_data_stream` - a method that takes a
+    [`SerializedDataStream`][lakery.core.serializer.SerializedDataStream] and returns an
+    [`AsyncIterator`][collections.abc.AsyncIterator] of values.
+
+It's usually easiest to start with the `serialize_data_stream` method. The code snippets
+below show a stream serializer that turns UTF-8 strings into a stream of bytes and back.
 
 ```python
 from collections.abc import AsyncGenerator

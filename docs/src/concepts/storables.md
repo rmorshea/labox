@@ -11,9 +11,10 @@ implementations:
 To define a storable class you need to inherit from
 [`Storable`][lakery.core.storable.Storable] and provide
 
--   A [`class_id`](#class-id) that uniquely and permanently identifies the class.
--   An [`Unpacker`](./unpackers.md) that defines how to destructure the class into its
-    constituent parts.
+-   [`class_id`](#class-id) - a string that uniquely and permanently identifies the
+    class.
+-   [`Unpacker`](./unpackers.md) - a class that defines how to destructure the class
+    into its constituent parts.
 
 ```python
 from lakery import Storable

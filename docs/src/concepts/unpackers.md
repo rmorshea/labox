@@ -13,10 +13,10 @@ To define an unpacker you need to first decide what types of `Storable` classes 
 should handle. Then you can implement the `Unpacker` interface, which requires you to
 provide the following:
 
--   A `name` that uniquely and permanently identifies the unpacker.
--   An `unpack_object` method that takes a `Storable` instance and returns a dictionary
+-   `name` - a string that uniquely and permanently identifies the unpacker.
+-   `unpack_object` - a method that takes a `Storable` instance and returns a dictionary
     of fields with their values as well as where and how to store them.
--   A `repack_object` method that takes a `Storable` class and the aforementioned
+-   `repack_object` - a method that takes a `Storable` class and the aforementioned
     dictionary, and returns a new instance of the `Storable` class.
 
 In the simplest case, this might look something like the following:
