@@ -91,10 +91,16 @@ class FileStorage(Storage):
 In the example above, the `write_data` and `write_data_stream` methods accept a`tags`
 argument. This is a dictionary of tags that have been added to the content being stored.
 This is an amalgamation tags [provided by the user](../usage.md#adding-tags) and tags
-from the [`UnpackedValue`][lakery.core.storable.UnpackedValue]s or
-[`UnpackedValueStream`][lakery.core.storable.UnpackedValueStream]s that were produced by
-an [`Unpacker`](./unpackers.md) when destructuring the original
-[`Storable`](./storable.md).
+from the [`UnpackedValue`](./unpackers.md#unpacked-values)s or
+[`UnpackedValueStream`](./unpackers.md#unpacked-streams)s that were produced when
+destructuring the original `Storable`. Put another way, this a mapping merged from the
+[`ManifestRecord.tags`](./database.md#manifest-records) and
+[`ContentRecord.tags`](./database.md#content-records) where the `ManifestRecord`'s tags
+have priority:
+
+```python
+{**content_record.tags, **manifest_record.tags}
+```
 
 ## Storage Data
 

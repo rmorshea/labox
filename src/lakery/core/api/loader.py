@@ -30,6 +30,8 @@ if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
     from lakery.core.registry import Registry
+    from lakery.core.unpacker import UnpackedValue
+    from lakery.core.unpacker import UnpackedValueStream
 
 
 M = TypeVar("M")
@@ -157,7 +159,7 @@ async def load_from_content_record(
     record: ContentRecord,
     *,
     registry: Registry,
-) -> Any:
+) -> UnpackedValue | UnpackedValueStream:
     """Load the given content from the given record."""
     storage = registry.get_storage(record.storage_name)
     storage_data = storage.deserialize_storage_data(record.storage_data)
@@ -171,7 +173,12 @@ async def load_from_content_record(
                     "data": await storage.read_data(storage_data),
                 }
             )
-            return {"value": value, "serializer": serializer, "storage": storage}
+            return {
+                "value": value,
+                "serializer": serializer,
+                "storage": storage,
+                "tags": record.tags,
+            }
         case SerializerTypeEnum.StreamSerializer:
             serializer = registry.get_stream_serializer(record.serializer_name)
             if not isinstance(serializer, StreamSerializer):
@@ -188,6 +195,7 @@ async def load_from_content_record(
                 "value_stream": stream,
                 "serializer": serializer,
                 "storage": storage,
+                "tags": record.tags,
             }
         case _:  # nocov
             msg = f"Unknown serializer type: {record.serializer_type}"
