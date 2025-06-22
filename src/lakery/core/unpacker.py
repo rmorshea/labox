@@ -19,6 +19,7 @@ from lakery.core.storable import Storable
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable
 
+    from lakery.common.types import TagMap
     from lakery.core.registry import Registry
     from lakery.core.serializer import Serializer
     from lakery.core.serializer import StreamSerializer
@@ -63,6 +64,8 @@ class UnpackedValue(Generic[T], TypedDict, total=False):
     """The serializer to apply to the value."""
     storage: Storage | None
     """The storage to send the serialized value to."""
+    tags: TagMap | None
+    """Tags to apply to the stored value."""
 
 
 class UnpackedValueStream(Generic[T], TypedDict, total=False):
@@ -74,6 +77,8 @@ class UnpackedValueStream(Generic[T], TypedDict, total=False):
     """The serializer to apply to the stream."""
     storage: Storage | None
     """The storage to send the serialized stream to."""
+    tags: TagMap | None
+    """Tags to apply to the stored value."""
 
 
 AnyUnpackedValue = UnpackedValue[Any] | UnpackedValueStream[Any]

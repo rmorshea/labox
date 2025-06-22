@@ -42,6 +42,7 @@ if TYPE_CHECKING:
     from lakery.core.storage import GetStreamDigest
     from lakery.core.storage import Storage
     from lakery.core.storage import StreamDigest
+    from lakery.core.unpacker import AnyUnpackedValue
 
 
 P = ParamSpec("P")
@@ -138,44 +139,47 @@ async def _save_object(
     cls = obj.__class__
     cfg = cls.get_storable_config()
     unpacker = cfg.unpacker or registry.infer_unpacker(cls)
-    obj_contents = unpacker.unpack_object(obj, registry)
+    obj_contents: Mapping[str, AnyUnpackedValue] = unpacker.unpack_object(obj, registry)
 
     manifest_id = uuid4()
     data_record_futures: list[FutureResult[ContentRecord]] = []
     async with create_task_group() as tg:
         for content_key, content in obj_contents.items():
             _LOG.debug("Saving %s in manifest %s", content_key, manifest_id.hex)
-            if "value" in content:
-                data_record_futures.append(
-                    start_future(
-                        tg,
-                        _save_storage_value,
-                        tags,
-                        manifest_id,
-                        content_key,
-                        content["value"],
-                        content.get("serializer"),
-                        content.get("storage"),
-                        registry,
+            match content:
+                case {"value": content_value}:
+                    data_record_futures.append(
+                        start_future(
+                            tg,
+                            _save_storage_value,
+                            tags,
+                            manifest_id,
+                            content_key,
+                            content_value,
+                            content.get("serializer"),
+                            content.get("storage"),
+                            content.get("tags") or {},
+                            registry,
+                        )
                     )
-                )
-            elif "value_stream" in content:
-                data_record_futures.append(
-                    start_future(
-                        tg,
-                        _save_storage_stream,
-                        tags,
-                        manifest_id,
-                        content_key,
-                        content["value_stream"],
-                        content.get("serializer"),
-                        content.get("storage"),
-                        registry,
+                case {"value_stream": content_value_stream}:
+                    data_record_futures.append(
+                        start_future(
+                            tg,
+                            _save_storage_stream,
+                            tags,
+                            manifest_id,
+                            content_key,
+                            content_value_stream,
+                            content.get("serializer"),
+                            content.get("storage"),
+                            content.get("tags") or {},
+                            registry,
+                        )
                     )
-                )
-            else:
-                msg = f"Invalid manifest {content_key!r} in {obj!r} - {content}"
-                raise AssertionError(msg)
+                case _:
+                    msg = f"Invalid manifest {content_key!r} in {obj!r} - {content}"
+                    raise AssertionError(msg)
 
     contents: list[ContentRecord] = []
     for k, f in zip(obj_contents, data_record_futures, strict=False):
@@ -204,13 +208,15 @@ async def _save_storage_value(
     value: Any,
     serializer: Serializer | None,
     storage: Storage | None,
+    content_tags: TagMap,
     registry: Registry,
 ) -> ContentRecord:
     storage = storage or registry.get_default_storage()
     serializer = serializer or registry.infer_serializer(type(value))
     content = serializer.serialize_data(value)
     digest = _make_value_dump_digest(content)
-    storage_data = await storage.write_data(content["data"], digest, tags)
+    merged_tags = {**content_tags, **tags}  # content tags have lower priority
+    storage_data = await storage.write_data(content["data"], digest, merged_tags)
     return ContentRecord(
         content_encoding=content["content_encoding"],
         content_hash_algorithm=digest["content_hash_algorithm"],
@@ -223,6 +229,7 @@ async def _save_storage_value(
         serializer_type=SerializerTypeEnum.Serializer,
         storage_data=storage.serialize_storage_data(storage_data),
         storage_name=storage.name,
+        tags=content_tags,
     )
 
 
@@ -233,6 +240,7 @@ async def _save_storage_stream(
     stream: AsyncIterable[Any],
     serializer: StreamSerializer | None,
     storage: Storage | None,
+    content_tags: TagMap,
     registry: Registry,
 ) -> ContentRecord:
     storage = storage or registry.get_default_storage()
@@ -248,7 +256,8 @@ async def _save_storage_stream(
 
         content = serializer.serialize_data_stream(stream)
         byte_stream, get_digest = _wrap_stream_dump(content)
-        storage_data = await storage.write_data_stream(byte_stream, get_digest, tags)
+        merged_tags = {**content_tags, **tags}  # content tags have lower priority
+        storage_data = await storage.write_data_stream(byte_stream, get_digest, merged_tags)
         try:
             digest = get_digest()
         except ValueError:
@@ -266,6 +275,7 @@ async def _save_storage_stream(
             serializer_type=SerializerTypeEnum.StreamSerializer,
             storage_data=storage.serialize_storage_data(storage_data),
             storage_name=storage.name,
+            tags=content_tags,
         )
     raise AssertionError  # nocov
 

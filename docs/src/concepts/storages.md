@@ -86,6 +86,16 @@ class FileStorage(Storage):
                 yield chunk
 ```
 
+## Storage Tags
+
+In the example above, the `write_data` and `write_data_stream` methods accept a`tags`
+argument. This is a dictionary of tags that have been added to the content being stored.
+This is an amalgamation tags [provided by the user](../usage.md#adding-tags) and tags
+from the [`UnpackedValue`][lakery.core.storable.UnpackedValue]s or
+[`UnpackedValueStream`][lakery.core.storable.UnpackedValueStream]s that were produced by
+an [`Unpacker`](./unpackers.md) when destructuring the original
+[`Storable`](./storable.md).
+
 ## Storage Data
 
 When a storage saves data via its `write_data` and `write_data_stream` methods,

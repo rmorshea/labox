@@ -111,7 +111,7 @@ class ManifestRecord(_StrMixin, BaseRecord, kw_only=True):
     id: Mapped[UUID] = mapped_column(default_factory=uuid4, primary_key=True)
     """The ID of the manifest record."""
     tags: Mapped[TagMap | None] = mapped_column(JSON_OR_JSONB)
-    """User defined tags associated with the stored object."""
+    """User defined tags associated with the object."""
     class_id: Mapped[UUID] = mapped_column()
     """An ID that uniquely identifies the type that was stored."""
     unpacker_name: Mapped[str] = mapped_column()
@@ -119,7 +119,7 @@ class ManifestRecord(_StrMixin, BaseRecord, kw_only=True):
     created_at: Mapped[DateTimeTZ] = mapped_column(default=func.now())
     """The timestamp when the manifest was created."""
     contents: Mapped[Sequence[ContentRecord]] = relationship(default=(), collection_class=list)
-    """The contents of the stored object."""
+    """The contents of the object."""
 
 
 class SerializerTypeEnum(IntEnum):
@@ -162,6 +162,8 @@ class ContentRecord(_StrMixin, BaseRecord, kw_only=True):
     """The information needed to load data from the storage."""
     created_at: Mapped[DateTimeTZ] = mapped_column(default=func.now())
     """The timestamp when the content was created."""
+    tags: Mapped[TagMap | None] = mapped_column(JSON_OR_JSONB)
+    """User defined tags associated with the content."""
 
 
 UniqueConstraint(

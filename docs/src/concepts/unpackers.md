@@ -57,10 +57,18 @@ following information:
 -   `value`: The actual value of the field.
 -   `serializer` (optional): The serializer to use when saving the value.
 -   `storage` (optional): The storage to use when saving the value.
+-   `tags` (optional): A dictionary of tags to associate with the value.
 
 If you do not specify a serializer. One will be inferred based on the type of the value.
 If you do not specify a storage, the default storage in the given
 [registry](./registries.md) will be used.
+
+Tags are optional. They are included in the
+[`ContentRecord`](./database.md#content-records) and are
+[sent to the storage](./storables.md#storage-tags).
+
+Unpacked values and value streams may be mixed within the same unpacked dictionary,
+allowing you to unpack some fields into memory while streaming others.
 
 ## Unpacked Streams
 
@@ -72,11 +80,16 @@ following information:
 -   `value_stream`: An async iterable that yields the values of the fields.
 -   `serializer` (recommended): The serializer to use when saving the values.
 -   `storage` (optional): The storage to use when saving the values.
+-   `tags` (optional): A dictionary of tags to associate with the value stream.
 
 In this case providing an explicit serializer is recommended because attempting to infer
 the appropriate serializer will raise a late error since the first value from the stream
 must be inspected. As before, if you do not specify a storage, the default storage in
 the [registry](./registries.md) will be used.
+
+Tags are optional. They are included in the
+[`ContentRecord`](./database.md#content-records) and are
+[sent to the storage](./storables.md#storage-tags).
 
 Unpacked values and value streams may be mixed within the same unpacked dictionary,
 allowing you to unpack some fields into memory while streaming others.
