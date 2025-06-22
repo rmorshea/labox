@@ -88,10 +88,11 @@ class FileStorage(Storage):
 
 ## Storage Data
 
-When a storage saves data it returns information that is used to retrieve it later. This
-information is called "storage data". In the example above, the `write_data` and
-`write_data_stream` methods return a string that is is part of the file path where the
-data was stored. More generally these methods may return anything which is JSON
+When a storage saves data via its `write_data` and `write_data_stream` methods,
+information that is used to retrieve it later is returned. This information is called
+"storage data" and is distinct from the data which is being stored remotely. In the
+example above, the storage data is a string that forms part of a file path where the
+data was put. More generally these methods may return anything which is JSON
 serializable, such as a dictionary. You may customize how this data is serialized and
 deserialized by overwriting the `serialize_storage_data` and `deserialize_storage_data`
 methods of the [`Storage`][lakery.core.storage.Storage] class.
