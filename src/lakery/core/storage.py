@@ -3,15 +3,13 @@ from __future__ import annotations
 import abc
 import json
 from typing import TYPE_CHECKING
-from typing import ClassVar
 from typing import Generic
-from typing import LiteralString
 from typing import Protocol
 from typing import TypedDict
 from typing import TypeVar
 
+from lakery._internal.component import Component
 from lakery._internal.utils import not_implemented
-from lakery._internal.utils import validate_versioned_class_name
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
@@ -23,14 +21,8 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 
 
-class Storage(Generic[T], abc.ABC):
+class Storage(Generic[T], Component):
     """A protocol for storing and retrieving data."""
-
-    name: ClassVar[LiteralString]
-    """The name of the storage."""
-
-    def __init_subclass__(cls) -> None:
-        validate_versioned_class_name(cls)
 
     @abc.abstractmethod
     @not_implemented
@@ -75,9 +67,6 @@ class Storage(Generic[T], abc.ABC):
     def deserialize_storage_data(self, data: str) -> T:
         """Load the storage information from a JSON string."""
         return json.loads(data)
-
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.name!r})"
 
 
 class Digest(TypedDict):

@@ -6,7 +6,7 @@ steps to convert the object into a format suitable for storage. This process inv
 [serializing](./serializers.md) those parts, and then storing the serialized data in a
 backend [storage](./storages.md) system.
 
-<pre class="mermaid">
+<pre class="mermaid" style="min-width: 100%;">
 flowchart LR
     START:::hidden -- Storable Object --> U[Unpacker]
     U -- UnpackedValue --> S1[Serializer]

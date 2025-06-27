@@ -17,12 +17,13 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterable
     from collections.abc import Mapping
 
+    from lakery.common.types import TagMap
     from lakery.core.registry import Registry
     from lakery.core.serializer import Serializer
     from lakery.core.serializer import StreamSerializer
     from lakery.core.storage import Storage
 
-T = TypeVar("T")
+T = TypeVar("T", default=Any)
 
 __all__ = (
     "StorableStream",
@@ -64,6 +65,8 @@ class StorableValue(Storable, Generic[T], class_id="5a044e9f", unpacker=_SimpleU
     """The serializer to use for the value."""
     storage: Storage | None = field(default=None, compare=False)
     """The storage to use for the value."""
+    tags: TagMap | None = field(default=None, compare=False)
+    """Tags associated with the value, used for metadata or categorization."""
 
 
 @dataclass(frozen=True)
@@ -79,3 +82,5 @@ class StorableStream(Storable, Generic[T], class_id="31198cfb", unpacker=_Simple
     """The serializer to use for the stream."""
     storage: Storage | None = field(default=None, compare=False)
     """The storage to use for the stream."""
+    tags: TagMap | None = field(default=None, compare=False)
+    """Tags associated with the stream, used for metadata or categorization."""

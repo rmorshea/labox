@@ -76,7 +76,7 @@ class ArrowTableSerializer(_ArrowTableBase, Serializer[pa.Table]):
 class ArrowRecordBatchStreamSerializer(_ArrowTableBase, StreamSerializer[pa.RecordBatch]):
     """Serialize a stream of PyArrow record batches to the arrow stream format."""
 
-    name = "lakery.arrow.record_batch.stream"
+    name = "lakery.arrow.record_batch.stream@v1"
     version = 1
     types = (pa.RecordBatch,)
 
@@ -181,7 +181,7 @@ class ParquetTableSerializer(Serializer[pa.Table]):
 class ParquetRecordBatchStreamSerializer(StreamSerializer[pa.RecordBatch]):
     """Serialize a stream of PyArrow record batches to the parquet file format."""
 
-    name = "lakery.arrow.parquet.record_batch.stream"
+    name = "lakery.arrow.parquet.record_batch.stream@v1"
     version = 1
     types = (pa.RecordBatch,)
     content_type = "application/vnd.apache.parquet"

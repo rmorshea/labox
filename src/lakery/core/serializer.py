@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import abc
 from typing import TYPE_CHECKING
-from typing import ClassVar
+from typing import Any
 from typing import Generic
-from typing import LiteralString
 from typing import TypedDict
 from typing import TypeVar
 
 from typing_extensions import AsyncGenerator
 
+from lakery._internal.component import Component
 from lakery._internal.utils import not_implemented
 from lakery._internal.utils import validate_versioned_class_name
 
@@ -17,14 +17,12 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterable
 
 
-T = TypeVar("T")
+T = TypeVar("T", default=Any)
 
 
-class Serializer(Generic[T]):
+class Serializer(Generic[T], Component):
     """A protocol for serializing/deserializing values."""
 
-    name: ClassVar[LiteralString]
-    """The name of the serializer."""
     types: tuple[type[T], ...] = ()
     """The types that the serializer can handle."""
 
@@ -43,15 +41,10 @@ class Serializer(Generic[T]):
         """Deserialize the given value."""
         ...
 
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.name!r})"
 
-
-class StreamSerializer(Generic[T]):
+class StreamSerializer(Generic[T], Component):
     """A protocol for serializing/deserializing streams of values."""
 
-    name: LiteralString
-    """The name of the serializer."""
     types: tuple[type[T], ...] = ()
     """The types that the serializer can handle."""
 

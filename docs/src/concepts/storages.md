@@ -10,19 +10,21 @@ class.
 To define a storage you need to implement the [`Storage`][lakery.core.storage.Storage]
 interface with the following:
 
--   `name` - a string that uniquely and permanently identifies the storage.
--   `write_data` - a method that saves a single blob of data to the storage.
--   `read_data` - a method that reads a single blob of data from the storage.
--   `write_data_stream` - a method that saves a stream of data to the storage.
--   `read_data_stream` - a method that reads a stream of data from the storage.
+- `name` - a string that uniquely and permanently identifies the storage.
+- `write_data` - a method that saves a single blob of data to the storage.
+- `read_data` - a method that reads a single blob of data from the storage.
+- `write_data_stream` - a method that saves a stream of data to the storage.
+- `read_data_stream` - a method that reads a stream of data from the storage.
 
 The code snippets below show a storage that saves data to files. You can start by
 implementing the `write_data` and `read_data` methods:
 
 ```python
 from pathlib import Path
-import uuid
-from lakery import Storage, SerializedData, SerializedDataStream, GetStreamDigest, Digest, TagMap, GetStreamDigest
+
+from lakery import Digest
+from lakery import Storage
+from lakery import TagMap
 
 
 class FileStorage(Storage):
@@ -32,12 +34,7 @@ class FileStorage(Storage):
         self._root = root
         self._read_chunk_size = read_chunk_size
 
-    async def write_data(
-        self,
-        data: bytes,
-        digest: Digest,
-        tags: TagMap
-    ) -> str:
+    async def write_data(self, data: bytes, digest: Digest, tags: TagMap) -> str:
         key = digest["content_hash"]
         with (self._root / key).open("wb") as f:
             f.write(data)
@@ -55,23 +52,21 @@ written to a temporary file first, and then the final `content_hash` can be comp
 the file renamed to the final key.
 
 ```python
+from collections.abc import AsyncGenerator
+from collections.abc import AsyncIterator
 from tempfile import NamedTemporaryFile
-from typing import AsyncIterator, AsyncGenerator
 
 
 class FileStorage(Storage):
-
     ...
 
-
     async def write_data_stream(
+        self,
         stream: AsyncIterator[bytes],
         get_digest: GetStreamDigest,
         tags: TagMap,
     ) -> str:
-        with NamedTemporaryFile(
-            dir=self._root
-        ) as temp_file:
+        with NamedTemporaryFile(dir=self._root) as temp_file:
             async for chunk in stream:
                 temp_file.write(chunk)
             temp_file.flush()

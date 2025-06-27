@@ -4,16 +4,14 @@ import abc
 from collections.abc import Mapping
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import ClassVar
 from typing import Generic
-from typing import LiteralString
 from typing import Required
 
 from sqlalchemy.util.typing import TypedDict
 from typing_extensions import TypeVar
 
+from lakery._internal.component import Component
 from lakery._internal.utils import not_implemented
-from lakery._internal.utils import validate_versioned_class_name
 from lakery.core.storable import Storable
 
 if TYPE_CHECKING:
@@ -31,16 +29,11 @@ T = TypeVar("T", bound=Any, default=Any)
 D = TypeVar("D", bound=Mapping[str, Any], default=Mapping[str, Any])
 
 
-class Unpacker(abc.ABC, Generic[S, D]):
+class Unpacker(Generic[S, D], Component):
     """A base for classes that decompose storable objects into their constituent parts."""
 
-    name: ClassVar[LiteralString]
-    """The name of the packer."""
     types: tuple[type[S], ...] = ()
     """The types of objects that this packer can handle."""
-
-    def __init_subclass__(cls) -> None:
-        validate_versioned_class_name(cls)
 
     @abc.abstractmethod
     @not_implemented
