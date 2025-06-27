@@ -10,8 +10,8 @@ from typing import Required
 from sqlalchemy.util.typing import TypedDict
 from typing_extensions import TypeVar
 
-from lakery._internal.component import Component
-from lakery._internal.utils import not_implemented
+from lakery._internal._component import Component
+from lakery._internal._utils import not_implemented
 from lakery.core.storable import Storable
 
 if TYPE_CHECKING:

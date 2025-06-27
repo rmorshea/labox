@@ -16,8 +16,8 @@ from uuid import uuid4
 from anyio import create_task_group
 from anysync import contextmanager
 
-from lakery._internal.anyio import FutureResult
-from lakery._internal.anyio import start_future
+from lakery._internal._anyio import FutureResult
+from lakery._internal._anyio import start_future
 from lakery.core.database import ContentRecord
 from lakery.core.database import ManifestRecord
 from lakery.core.database import SerializerTypeEnum

@@ -8,7 +8,7 @@ from uuid import uuid4
 
 from anyio import create_task_group
 
-from lakery._internal.anyio import start_as_async_iterator
+from lakery._internal._anyio import start_as_async_iterator
 from lakery.core.storage import Storage
 from lakery.extra._utils import make_path_parts_from_digest
 

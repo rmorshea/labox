@@ -15,7 +15,7 @@ from anyio import create_task_group
 from anyio.abc import CapacityLimiter
 from anyio.to_thread import run_sync
 
-from lakery._internal.anyio import start_as_async_iterator
+from lakery._internal._anyio import start_as_async_iterator
 from lakery.common.exceptions import NoStorageData
 from lakery.common.streaming import write_async_byte_stream_into
 from lakery.core.storage import Digest

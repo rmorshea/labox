@@ -13,8 +13,8 @@ from typing import cast
 
 from ruyaml import import_module
 
-from lakery._internal.utils import full_class_name
-from lakery._internal.utils import validate_typed_dict
+from lakery._internal._utils import full_class_name
+from lakery._internal._utils import validate_typed_dict
 from lakery.common.exceptions import NotRegistered
 from lakery.core.serializer import Serializer
 from lakery.core.serializer import StreamSerializer

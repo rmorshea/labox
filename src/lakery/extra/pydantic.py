@@ -19,8 +19,8 @@ from pydantic import GetCoreSchemaHandler
 from pydantic_core import core_schema as cs
 from pydantic_walk_core_schema import walk_core_schema
 
-from lakery._internal.utils import frozenclass
-from lakery._internal.utils import get_typed_dict
+from lakery._internal._utils import frozenclass
+from lakery._internal._utils import get_typed_dict
 from lakery.core.storable import Storable
 from lakery.core.storable import StorableConfigDict
 from lakery.core.unpacker import AnyUnpackedValue

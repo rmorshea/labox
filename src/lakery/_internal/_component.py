@@ -2,7 +2,7 @@ import abc
 from typing import ClassVar
 from typing import LiteralString
 
-from lakery._internal.utils import validate_versioned_class_name
+from lakery._internal._utils import validate_versioned_class_name
 
 
 class Component(abc.ABC):

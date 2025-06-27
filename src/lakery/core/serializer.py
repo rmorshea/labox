@@ -9,9 +9,9 @@ from typing import TypeVar
 
 from typing_extensions import AsyncGenerator
 
-from lakery._internal.component import Component
-from lakery._internal.utils import not_implemented
-from lakery._internal.utils import validate_versioned_class_name
+from lakery._internal._component import Component
+from lakery._internal._utils import not_implemented
+from lakery._internal._utils import validate_versioned_class_name
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable

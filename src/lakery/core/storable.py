@@ -13,8 +13,8 @@ from uuid import uuid4
 
 from typing_extensions import TypedDict
 
-from lakery._internal.class_id import validate_class_id
-from lakery._internal.utils import full_class_name
+from lakery._internal._class_id import validate_class_id
+from lakery._internal._utils import full_class_name
 
 if TYPE_CHECKING:
     from lakery.core.unpacker import Unpacker

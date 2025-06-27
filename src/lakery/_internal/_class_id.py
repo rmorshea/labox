@@ -3,7 +3,7 @@ from typing import cast
 from uuid import uuid4
 from warnings import warn
 
-from lakery._internal.utils import full_class_name
+from lakery._internal._utils import full_class_name
 
 S = TypeVar("S", bound=str)
 

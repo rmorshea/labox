@@ -14,7 +14,7 @@ from anyio import create_memory_object_stream
 from anyio.from_thread import run_sync as run_sync_from_thread
 from anyio.to_thread import run_sync as run_sync_to_thread
 
-from lakery._internal.utils import UNDEFINED
+from lakery._internal._utils import UNDEFINED
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable

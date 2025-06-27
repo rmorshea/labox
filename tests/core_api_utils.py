@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio.session import AsyncSession
 from sqlalchemy.orm import raiseload
 
-from lakery._internal.anyio import FutureResult
+from lakery._internal._anyio import FutureResult
 from lakery.core.api.loader import data_loader
 from lakery.core.api.saver import data_saver
 from lakery.core.database import ManifestRecord

@@ -6,7 +6,7 @@ import numpy as np
 from imageio import v3 as imageio
 from numpy.typing import NDArray
 
-from lakery._internal.utils import frozenclass
+from lakery._internal._utils import frozenclass
 from lakery.core.serializer import SerializedData
 from lakery.core.serializer import Serializer
 

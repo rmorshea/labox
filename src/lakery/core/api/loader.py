@@ -13,10 +13,10 @@ from anysync import contextmanager
 from sqlalchemy import inspect as orm_inspect
 from sqlalchemy import select
 
-from lakery._internal.anyio import FutureResult
-from lakery._internal.anyio import set_future_exception_forcefully
-from lakery._internal.anyio import start_future
-from lakery._internal.anyio import start_with_future
+from lakery._internal._anyio import FutureResult
+from lakery._internal._anyio import set_future_exception_forcefully
+from lakery._internal._anyio import start_future
+from lakery._internal._anyio import start_with_future
 from lakery.common.exceptions import NotRegistered
 from lakery.core.database import ContentRecord
 from lakery.core.database import ManifestRecord
