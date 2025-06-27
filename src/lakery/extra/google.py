@@ -14,12 +14,12 @@ from google.cloud.storage.fileio import DEFAULT_CHUNK_SIZE
 from google.cloud.storage.fileio import BlobReader
 from google.cloud.storage.fileio import BlobWriter
 
+from lakery._internal._temp_path import make_path_from_digest
+from lakery._internal._temp_path import make_temp_path
 from lakery.common.exceptions import NoStorageData
 from lakery.core.storage import Digest
 from lakery.core.storage import GetStreamDigest
 from lakery.core.storage import Storage
-from lakery.extra._utils import make_path_from_digest
-from lakery.extra._utils import make_temp_path
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator

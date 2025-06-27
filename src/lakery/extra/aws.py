@@ -16,13 +16,13 @@ from anyio.abc import CapacityLimiter
 from anyio.to_thread import run_sync
 
 from lakery._internal._anyio import start_as_async_iterator
+from lakery._internal._temp_path import make_path_from_digest
+from lakery._internal._temp_path import make_temp_path
 from lakery.common.exceptions import NoStorageData
 from lakery.common.streaming import write_async_byte_stream_into
 from lakery.core.storage import Digest
 from lakery.core.storage import GetStreamDigest
 from lakery.core.storage import Storage
-from lakery.extra._utils import make_path_from_digest
-from lakery.extra._utils import make_temp_path
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable

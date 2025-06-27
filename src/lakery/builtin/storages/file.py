@@ -9,8 +9,8 @@ from uuid import uuid4
 from anyio import create_task_group
 
 from lakery._internal._anyio import start_as_async_iterator
+from lakery._internal._temp_path import make_path_parts_from_digest
 from lakery.core.storage import Storage
-from lakery.extra._utils import make_path_parts_from_digest
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
