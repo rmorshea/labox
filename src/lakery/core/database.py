@@ -13,6 +13,7 @@ from uuid import UUID
 from uuid import uuid4
 
 from anysync import coroutine
+from sqlalchemy import BIGINT
 from sqlalchemy import JSON
 from sqlalchemy import BindParameter
 from sqlalchemy import ColumnElement
@@ -105,7 +106,6 @@ class _StrMixin(BaseRecord):
 class ManifestRecord(_StrMixin, BaseRecord, kw_only=True):
     """A record acting as a manifest for a storable object."""
 
-    __abstract__ = False
     __tablename__ = "lakery_manifests"
 
     id: Mapped[UUID] = mapped_column(default_factory=uuid4, primary_key=True)
@@ -150,7 +150,7 @@ class ContentRecord(_StrMixin, BaseRecord, kw_only=True):
     """The hash of the data."""
     content_hash_algorithm: Mapped[str] = mapped_column()
     """The algorithm used to hash the data."""
-    content_size: Mapped[int] = mapped_column()
+    content_size: Mapped[int] = mapped_column(BIGINT())
     """The size of the data in bytes"""
     serializer_name: Mapped[str] = mapped_column()
     """The name of the serializer used to serialize the data."""

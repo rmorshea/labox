@@ -8,7 +8,7 @@ nav:
   - Home: index.md
   - Usage: usage.md
   - Concepts:
-      - Overview: concepts/overview.md
+      - Overview: concepts/index.md
       - Storables: concepts/storables.md
       - Unpackers: concepts/unpackers.md
       - Serializers: concepts/serializers.md
@@ -16,6 +16,7 @@ nav:
       - Registry: concepts/registry.md
       - Database: concepts/database.md
   - Integrations:
+      - Overview: integrations/index.md
       - Built-in:
           - Serializers: integrations/built-ins/serializers.md
           - Storables: integrations/built-ins/storables.md
