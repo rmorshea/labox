@@ -3,9 +3,9 @@
 The [PostgreSQL](https://www.postgresql.org/) database schema for Lakery contains two
 types of records:
 
-- [Manifest Records](#manifest-records): Contains metadata about a stored object and
+-   [Manifest Records](#manifest-records): Contains metadata about a stored object and
     its associated content.
-- [Content Records](#content-records): Pointers to the actual content of the stored
+-   [Content Records](#content-records): Pointers to the actual content of the stored
     object.
 
 Each manifest record corresponds to a single [`Storable`](./storables.md) object while
@@ -57,6 +57,6 @@ A content record is saved in the `lakery_contents` table for each
 [unpacked stream](./unpackers.md#unpacked-streams) returned by an unpacker when
 deconstructing a `Storable` object. The `content_key` of each record comes from the keys
 in the mapping returned by the
-[`unpack_object`][lakery.core.unpackers.Unpacker.unpack_object] method. Each unpacked
+[`unpack_object`][lakery.core.unpacker.Unpacker.unpack_object] method. Each unpacked
 value or stream may also have associated tags, which will be stored in the `tags`
 column.

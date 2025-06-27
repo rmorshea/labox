@@ -20,7 +20,7 @@ flowchart LR
 To faciliate loading a `Storable`, Lakery uses a [PostgreSQL database](./database.md) to
 preserve metadata about the components that were used when it was originally saved (i.e.
 the unpackers, serializers and storages). Lakery then uses that metadata to pick the
-component instance out of a [registry](./registries.md) when needed.
+component instance out of a [registry](./registry.md) when needed.
 
 In the diagram below, the necessary input to load a `Storable` is a
 [`ManifestRecord`](./database.md#manifest-records) which can be used to query the Lakery

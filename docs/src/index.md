@@ -45,7 +45,7 @@ from lakery.core import BaseRecord
 BaseRecord.create_all(engine).run()
 ```
 
-Establish a [registry](./concepts/registries.md) with the
+Establish a [registry](./concepts/registry.md) with the
 [storables](./concepts/storables.md), [serializers](./concepts/serializers.md) and
 [storages](./concepts/storages.md) you plan to use.
 

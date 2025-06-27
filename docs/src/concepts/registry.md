@@ -37,7 +37,7 @@ reg = Registry(unpackers=[my_unpacker])
 If you add an unpacker explicitly it will take precedence over any unpacker registered
 with a storable. Specifically, it will be used to unpack any of its
 [`types`][lakery.core.unpacker.Unpacker.types] based on the standard
-[type inference](type-inference) logic.
+[type inference](#type-inference) logic.
 
 ## Adding Serializers
 
@@ -176,4 +176,4 @@ arguments is, in increasing order of priority:
 1. Modules loaded from the `modules` argument.
 1. Registries merged from the `registries` argument.
 1. Explicitly provided serializers, storages, unpackers, or storables in the
-    `serializers`, `storages`, `unpackers`, or `storables` arguments.
+   `serializers`, `storages`, `unpackers`, or `storables` arguments.
