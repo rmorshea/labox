@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import abc
-import json
 from typing import TYPE_CHECKING
 from typing import Generic
 from typing import Protocol
@@ -9,6 +8,8 @@ from typing import TypedDict
 from typing import TypeVar
 
 from lakery._internal._component import Component
+from lakery._internal._json import DEFAULT_JSON_DECODER
+from lakery._internal._json import DEFAULT_JSON_ENCODER
 from lakery._internal._utils import not_implemented
 
 if TYPE_CHECKING:
@@ -62,11 +63,11 @@ class Storage(Generic[T], Component):
 
     def serialize_storage_data(self, info: T) -> str:
         """Dump the storage information to a JSON string."""
-        return json.dumps(info)
+        return DEFAULT_JSON_ENCODER.encode(info)
 
     def deserialize_storage_data(self, data: str) -> T:
         """Load the storage information from a JSON string."""
-        return json.loads(data)
+        return DEFAULT_JSON_DECODER.decode(data)
 
 
 class Digest(TypedDict):

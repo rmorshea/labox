@@ -13,5 +13,3 @@ JsonType = (
     | None
 )
 """A type alias for JSON data."""
-JsonStreamType = dict[str, JsonType] | list[JsonType] | tuple[JsonType, ...]
-"""A type alias for a a value in a stream of JSON data."""
