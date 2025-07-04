@@ -8,7 +8,7 @@ backend [storage](./storages.md) system. At the end of this process, a
 [`ManifestRecord`](./database.md#manifest-records) is created in the Lakery database to
 preserve metadata about the components used in the process.
 
-```mermaid
+<pre class="mermaid">
 flowchart LR
     START:::hidden -- Storable --> U[Unpacker]
     U -- UnpackedValue --> S1[Serializer]
@@ -18,7 +18,7 @@ flowchart LR
     S2 -- SerializedData --> R2[Storage]
     S3 --> R3[...]
     classDef hidden display: none;
-```
+</pre>
 
 To faciliate loading a `Storable`, the user must provide the `ManifestRecord` that was
 created when the `Storable` object was saved. Lakery uses this manifest to find its
