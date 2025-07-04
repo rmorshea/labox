@@ -173,4 +173,4 @@ arguments is, in increasing order of priority:
 1. Modules loaded from the `modules` argument.
 1. Registries merged from the `registries` argument.
 1. Explicitly provided serializers, storages, unpackers, or storables in the
-   `serializers`, `storages`, `unpackers`, or `storables` arguments.
+    `serializers`, `storages`, `unpackers`, or `storables` arguments.

@@ -3,17 +3,17 @@
 Storables define the shape of the data that's saved and loaded by Lakery. Try these
 implementations:
 
--   [Pydantic models](../integrations/3rd-party/pydantic.md)
--   [Built-ins](../integrations/built-ins/storables.md) for simple values and streams.
+- [Pydantic models](../integrations/3rd-party/pydantic.md)
+- [Built-ins](../integrations/built-ins/storables.md) for simple values and streams.
 
 ## Defining Storables
 
 To define a storable class you need to inherit from
 [`Storable`][lakery.core.storable.Storable] and provide
 
--   [`class_id`](#class-ids) - a string that uniquely and permanently identifies the
+- [`class_id`](#class-ids) - a string that uniquely and permanently identifies the
     class.
--   [`Unpacker`](./unpackers.md) - a class that defines how to destructure the class
+- [`Unpacker`](./unpackers.md) - a class that defines how to destructure the class
     into its constituent parts.
 
 ```python
@@ -42,10 +42,10 @@ implementation must document what types of changes are compatible and which are 
 
 In general, you should avoid:
 
--   Removing fields from the class.
--   Changing the expected type of fields (though converting or adding to a union type is
+- Removing fields from the class.
+- Changing the expected type of fields (though converting or adding to a union type is
     generally safe).
--   Renaming fields if there is no way to provide an alias for the old name.
+- Renaming fields if there is no way to provide an alias for the old name.
 
 If you must make a change that is not compatible with existing data, you should create a
 new `Storable` class with a new `class_id`. This will ensure that existing data remains
