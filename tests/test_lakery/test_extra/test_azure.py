@@ -14,6 +14,7 @@ from azure.storage.blob import BlobType
 from azure.storage.blob import ContentSettings
 
 from lakery.extra.azure import BlobStorage
+from lakery.extra.azure import simple_blob_router
 from tests.core_storage_utils import parametrize_storage_assertions
 
 if TYPE_CHECKING:
@@ -22,31 +23,38 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
     from datetime import datetime
 
-    from azure.storage.blob.aio import ContainerClient
+    from azure.storage.blob.aio import BlobServiceClient
 
     from lakery.common.types import TagMap
 
 
 @parametrize_storage_assertions
 async def test_blob_storage(assertion):
-    container_client = cast("ContainerClient", MockContainerClient())
-    await assertion(BlobStorage(container_client=container_client))
+    service_client = cast("BlobServiceClient", MockBlobServiceClient())
+    await assertion(
+        BlobStorage(
+            service_client=service_client,
+            blob_router=simple_blob_router("fake"),
+        )
+    )
 
 
-class MockContainerClient:
+class MockBlobServiceClient:
     def __init__(self) -> None:
-        self._state: dict[str, MockBlobState] = {}
+        self._state: dict[str, dict[str, MockBlobState]] = {}
 
     def get_blob_client(
         self,
+        container: str,
         blob: str,
         snapshot: str | None = None,
         *,
         version_id: str | None = None,
     ) -> MockBlobClient:
+        blob_state = self._state.setdefault(container, {})
         assert snapshot is None, "Snapshots are not supported in the mock"
         assert version_id is None, "Versioning is not supported in the mock"
-        return MockBlobClient(self._state, url=blob)
+        return MockBlobClient(blob_state, url=blob)
 
 
 class MockBlobClient:

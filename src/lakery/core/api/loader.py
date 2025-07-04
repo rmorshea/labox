@@ -141,7 +141,7 @@ async def load_from_manifest_record(
     content_futures: dict[str, FutureResult[Any]] = {}
     async with create_task_group() as tg:
         for c in contents:
-            content_futures[c.content_key] = start_future(
+            content_futures[c.content_name] = start_future(
                 tg,
                 load_from_content_record,
                 c,

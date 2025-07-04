@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
+from typing import Protocol
+from typing import TypedDict
+from weakref import ref
 
 from anyio import CapacityLimiter
 from azure.core.exceptions import ResourceNotFoundError
@@ -13,12 +16,13 @@ from lakery.common.exceptions import NoStorageData
 from lakery.core.storage import Digest
 from lakery.core.storage import GetStreamDigest
 from lakery.core.storage import Storage
+from lakery.core.storage import StreamDigest
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
     from collections.abc import AsyncIterable
 
-    from azure.storage.blob.aio import ContainerClient
+    from azure.storage.blob.aio import BlobServiceClient
 
     from lakery.common.types import TagMap
 
@@ -28,7 +32,29 @@ __all__ = ("BlobStorage",)
 _LOG = logging.getLogger(__name__)
 
 
-class BlobStorage(Storage[str]):
+def simple_blob_router(container: str, prefix: str = "") -> BlobRouter:
+    """Create a simple blob router that returns a BlobPointer based on the container and prefix.
+
+    Args:
+        container: The name of the Azure Blob Storage container.
+        prefix: An optional prefix to prepend to the blob path.
+
+
+    Returns:
+        A BlobRouter that generates BlobPointers for the specified container and prefix.
+    """
+
+    def route(digest: Digest | StreamDigest, name: str, *, temp: bool) -> BlobPointer:  # noqa: ARG001
+        if temp:
+            blob = make_temp_path("/", digest, prefix=prefix)
+        else:
+            blob = make_path_from_digest("/", digest, prefix=prefix)
+        return {"container": container, "blob": blob}
+
+    return route
+
+
+class BlobStorage(Storage["BlobPointer"]):
     """Storage for Azure Blob data."""
 
     name = "lakery.azure.blob@v1"
@@ -36,11 +62,13 @@ class BlobStorage(Storage[str]):
     def __init__(
         self,
         *,
-        container_client: ContainerClient,
+        service_client: BlobServiceClient,
+        blob_router: BlobRouter | None,
         path_prefix: str = "",
         max_concurrency: int | None = None,
     ):
-        self._container_client = container_client
+        self._service_client = service_client
+        self._blob_router = blob_router or _read_only(self)
         self._path_prefix = path_prefix
         self._limiter = CapacityLimiter(max_concurrency) if max_concurrency else None
 
@@ -48,12 +76,15 @@ class BlobStorage(Storage[str]):
         self,
         data: bytes,
         digest: Digest,
+        name: str,
         tags: TagMap,
-    ) -> str:
+    ) -> BlobPointer:
         """Save the given value data."""
-        location = make_path_from_digest("/", digest, prefix=self._path_prefix)
-        _LOG.debug("Saving data to %s", location)
-        blob_client = self._container_client.get_blob_client(blob=location)
+        pointer = self._blob_router(digest, name, temp=False)
+        _LOG.debug("Saving data to %s", pointer)
+        blob_client = self._service_client.get_blob_client(
+            container=pointer["container"], blob=pointer["blob"]
+        )
         await blob_client.upload_blob(
             data,
             content_settings=ContentSettings(
@@ -62,16 +93,18 @@ class BlobStorage(Storage[str]):
             ),
             tags=tags,
         )
-        return location
+        return pointer
 
-    async def read_data(self, location: str) -> bytes:
+    async def read_data(self, pointer: BlobPointer) -> bytes:
         """Load data from the given location."""
-        _LOG.debug("Loading data from %s", location)
-        blob_client = self._container_client.get_blob_client(blob=location)
+        _LOG.debug("Loading data from %s", pointer)
+        blob_client = self._service_client.get_blob_client(
+            container=pointer["container"], blob=pointer["blob"]
+        )
         try:
             blob_reader = await blob_client.download_blob()
         except ResourceNotFoundError as exc:
-            msg = f"Failed to load value from {location!r}"
+            msg = f"Failed to load value from {pointer!r}"
             raise NoStorageData(msg) from exc
         return await blob_reader.readall()
 
@@ -79,14 +112,17 @@ class BlobStorage(Storage[str]):
         self,
         data_stream: AsyncIterable[bytes],
         get_digest: GetStreamDigest,
+        name: str,
         tags: TagMap,
-    ) -> str:
+    ) -> BlobPointer:
         """Save the given data stream."""
         initial_digest = get_digest(allow_incomplete=True)
-        temp_location = make_temp_path("/", initial_digest, prefix=self._path_prefix)
-        _LOG.debug("Temporarily saving data to %s", temp_location)
+        temp_pointer = self._blob_router(initial_digest, name, temp=True)
+        _LOG.debug("Temporarily saving data to %s", temp_pointer)
 
-        temp_blob_client = self._container_client.get_blob_client(blob=temp_location)
+        temp_blob_client = self._service_client.get_blob_client(
+            container=temp_pointer["container"], blob=temp_pointer["blob"]
+        )
         await temp_blob_client.upload_blob(
             data_stream,
             content_settings=ContentSettings(
@@ -96,25 +132,66 @@ class BlobStorage(Storage[str]):
             tags=tags,
         )
         try:
-            final_location = make_path_from_digest("/", get_digest(), prefix=self._path_prefix)
-            _LOG.debug("Moving data to final location %s", final_location)
-            final_blob_client = self._container_client.get_blob_client(blob=final_location)
+            final_pointer = self._blob_router(get_digest(), "final", temp=False)
+            _LOG.debug("Moving data to final location %s", final_pointer)
+            final_blob_client = self._service_client.get_blob_client(
+                container=final_pointer["container"], blob=final_pointer["blob"]
+            )
             await final_blob_client.start_copy_from_url(temp_blob_client.url, requires_sync=True)
         finally:
-            _LOG.debug("Deleting temporary data %s", temp_location)
+            _LOG.debug("Deleting temporary data %s", temp_pointer)
             await temp_blob_client.delete_blob()
 
-        return final_location
+        return final_pointer
 
-    async def read_data_stream(self, location: str) -> AsyncGenerator[bytes]:
+    async def read_data_stream(self, pointer: BlobPointer) -> AsyncGenerator[bytes]:
         """Load a data stream from the given location."""
-        _LOG.debug("Loading data stream from %s", location)
-        blob_client = self._container_client.get_blob_client(blob=location)
+        _LOG.debug("Loading data stream from %s", pointer)
+        blob_client = self._service_client.get_blob_client(
+            container=pointer["container"], blob=pointer["blob"]
+        )
         try:
             blob_reader = await blob_client.download_blob()
         except ResourceNotFoundError as exc:
-            msg = f"Failed to load stream from {location!r}"
+            msg = f"Failed to load stream from {pointer!r}"
             raise NoStorageData(msg) from exc
 
         async for chunk in blob_reader.chunks():
             yield chunk
+
+
+class BlobPointer(TypedDict):
+    """A pointer to a blob in Azure Blob Storage."""
+
+    container: str
+    """The name of the container where the blob is stored."""
+    blob: str
+    """The path to the blob within the container."""
+
+
+class BlobRouter(Protocol):
+    """A protocol for routing data to Azure Blob Storage by returning a BlobPointer."""
+
+    def __call__(self, digest: Digest | StreamDigest, name: str, *, temp: bool) -> BlobPointer:
+        """Return a BlobPointer for the given digest and name.
+
+        Args:
+            digest: The digest of the data to route.
+            name: The name given to the content by an unpacker - not globally unique.
+            temp: Whether to create a temporary path for the data - used for streaming data.
+
+        Returns:
+            A BlobPointer that can be used to access the data.
+        """
+        ...
+
+
+def _read_only(storage: BlobStorage) -> BlobRouter:
+    """Create a read-only blob router that always returns the same container and blob."""
+    get_storage = ref(storage)
+
+    def router(digest: Digest | StreamDigest, name: str, *, temp: bool) -> BlobPointer:
+        msg = f"{get_storage()} is read-only and cannot write data."
+        raise NotImplementedError(msg)
+
+    return router

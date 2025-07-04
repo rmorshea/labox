@@ -42,7 +42,7 @@ def parametrize_storage_assertions(test_function: F) -> F:
 
 async def assert_storage_can_put_and_get_value(storage: Storage) -> None:
     value, digest = make_fake_value_data(1024)
-    storage_data = await storage.write_data(value, digest, {})
+    storage_data = await storage.write_data(value, digest, "fake", {})
     assert (await storage.read_data(storage_data)) == value
 
 
@@ -52,7 +52,7 @@ async def assert_storage_can_put_and_get_stream(storage: Storage):
         expected_value,
         digest,
     ):
-        relation = await storage.write_data_stream(stream, digest, {})
+        relation = await storage.write_data_stream(stream, digest, "fake", {})
         actual_value = b"".join([chunk async for chunk in storage.read_data_stream(relation)])
         assert actual_value == expected_value
 
@@ -63,14 +63,14 @@ async def assert_storage_can_put_stream_and_get_value(storage: Storage):
         expected_value,
         digest,
     ):
-        relation = await storage.write_data_stream(stream, digest, {})
+        relation = await storage.write_data_stream(stream, digest, "fake", {})
         actual_value = await storage.read_data(relation)
         assert actual_value == expected_value
 
 
 async def assert_storage_can_put_value_and_get_stream(storage: Storage):
     value, digest = make_fake_value_data(1024)
-    relation = await storage.write_data(value, digest, {})
+    relation = await storage.write_data(value, digest, "fake", {})
     actual_value = b"".join([chunk async for chunk in storage.read_data_stream(relation)])
     assert actual_value == value
 

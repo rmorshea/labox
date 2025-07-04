@@ -7,6 +7,7 @@ import moto
 import pytest
 
 from lakery.extra.aws import S3Storage
+from lakery.extra.aws import simple_s3_router
 from tests.core_storage_utils import parametrize_storage_assertions
 
 if TYPE_CHECKING:
@@ -33,4 +34,9 @@ def s3_bucket(s3_client) -> str:
 
 @parametrize_storage_assertions
 async def test_s3_storage(assertion, s3_bucket):
-    await assertion(S3Storage(s3_client=boto3.client("s3"), bucket_name=s3_bucket))
+    await assertion(
+        S3Storage(
+            s3_client=boto3.client("s3"),
+            s3_router=simple_s3_router(s3_bucket),
+        )
+    )

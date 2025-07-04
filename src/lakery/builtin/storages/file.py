@@ -9,7 +9,7 @@ from uuid import uuid4
 from anyio import create_task_group
 
 from lakery._internal._anyio import start_as_async_iterator
-from lakery._internal._temp_path import make_path_parts_from_digest
+from lakery._internal._temp_path import make_file_name_from_digest
 from lakery.core.storage import Storage
 
 if TYPE_CHECKING:
@@ -49,10 +49,11 @@ class FileStorage(Storage[str]):
         self,
         data: bytes,
         digest: Digest,
+        _name: str,
         _tags: TagMap,
     ) -> str:
         """Save the given data."""
-        content_path = self.path.joinpath(*make_path_parts_from_digest(digest))
+        content_path = self.path / make_file_name_from_digest(digest)
         _LOG.debug("Saving data to %s", content_path)
         if not content_path.exists():
             content_path.parent.mkdir(parents=True, exist_ok=True)
@@ -69,6 +70,7 @@ class FileStorage(Storage[str]):
         self,
         data_stream: AsyncIterable[bytes],
         get_digest: GetStreamDigest,
+        _name: str,
         _tags: TagMap,
     ) -> str:
         """Save the given data stream."""
@@ -79,7 +81,7 @@ class FileStorage(Storage[str]):
                 file.write(chunk)
         try:
             final_digest = get_digest()
-            content_path = self.path.joinpath(*make_path_parts_from_digest(final_digest))
+            content_path = self.path / make_file_name_from_digest(final_digest)
             _LOG.debug("Moving data to final location %s", content_path)
             if not content_path.exists():
                 content_path.parent.mkdir(parents=True, exist_ok=True)

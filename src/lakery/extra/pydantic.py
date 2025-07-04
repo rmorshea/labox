@@ -166,13 +166,13 @@ class StorableSpec:
 
     ```python
     from typing import Any, Annotated, TypeVar
-    from lakery.extra.pydantic import StorageSpec
+    from lakery.extra.pydantic import StorableSpec
     from lakery.extra.msgpack import MsgPackSerializer
 
     msgpack_serializer = MsgPackSerializer()
 
     T = TypeVar("T")
-    UseMsgPack = Annotated[T, StorageSpec(serializer=msgpack_serializer)]
+    UseMsgPack = Annotated[T, StorableSpec(serializer=msgpack_serializer)]
     ```
 
     Then use it somewhere in a storage model:

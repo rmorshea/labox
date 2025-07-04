@@ -10,11 +10,11 @@ class.
 To define a storage you need to implement the [`Storage`][lakery.core.storage.Storage]
 interface with the following:
 
-- `name` - a string that uniquely and permanently identifies the storage.
-- `write_data` - a method that saves a single blob of data to the storage.
-- `read_data` - a method that reads a single blob of data from the storage.
-- `write_data_stream` - a method that saves a stream of data to the storage.
-- `read_data_stream` - a method that reads a stream of data from the storage.
+-   `name` - a string that uniquely and permanently identifies the storage.
+-   `write_data` - a method that saves a single blob of data to the storage.
+-   `read_data` - a method that reads a single blob of data from the storage.
+-   `write_data_stream` - a method that saves a stream of data to the storage.
+-   `read_data_stream` - a method that reads a stream of data from the storage.
 
 The code snippets below show a storage that saves data to files. You can start by
 implementing the `write_data` and `read_data` methods:
@@ -30,18 +30,18 @@ from lakery import TagMap
 class FileStorage(Storage):
     name = "temp-file-storage@v1"
 
-    def __init__(self, root: Path, *, read_chunk_size: int = 1024):
-        self._root = root
+    def __init__(self, prefix: Path, *, read_chunk_size: int = 1024):
+        self._prefix = prefix
         self._read_chunk_size = read_chunk_size
 
-    async def write_data(self, data: bytes, digest: Digest, tags: TagMap) -> str:
-        key = digest["content_hash"]
-        with (self._root / key).open("wb") as f:
+    async def write_data(self, data: bytes, digest: Digest, name: str, tags: TagMap) -> str:
+        path = self._prefix / digest["content_hash"]
+        with path.open("wb") as f:
             f.write(data)
-        return key
+        return str(path)
 
-    async def read_data(self, key: str) -> bytes:
-        with (self._root / key).open("rb") as f:
+    async def read_data(self, path: str) -> bytes:
+        with Path(path).open("rb") as f:
             return f.read()
 ```
 
@@ -64,6 +64,7 @@ class FileStorage(Storage):
         self,
         stream: AsyncIterator[bytes],
         get_digest: GetStreamDigest,
+        name: str,
         tags: TagMap,
     ) -> str:
         with NamedTemporaryFile(dir=self._root) as temp_file:
@@ -80,6 +81,33 @@ class FileStorage(Storage):
             while chunk := f.read(self._read_chunk_size):
                 yield chunk
 ```
+
+## Best Practices
+
+When implementing a storage, the most important thing to keep in mind is that a storage
+implementation must be able to read from any location is has written to. So, for
+example, if one of the configuration options your storage accepts is a path prefix (as
+in the example above), then this prefix must be included in the
+[storage data](#storage-data) returned by the `write_data` and `write_data_stream`
+methods. This way, when reading data, the storage can reconstruct the full path to the
+data even if the prefix may have changed since the data was written.
+
+A pattern used within Lakery when implementing a storage is to allow users to configure
+their storages with a "router" function that takes in the `Digest` and `name` of the
+data being saved and returns a dictionary with the storage-specific information needed
+to locate the data later. In the case of the [`S3Storage`][lakery.extra.aws.S3Storage],
+the router function must return an [`S3Pointer`][lakery.extra.aws.S3Pointer] dictionary
+with the `bucket` and `key` where the data is stored. This forces the storage
+implementation to be agnostic about where it's been configured to save data while still
+allowing it to save data in a location that can be reconstructed later.
+
+## Content Name
+
+When saving data, the `write_data` and `write_data_stream` methods accept a `name`
+argument. This is label given to the data by its [unpacker](./unpackers.md). This name
+is not globally unique and is not suitable on its own as storage key that can be used to
+retrieve the data later. It could be used as an additional [tag](#storage-tags) or as a
+prefix in a path to organize the data in the storage.
 
 ## Storage Tags
 

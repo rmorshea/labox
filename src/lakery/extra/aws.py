@@ -8,8 +8,11 @@ from tempfile import SpooledTemporaryFile
 from typing import IO
 from typing import TYPE_CHECKING
 from typing import ParamSpec
+from typing import Protocol
+from typing import TypedDict
 from typing import TypeVar
 from urllib.parse import urlencode
+from weakref import ref
 
 from anyio import create_task_group
 from anyio.abc import CapacityLimiter
@@ -23,6 +26,7 @@ from lakery.common.streaming import write_async_byte_stream_into
 from lakery.core.storage import Digest
 from lakery.core.storage import GetStreamDigest
 from lakery.core.storage import Storage
+from lakery.core.storage import StreamDigest
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable
@@ -47,7 +51,34 @@ StreamBufferType = Callable[[], AbstractContextManager[IO[bytes]]]
 """A function that returns a context manager for a stream buffer."""
 
 
-class S3Storage(Storage[str]):
+def simple_s3_router(
+    bucket: str,
+    prefix: str = "",
+) -> S3Router:
+    """Create a simple S3 router that routes digests to S3 pointers.
+
+    Object paths are of the form:
+
+        <prefix>/<content_hash>.<extension>
+
+    Args:
+        bucket: The S3 bucket to use for routing.
+        prefix: An optional prefix to add to the S3 object key.
+        temp: If True, the router will create temporary paths for the data.
+    """
+
+    def router(digest: Digest, name: str, *, temp: bool) -> S3Pointer:  # noqa: ARG001
+        """Route a digest and name to an S3 pointer."""
+        if temp:
+            key = make_temp_path("/", digest, prefix=prefix)
+        else:
+            key = make_path_from_digest("/", digest, prefix=prefix)
+        return S3Pointer(bucket=bucket, key=key)
+
+    return router
+
+
+class S3Storage(Storage["S3Pointer"]):
     """Storage for S3 data."""
 
     name = "lakery.aws.s3@v1"
@@ -56,8 +87,7 @@ class S3Storage(Storage[str]):
         self,
         *,
         s3_client: S3Client,
-        bucket_name: str,
-        object_key_prefix: str = "",
+        s3_router: S3Router | None,
         max_concurrency: int | None = None,
         stream_writer_min_part_size: int = _5MB,
         stream_writer_buffer_type: StreamBufferType = lambda: SpooledTemporaryFile(max_size=_5MB),  # noqa: SIM115
@@ -71,8 +101,7 @@ class S3Storage(Storage[str]):
             )
             raise ValueError(msg)
         self._client = s3_client
-        self._bucket_name = bucket_name
-        self._object_key_prefix = object_key_prefix
+        self._router = s3_router or _read_only(self)
         self._limiter = CapacityLimiter(max_concurrency) if max_concurrency else None
         self._stream_writer_min_part_size = stream_writer_min_part_size
         self._stream_writer_buffer_type = stream_writer_buffer_type
@@ -82,13 +111,14 @@ class S3Storage(Storage[str]):
         self,
         data: bytes,
         digest: Digest,
+        name: str,
         tags: TagMap,
-    ) -> str:
+    ) -> S3Pointer:
         """Save the given value."""
-        location = make_path_from_digest("/", digest, prefix=self._object_key_prefix)
+        pointer = self._router(digest, name, temp=False)
         put_request: PutObjectRequestRequestTypeDef = {
-            "Bucket": self._bucket_name,
-            "Key": location,
+            "Bucket": pointer["bucket"],
+            "Key": pointer["key"],
             "Body": data,
             "ContentType": digest["content_type"],
             "Tagging": urlencode(tags),
@@ -96,27 +126,30 @@ class S3Storage(Storage[str]):
         if digest["content_encoding"]:
             put_request["ContentEncoding"] = digest["content_encoding"]
         await self._to_thread(self._client.put_object, **put_request)
-        return location
+        # include the bucket name in the location so this storage can
+        # read from any bucket that the client has access to
+        return pointer
 
-    async def read_data(self, location: str) -> bytes:
+    async def read_data(self, pointer: S3Pointer) -> bytes:
         """Load the value from the given location."""
         try:
             result = await self._to_thread(
                 self._client.get_object,
-                Bucket=self._bucket_name,
-                Key=location,
+                Bucket=pointer["bucket"],
+                Key=pointer["key"],
             )
             return result["Body"].read()
         except self._client.exceptions.NoSuchKey as error:
-            msg = f"No data found for {location!r}."
+            msg = f"No data found for {pointer}."
             raise NoStorageData(msg) from error
 
     async def write_data_stream(
         self,
         data_stream: AsyncIterable[bytes],
         get_digest: GetStreamDigest,
+        name: str,
         tags: TagMap,
-    ) -> str:
+    ) -> S3Pointer:
         """Save the given data stream.
 
         This works by first saving the stream to a temporary key becuase the content
@@ -124,13 +157,17 @@ class S3Storage(Storage[str]):
         to the temporary key it's copied to its final location based on the content
         hash.
         """
+        if not self._router:
+            msg = f"{self} is read-only and cannot write data."
+            raise NotImplementedError(msg)
+
         initial_digest = get_digest(allow_incomplete=True)
-        temp_location = make_temp_path("/", initial_digest, prefix=self._object_key_prefix)
+        temp_pointer = self._router(initial_digest, name, temp=True)
         tagging = urlencode(tags)
 
         create_multipart_upload: CreateMultipartUploadRequestRequestTypeDef = {
-            "Bucket": self._bucket_name,
-            "Key": temp_location,
+            "Bucket": temp_pointer["bucket"],
+            "Key": temp_pointer["key"],
             "ContentType": initial_digest["content_type"],
             "Tagging": tagging,
         }
@@ -152,8 +189,8 @@ class S3Storage(Storage[str]):
                         (
                             await self._to_thread(
                                 self._client.upload_part,
-                                Bucket=self._bucket_name,
-                                Key=temp_location,
+                                Bucket=temp_pointer["bucket"],
+                                Key=temp_pointer["key"],
                                 Body=buffer,
                                 PartNumber=part_num,
                                 UploadId=upload_id,
@@ -165,8 +202,8 @@ class S3Storage(Storage[str]):
                     part_num += 1
                 await self._to_thread(
                     self._client.complete_multipart_upload,
-                    Bucket=self._bucket_name,
-                    Key=temp_location,
+                    Bucket=temp_pointer["bucket"],
+                    Key=temp_pointer["key"],
                     UploadId=upload_id,
                     MultipartUpload={
                         "Parts": [{"ETag": e, "PartNumber": i} for i, e in enumerate(etags, 1)]
@@ -175,44 +212,40 @@ class S3Storage(Storage[str]):
             except Exception:
                 await self._to_thread(
                     self._client.abort_multipart_upload,
-                    Bucket=self._bucket_name,
-                    Key=temp_location,
+                    Bucket=temp_pointer["bucket"],
+                    Key=temp_pointer["key"],
                     UploadId=upload_id,
                 )
                 raise
 
             try:
-                final_location = make_path_from_digest(
-                    "/",
-                    get_digest(),
-                    prefix=self._object_key_prefix,
-                )
+                final_pointer = self._router(get_digest(), name, temp=False)
                 await self._to_thread(
                     self._client.copy_object,
-                    Bucket=self._bucket_name,
-                    CopySource={"Bucket": self._bucket_name, "Key": temp_location},
-                    Key=final_location,
+                    Bucket=final_pointer["bucket"],
+                    CopySource={"Bucket": temp_pointer["bucket"], "Key": temp_pointer["key"]},
+                    Key=final_pointer["key"],
                     Tagging=tagging,
                 )
             finally:
                 await self._to_thread(
                     self._client.delete_object,
-                    Bucket=self._bucket_name,
-                    Key=temp_location,
+                    Bucket=temp_pointer["bucket"],
+                    Key=temp_pointer["key"],
                 )
 
-        return final_location
+        return final_pointer
 
-    async def read_data_stream(self, location: str) -> AsyncGenerator[bytes]:
+    async def read_data_stream(self, pointer: S3Pointer) -> AsyncGenerator[bytes]:
         """Load the stream from the given location."""
         try:
             result = await self._to_thread(
                 self._client.get_object,
-                Bucket=self._bucket_name,
-                Key=location,
+                Bucket=pointer["bucket"],
+                Key=pointer["key"],
             )
         except self._client.exceptions.NoSuchKey as error:
-            msg = f"No data found for {location!r}."
+            msg = f"No data found for {pointer}."
             raise NoStorageData(msg) from error
 
         async with create_task_group() as tg:
@@ -230,3 +263,39 @@ class S3Storage(Storage[str]):
         **kwargs: P.kwargs,
     ) -> Coroutine[None, None, R]:
         return run_sync(lambda: func(*args, **kwargs), limiter=self._limiter)
+
+
+class S3Pointer(TypedDict):
+    """A pointer to a location in S3."""
+
+    bucket: str
+    """The S3 bucket where the data is stored."""
+    key: str
+    """The S3 object key where the data is stored."""
+
+
+class S3Router(Protocol):
+    """A protocol for routing data to S3 buckets by returning an S3Pointer."""
+
+    def __call__(self, digest: Digest | StreamDigest, name: str, *, temp: bool) -> S3Pointer:
+        """Return an S3 pointer for the given digest and name.
+
+        Args:
+            digest: The digest of the data to route.
+            name: The name given to the content by an unpacker - not globally unique.
+            temp: Whether to create a temporary path for the data - used for streaming data.
+
+        Returns:
+            An S3Pointer that can be used to access the data.
+        """
+        ...
+
+
+def _read_only(storage: S3Storage) -> S3Router:
+    get_storage = ref(storage)
+
+    def router(digest: Digest, name: str, *, temp: bool) -> S3Pointer:
+        msg = f"{get_storage()} is read-only and cannot write data."
+        raise NotImplementedError(msg)
+
+    return router

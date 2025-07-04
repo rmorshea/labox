@@ -3,9 +3,9 @@
 The [PostgreSQL](https://www.postgresql.org/) database schema for Lakery contains two
 types of records:
 
-- [Manifest Records](#manifest-records): Contains metadata about a stored object and
+-   [Manifest Records](#manifest-records): Contains metadata about a stored object and
     its associated content.
-- [Content Records](#content-records): Pointers to the actual content of the stored
+-   [Content Records](#content-records): Pointers to the actual content of the stored
     object.
 
 Each manifest record corresponds to a single [`Storable`](./storables.md) object while
@@ -40,7 +40,7 @@ The `lakery_contents` table contains pointers to the actual content of stored ob
 | [`id`][lakery.core.database.ContentRecord.id]                                         | `UUID`      | Unique identifier for the content record.                                                                                             |
 | [`created_at`][lakery.core.database.ContentRecord.created_at]                         | `TIMESTAMP` | Timestamp when the content record was created.                                                                                        |
 | [`manifest_id`][lakery.core.database.ContentRecord.manifest_id]                       | `UUID`      | Unique identifier for the related manifest record representing the stored object.                                                     |
-| [`content_key`][lakery.core.database.ContentRecord.content_key]                       | `TEXT`      | A unique key amongst all content records for the same manifest returned by the unpacker.                                              |
+| [`content_name`][lakery.core.database.ContentRecord.content_name]                     | `TEXT`      | Unique amongst all content records for a given manifest. Given by the unpacker or the content.                                        |
 | [`content_type`][lakery.core.database.ContentRecord.content_type]                     | `TEXT`      | The [MIME type](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types) of the content.                          |
 | [`content_encoding`][lakery.core.database.ContentRecord.content_encoding]             | `TEXT`      | The encoding of the content, if applicable (e.g., `gzip`, `deflate`).                                                                 |
 | [`content_size`][lakery.core.database.ContentRecord.content_size]                     | `BIGINT`    | The size of the content in bytes.                                                                                                     |

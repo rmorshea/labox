@@ -8,11 +8,13 @@ from typing import cast
 from google.cloud.exceptions import NotFound
 
 from lakery.extra.google import BlobStorage
+from lakery.extra.google import simple_blob_router
 from tests.core_storage_utils import parametrize_storage_assertions
 
 if TYPE_CHECKING:
     from google.cloud.storage import Blob
     from google.cloud.storage import Bucket
+    from google.cloud.storage import Client
 
     from lakery.extra.google import ReaderType
     from lakery.extra.google import WriterType
@@ -22,11 +24,27 @@ if TYPE_CHECKING:
 async def test_blob_storage(assertion):
     await assertion(
         BlobStorage(
-            bucket_client=cast("Bucket", MockBucketClient()),
+            storage_client=cast("Client", MockStorageClient()),
+            storage_router=simple_blob_router("fake"),
             writer_type=cast("WriterType", MockBlobWriter),
             reader_type=cast("ReaderType", MockBlobReader),
         )
     )
+
+
+class MockStorageClient:
+    def __init__(self) -> None:
+        self._bucket_clients: dict[str, MockBucketClient] = {}
+
+    def bucket(
+        self,
+        bucket_name: str,
+        user_project: str | None = None,
+        generation: None = None,
+    ) -> MockBucketClient:
+        assert user_project is None, "User project is not supported in the mock"
+        assert generation is None, "Generation is not supported in the mock"
+        return self._bucket_clients.setdefault(bucket_name, MockBucketClient())
 
 
 class MockBucketClient:
