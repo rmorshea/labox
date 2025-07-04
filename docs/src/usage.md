@@ -16,7 +16,9 @@ First, initialize an async SQLAlchemy engine. Here's an example using
 [`aiosqlite`](https://pypi.org/project/aiosqlite/) for SQLite:
 
 ```python
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine
+
 from lakery.core import BaseRecord
 
 # Create the async engine
@@ -42,8 +44,8 @@ Next, establish a [registry](./concepts/registry.md) with the
 [storages](./concepts/storages.md) you plan to use:
 
 ```python
-from lakery.core import Registry
 from lakery.builtin.storages import FileStorage
+from lakery.core import Registry
 
 # Basic registry with built-in components
 registry = Registry(
@@ -55,14 +57,14 @@ registry = Registry(
 For more advanced setups, you can include additional modules and custom storages:
 
 ```python
-from lakery.extra.os import FileStorage
 from lakery.extra.aws import S3Storage
+from lakery.extra.os import FileStorage
 
 registry = Registry(
     modules=[
-        "lakery.builtin",           # Core storables and serializers
-        "lakery.extra.pydantic",    # Pydantic model support
-        "lakery.extra.msgpack",     # MessagePack serialization
+        "lakery.builtin",  # Core storables and serializers
+        "lakery.extra.pydantic",  # Pydantic model support
+        "lakery.extra.msgpack",  # MessagePack serialization
     ],
     storages=[
         FileStorage("./local_storage", mkdir=True),
@@ -78,9 +80,14 @@ Here's a complete setup example you can use as a starting point:
 
 ```python
 import asyncio
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
-from lakery.core import BaseRecord, Registry
+
+from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine
+
 from lakery.builtin.storages import FileStorage
+from lakery.core import BaseRecord
+from lakery.core import Registry
+
 
 async def setup_lakery():
     # Database setup
@@ -96,6 +103,7 @@ async def setup_lakery():
 
     return new_async_session, registry
 
+
 # Run setup
 new_async_session, registry = asyncio.run(setup_lakery())
 ```
@@ -110,8 +118,8 @@ The simplest way to save a single object is with
 [`save_one`][lakery.core.api.saver.save_one]:
 
 ```python
-from lakery.core import save_one
 from lakery.builtin import StorableValue
+from lakery.core import save_one
 
 # Create some data to save
 data = {"message": "Hello, world!", "value": 42}
@@ -119,11 +127,7 @@ obj = StorableValue(data)
 
 # Save it
 async with new_async_session() as session:
-    record = await save_one(
-        obj,
-        registry=registry,
-        session=session
-    )
+    record = await save_one(obj, registry=registry, session=session)
 ```
 
 The function returns a [`ManifestRecord`][lakery.core.database.ManifestRecord] that
@@ -135,8 +139,8 @@ For better performance when saving multiple objects, use the
 [`data_saver`][lakery.core.api.saver.data_saver] context manager:
 
 ```python
-from lakery.core import data_saver
 from lakery.builtin import StorableValue
+from lakery.core import data_saver
 
 objects = [
     StorableValue({"id": 1, "name": "Alice"}),
@@ -167,23 +171,23 @@ two levels:
 
 ```python
 await save_one(
-    obj,
-    tags={"environment": "production", "version": "1.0"},
-    registry=registry,
-    session=session
+    obj, tags={"environment": "production", "version": "1.0"}, registry=registry, session=session
 )
 ```
 
 **Content-level tags** apply to individual fields within a storable object. These are
-specified in the storable's unpacker or through annotations:
+specified in the storable's unpacker or, in the case of Pydantic, through annotations:
 
 ```python
-from lakery.extra.pydantic import StorageModel, StorageSpec
 from typing import Annotated
+
+from lakery.extra.pydantic import StorableSpec
+from lakery.extra.pydantic import StorageModel
+
 
 class MyModel(StorageModel, class_id="my-model"):
     regular_field: Any
-    tagged_field: Annotated[Any, StorageSpec(tags={"sensitive": "true"})]
+    tagged_field: Annotated[Any, StorableSpec(tags={"sensitive": "true"})]
 ```
 
 Tags are merged when saving, with manifest-level tags taking priority over content-level
@@ -198,9 +202,11 @@ For large datasets that don't fit in memory, use
 ```python
 from lakery.builtin import StorableStream
 
+
 async def generate_data():
     for i in range(1000000):
         yield {"id": i, "value": f"item_{i}"}
+
 
 stream_obj = StorableStream(generate_data())
 
@@ -223,7 +229,7 @@ async with new_async_session() as session:
         record,
         StorableValue,  # Expected type (optional but recommended)
         registry=registry,
-        session=session
+        session=session,
     )
 
 assert loaded_obj.value == data
@@ -270,13 +276,12 @@ You can query manifest records directly from the database to find objects to loa
 
 ```python
 from sqlalchemy import select
+
 from lakery.core.database import ManifestRecord
 
 async with new_async_session() as session:
     # Find all manifests with specific tags
-    stmt = select(ManifestRecord).where(
-        ManifestRecord.tags["environment"].astext == "production"
-    )
+    stmt = select(ManifestRecord).where(ManifestRecord.tags["environment"].astext == "production")
 
     results = await session.execute(stmt)
     manifests = results.scalars().all()

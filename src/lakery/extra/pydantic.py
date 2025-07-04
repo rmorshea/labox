@@ -36,21 +36,21 @@ if TYPE_CHECKING:
 
 
 __all__ = (
-    "StorageModel",
-    "StorageSpec",
+    "StorableModel",
+    "StorableSpec",
 )
 
 _LOG = getLogger(__name__)
 
 
-class _StorageModelUnpacker(Unpacker["StorageModel"]):
-    """Unpacker for [`StorageModel`][lakery.extra.pydantic.StorageModel] objects."""
+class _StorableModelUnpacker(Unpacker["StorableModel"]):
+    """Unpacker for [`StorableModel`][lakery.extra.pydantic.StorableModel] objects."""
 
     name = "lakery.pydantic@v1"
 
     def unpack_object(
         self,
-        obj: StorageModel,
+        obj: StorableModel,
         registry: Registry,
     ) -> Mapping[str, AnyUnpackedValue]:
         """Dump the model to storage content."""
@@ -86,10 +86,10 @@ class _StorageModelUnpacker(Unpacker["StorageModel"]):
 
     def repack_object(
         self,
-        cls: type[StorageModel],
+        cls: type[StorableModel],
         contents: Mapping[str, AnyUnpackedValue],
         registry: Registry,
-    ) -> StorageModel:
+    ) -> StorableModel:
         """Load the model from storage content."""
         contents = dict(contents)
         try:
@@ -114,11 +114,11 @@ class ConfigDict(StorableConfigDict, _ConfigDict):
     """
 
 
-class StorageModel(
+class StorableModel(
     Storable,
     BaseModel,
     arbitrary_types_allowed=True,
-    storable_unpacker=_StorageModelUnpacker(),
+    storable_unpacker=_StorableModelUnpacker(),
 ):
     """A Pydantic model that can be stored by Lakery."""
 
@@ -135,7 +135,7 @@ class StorageModel(
         handler: GetCoreSchemaHandler,
     ) -> cs.CoreSchema:
         try:
-            StorageModel  # type:ignore[reportUnusedExpression] # noqa: B018
+            StorableModel  # type:ignore[reportUnusedExpression] # noqa: B018
         except NameError:
             # we're defining the schema for this class
             return handler(source)
@@ -159,7 +159,7 @@ class StorageModel(
 
 
 @frozenclass
-class StorageSpec:
+class StorableSpec:
     """An annotation for specifying the storage and serialization of a field.
 
     Use [`typing.Annotated`][typing.Annotated] to add this to any type annotation.
@@ -178,10 +178,10 @@ class StorageSpec:
     Then use it somewhere in a storage model:
 
     ```python
-    from lakery.extra.pydantic import StorageModel
+    from lakery.extra.pydantic import StorableModel
 
 
-    class MyModel(StorageModel, storage_model_config={"id": "...", "version": 1}):
+    class MyModel(StorableModel, class_id="..."):
         my_field: UseMsgPack[Any]
     ```
     """

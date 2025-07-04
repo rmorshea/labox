@@ -184,6 +184,7 @@ ban-relative-imports = "all"
     "ARG002", # Unused method argument
     "ARG003", # Unused argument
     "B018",   # Useless expression
+    "F704",   # Await statement outside of function
     "F821",   # Undefined name (see: https://github.com/adamtheturtle/doccmd/issues/275)
     "FA102",  # Unsafe __futures__ annotations usage
     "RUF029", # No await in async function

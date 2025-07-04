@@ -21,7 +21,8 @@ pip install lakery[pydantic,pandas,aws]
 ```
 
 There's a [complete list of extras](./integrations/index.md) in the Integrations
-section.
+section, but be sure to checkout how Lakery works with
+[Pydantic](./integrations/3rd-party/pydantic.md).
 
 ## Basic Setup
 
@@ -91,7 +92,8 @@ async def save(obj):
 record = asyncio.run(save(obj))
 ```
 
-Behind the scenes Lakery inferred an appropriate serializer and default storage from the
+Behind the scenes Lakery inferred an appropriate serializer (in this case
+[JSON](./integrations/built-ins/serializers.md#json)) and default storage from the
 registry you created in the [setup](#basic-setup) section. Where and how the data was
 stored is recorded in the the [database](./concepts/database.md) so you can retrieve it
 later:
@@ -110,3 +112,82 @@ async def load(record):
 loaded_obj = asyncio.run(load(record))
 assert loaded_obj == obj
 ```
+
+## With Pydantic
+
+Lakery works well with [Pydantic](https://pydantic.dev/), allowing you to save and load
+[Pydantic models](https://docs.pydantic.dev/latest/) as `Storable` objects. First be
+sure a compatible version of Pydantic is installed:
+
+```bash
+pip install lakery[pydantic]
+```
+
+Then add Pydantic to your registry:
+
+```python
+registry = Registry(
+    modules=["lakery.builtin", "lakery.extra.pydantic"],
+    default_storage=FileStorage("temp", mkdir=True),
+)
+```
+
+Now define a model that inherits from `StorableModel`:
+
+```python
+from lakery.extra.pydantic import StorableModel
+
+
+class MyModel(StorableModel, class_id="abc123"):
+    name: str
+    value: int
+```
+
+You can then save and load instances of this model just like any other `Storable`:
+
+```python
+from lakery.core import load_one
+from lakery.core import save_one
+
+
+async def save_model(model):
+    async with new_async_session() as session:
+        return await save_one(model, session=session, registry=registry)
+
+
+async def load_model(record):
+    async with new_async_session() as session:
+        return await load_one(record, session=session, registry=registry)
+
+
+# Example usage
+model = MyModel(name="Test", value=42)
+record = asyncio.run(save_model(model))
+loaded_model = asyncio.run(load_model(record))
+assert loaded_model == model
+```
+
+Lakery also works with Pydantic's powerful type annotation features. For example, you
+can annotate that certain fields should use a specific serializer or storage with the
+`StorableSpec` annotation. Here is an example using a Pandas DataFrame with a Parquet
+serializer:
+
+```python
+from typing import Annotated
+
+import pandas as pd
+
+from lakery.extra.pandas import ParquetDataFrameSerializer
+from lakery.extra.pydantic import StorableSpec
+
+DataFrame = Annotated[pd.DataFrame, StorableSpec(serializer=ParquetDataFrameSerializer)]
+
+
+class MyModel(StorableModel, class_id="abc123"):
+    name: str
+    data: DataFrame
+```
+
+!!! note
+
+    Be sure to add the `ParquetDataFrameSerializer` to your registry.
