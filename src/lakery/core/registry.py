@@ -3,6 +3,8 @@ from __future__ import annotations
 import re
 from collections.abc import Mapping
 from copy import deepcopy
+from dataclasses import dataclass
+from dataclasses import field
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import NotRequired
@@ -143,8 +145,7 @@ class Registry:
     def get_serializer_by_content_type(self, content_type: str) -> Serializer:
         """Get a serializer that can handle the given content type."""
         parsed_ct = _parse_content_type(content_type)
-        key = (parsed_ct["type"], parsed_ct["subtype"], parsed_ct["suffix"])
-        if serializer := self._info["serializer_by_content_type"].get(key):
+        if serializer := self._info["serializer_by_content_type"].get(parsed_ct):
             return serializer
         msg = f"No serializer found for content type {content_type!r}."
         raise NotRegistered(msg)
@@ -156,8 +157,7 @@ class Registry:
     def get_stream_serializer_by_content_type(self, content_type: str) -> StreamSerializer:
         """Get a stream serializer that can handle the given content type."""
         parsed_ct = _parse_content_type(content_type)
-        key = (parsed_ct["type"], parsed_ct["subtype"], parsed_ct["suffix"])
-        if serializer := self._info["stream_serializer_by_content_type"].get(key):
+        if serializer := self._info["stream_serializer_by_content_type"].get(parsed_ct):
             return serializer
         msg = f"No stream serializer found for content type {content_type!r}."
         raise NotRegistered(msg)
@@ -210,12 +210,12 @@ def _kwargs_to_info(kwargs: RegistryKwargs) -> _RegistryInfo:
 
 
 def _info_from_explicit_kwargs(kwargs: RegistryKwargs) -> _RegistryInfo:
-    serializer_by_content_type: dict[_ContentTypeKey, Serializer] = {}
+    serializer_by_content_type: dict[_ContentType, Serializer] = {}
     serializer_by_name: dict[str, Serializer] = {}
     serializer_by_type: dict[type[Any], Serializer] = {}
     storable_by_id: dict[UUID, type[Storable]] = {}
     storage_by_name: dict[str, Storage] = {}
-    stream_serializer_by_content_type: dict[_ContentTypeKey, StreamSerializer] = {}
+    stream_serializer_by_content_type: dict[_ContentType, StreamSerializer] = {}
     stream_serializer_by_name: dict[str, StreamSerializer] = {}
     stream_serializer_by_type: dict[type[Any], StreamSerializer] = {}
     unpacker_by_name: dict[str, Unpacker] = {}
@@ -239,20 +239,14 @@ def _info_from_explicit_kwargs(kwargs: RegistryKwargs) -> _RegistryInfo:
             stream_serializer_by_name[serializer.name] = serializer
             stream_serializer_by_type.update(dict.fromkeys(serializer.types, serializer))
             stream_serializer_by_content_type.update(
-                {
-                    (ct["type"], ct["subtype"], ct["suffix"]): serializer
-                    for ct in map(_parse_content_type, serializer.content_types)
-                }
+                dict.fromkeys(map(_parse_content_type, serializer.content_types), serializer)
             )
 
         else:
             serializer_by_name[serializer.name] = serializer
             serializer_by_type.update(dict.fromkeys(serializer.types, serializer))
             serializer_by_content_type.update(
-                {
-                    (ct["type"], ct["subtype"], ct["suffix"]): serializer
-                    for ct in map(_parse_content_type, serializer.content_types)
-                }
+                dict.fromkeys(map(_parse_content_type, serializer.content_types), serializer)
             )
 
     for storage in kwargs.get("storages") or ():
@@ -356,15 +350,8 @@ class _RegistryInfo(TypedDict):
     stream_serializer_by_type: Mapping[type[Any], StreamSerializer]
     unpacker_by_name: Mapping[str, Unpacker]
     unpacker_by_type: Mapping[type[Any], Unpacker]
-    serializer_by_content_type: Mapping[_ContentTypeKey, Serializer]
-    stream_serializer_by_content_type: Mapping[_ContentTypeKey, StreamSerializer]
-
-
-_ContentTypeKey = tuple[
-    str,  # type
-    str,  # subtype
-    str,  # suffix
-]
+    serializer_by_content_type: Mapping[_ContentType, Serializer]
+    stream_serializer_by_content_type: Mapping[_ContentType, StreamSerializer]
 
 
 def _iter_module_exports(modules: Iterable[ModuleType | str]) -> Iterator[Any]:
@@ -426,7 +413,8 @@ def _parse_content_type(s: str) -> _ContentType:
     )
 
 
-class _ContentType(TypedDict):
+@dataclass(frozen=True)
+class _ContentType:
     """A parsed content type."""
 
     type: str
@@ -435,5 +423,5 @@ class _ContentType(TypedDict):
     """The sub-type."""
     suffix: str
     """The suffix, if any."""
-    parameters: Sequence[tuple[str, str]]
+    parameters: Sequence[tuple[str, str]] = field(hash=False)
     """Any additional parameters."""
