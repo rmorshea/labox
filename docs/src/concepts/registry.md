@@ -142,14 +142,14 @@ The logic for matching a serializer to a value or an unpacker to a storable is b
 the following psudo-code snippet:
 
 ```python
-def infer_serializer(cls: type, serializers: dict[type, Serializer]) -> Serializer:
+def get_serializer_by_type(cls: type, serializers: dict[type, Serializer]) -> Serializer:
     for base in cls.__mro__:
         if base in serializers:
             return serializers[base]
     raise ValueError
 
 
-def infer_unpacker(cls: type, unpackers: dict[type, Unpacker]) -> Unpacker:
+def get_unpacker_by_type(cls: type, unpackers: dict[type, Unpacker]) -> Unpacker:
     for base in cls.__mro__:
         if base in unpackers:
             return unpackers[base]
@@ -159,9 +159,6 @@ def infer_unpacker(cls: type, unpackers: dict[type, Unpacker]) -> Unpacker:
 The serializer and unpacker mappings are constructed from the
 [`types`][lakery.core.serializer.Serializer.types] and
 [`types`][lakery.core.unpacker.Unpacker.types] attributes respectively.
-
-Type inference can be disabled by setting either `infer_serializers=False` or
-`infer_unpackers=False` when creating a [`Registry`][lakery.core.registry.Registry].
 
 ## Precedence
 

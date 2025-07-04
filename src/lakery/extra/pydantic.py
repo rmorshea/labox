@@ -146,18 +146,16 @@ class StorageModel(
     def storage_model_body_storage(self, registry: Registry) -> Storage:
         """Return the storage for the "body" of this model.
 
-        "Body" refers to the data that Pydantic was able to dump
-        without needing to use a serializer supplied by Lakery.
+        "Body" refers to the data within the model that does not have an explicit storage.
         """
         return registry.get_default_storage()
 
     def storage_model_body_serializer(self, registry: Registry) -> Serializer:
         """Return a JSON serializer for the "body" of this model.
 
-        "Body" refers to the data that Pydantic was able to dump
-        without needing to use a serializer supplied by Lakery.
+        "Body" refers to the data within the model that does not have an explicit storage.
         """
-        return registry.infer_serializer(dict)
+        return registry.get_serializer_by_content_type("application/json")
 
 
 @frozenclass
@@ -305,7 +303,7 @@ def _make_serializer_func(schema: cs.CoreSchema) -> cs.FieldPlainInfoSerializerF
         serializer = (
             registry.get_serializer(serializer_name)
             if serializer_name is not None
-            else registry.infer_serializer(cls)
+            else registry.get_serializer_by_type(cls)
         )
         if storage_name is not None:
             ref_str = _make_ref_str(type(model), info, context)

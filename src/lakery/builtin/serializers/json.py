@@ -46,13 +46,13 @@ class JsonSerializer(Serializer[JsonType], _JsonSerializerBase):
 
     name = "lakery.json.value@v1"
     types = JSON_TYPES
-    content_type = "application/json"
+    content_types = ("application/json",)
 
     def serialize_data(self, value: JsonType) -> SerializedData:
         """Serialize the given value to JSON."""
         return {
             "content_encoding": "utf-8",
-            "content_type": self.content_type,
+            "content_type": "application/json",
             "data": self.encoder.encode(value).encode("utf-8"),
         }
 
@@ -66,13 +66,13 @@ class JsonStreamSerializer(StreamSerializer[JsonType], _JsonSerializerBase):
 
     name = "lakery.json.stream@v1"
     types = JSON_TYPES
-    content_type = "application/json"
+    content_types = ("application/json",)
 
     def serialize_data_stream(self, stream: AsyncIterable[JsonType]) -> SerializedDataStream:
         """Serialize the given stream of JSON data."""
         return {
             "content_encoding": "utf-8",
-            "content_type": self.content_type,
+            "content_type": "application/json",
             "data_stream": _dump_json_stream(self.encoder, stream),
         }
 

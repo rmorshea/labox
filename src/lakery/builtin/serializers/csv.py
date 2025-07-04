@@ -2,6 +2,7 @@ import csv
 import json
 from collections.abc import Sequence
 from io import StringIO
+from typing import Literal
 from typing import TypedDict
 from typing import Unpack
 
@@ -19,7 +20,7 @@ class CsvOptions(TypedDict, total=False):
     doublequote: bool
     skipinitialspace: bool
     lineterminator: str
-    quoting: int
+    quoting: Literal[0, 1, 2, 3, 4, 5]
     strict: bool
 
 
@@ -28,7 +29,7 @@ class CsvSerializer(Serializer[Sequence]):
 
     name = "lakery.csv@v1"
     types = ()  # Too hard to know the data is tabular just on an object type
-    content_type = "text/csv"
+    content_types = ("text/csv",)
 
     def __init__(self, **options: Unpack[CsvOptions]) -> None:
         """Initialize the CSV serializer with optional format parameters."""
@@ -42,7 +43,7 @@ class CsvSerializer(Serializer[Sequence]):
             writer.writerow(row)
         return {
             "content_encoding": "utf-8",
-            "content_type": self.content_type,
+            "content_type": "text/csv",
             "data": buffer.getvalue().encode("utf-8"),
         }
 

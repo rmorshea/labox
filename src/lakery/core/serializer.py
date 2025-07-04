@@ -24,7 +24,15 @@ class Serializer(Generic[T], Component):
     """A protocol for serializing/deserializing values."""
 
     types: tuple[type[T], ...] = ()
-    """The types that the serializer can handle."""
+    """The types that the serializer can handle
+
+    Used for type inference in the [registry][lakery.core.registry.Registry].
+    """
+    content_types: tuple[str, ...] = ()
+    """The content types that the serializer uses.
+
+    Used to get serializers by content type in the [registry][lakery.core.registry.Registry].
+    """
 
     def __init_subclass__(cls) -> None:
         validate_versioned_class_name(cls)
@@ -46,7 +54,15 @@ class StreamSerializer(Generic[T], Component):
     """A protocol for serializing/deserializing streams of values."""
 
     types: tuple[type[T], ...] = ()
-    """The types that the serializer can handle."""
+    """The types that the serializer can handle.
+
+    Used for type inference in the [registry][lakery.core.registry.Registry].
+    """
+    content_types: tuple[str, ...] = ()
+    """The content types that the serializer uses.
+
+    Used to get serializers by content type in the [registry][lakery.core.registry.Registry].
+    """
 
     @abc.abstractmethod
     @not_implemented

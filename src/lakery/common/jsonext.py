@@ -157,7 +157,7 @@ def dump_json_content_ext(
     value: Any, serializer: Serializer | None, context: JsonExtDumpContext
 ) -> ContentJsonExt:
     """Dump the given value to a JSON extension with embedded content."""
-    serializer = serializer or context["registry"].infer_serializer(type(value))
+    serializer = serializer or context["registry"].get_serializer_by_type(type(value))
     content = serializer.serialize_data(value)
     return {
         "__json_ext__": "content",

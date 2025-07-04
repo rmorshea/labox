@@ -212,7 +212,7 @@ async def _save_storage_value(
     registry: Registry,
 ) -> ContentRecord:
     storage = storage or registry.get_default_storage()
-    serializer = serializer or registry.infer_serializer(type(value))
+    serializer = serializer or registry.get_serializer_by_type(type(value))
     content = serializer.serialize_data(value)
     digest = _make_value_dump_digest(content)
     merged_tags = {**content_tags, **tags}  # content tags have lower priority
@@ -251,7 +251,7 @@ async def _save_storage_stream(
         if serializer is None:
             stream_iter = aiter(stream)
             first_value = await anext(stream_iter)
-            serializer = registry.infer_stream_serializer(type(first_value))
+            serializer = registry.get_stream_serializer_by_type(type(first_value))
             stream = _continue_stream(first_value, stream_iter)
 
         content = serializer.serialize_data_stream(stream)

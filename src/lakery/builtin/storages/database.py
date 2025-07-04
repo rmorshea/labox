@@ -9,7 +9,7 @@ __all__ = ("DatabaseStorage", "database_storage")
 
 WARN_SIZE_DEFAULT = 10 * 1024  # 10 KB
 ERROR_SIZE_DEFAULT = 100 * 1024  # 100 KB
-JSON_CONTENT_TYPE_PATTERN = re.compile(r"^application/.*\+?json$")
+JSON_CONTENT_TYPE_PATTERN = re.compile(r"^application/(.*?\+?json|json\+?.*?)\;?.*$")
 
 
 class DatabaseStorage(Storage):
