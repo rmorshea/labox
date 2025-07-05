@@ -13,10 +13,10 @@ To define an unpacker you need to first decide what types of `Storable` classes 
 should handle. Then you can implement the `Unpacker` interface, which requires you to
 provide the following:
 
--   `name` - a string that uniquely and permanently identifies the unpacker.
--   `unpack_object` - a method that takes a `Storable` instance and returns a dictionary
+- `name` - a string that uniquely and permanently identifies the unpacker.
+- `unpack_object` - a method that takes a `Storable` instance and returns a dictionary
     of fields with their values as well as where and how to store them.
--   `repack_object` - a method that takes a `Storable` class and the aforementioned
+- `repack_object` - a method that takes a `Storable` class and the aforementioned
     dictionary, and returns a new instance of the `Storable` class.
 
 In the simplest case, this might look something like the following:
@@ -54,10 +54,10 @@ Each [value](#unpacked-values) or [stream](#unpacked-streams) returned by an unp
 identified by a string within the unpacked dictionary. This string is called the
 "content name". This string gets passed along to:
 
--   The [`ContentRecord`](./database.md#content-records) that is saved as a pointer to
+- The [`ContentRecord`](./database.md#content-records) that is saved as a pointer to
     the data. The name is unique amongst all the content records for a given
     [`ManifestRecord`](./database.md#manifest-records).
--   The [storage](./storages.md#storage-names) where the data is saved. From the
+- The [storage](./storages.md#storage-names) where the data is saved. From the
     storage's perspective, the content name is not globally unique and is not suitable
     as a storage key on its own.
 
@@ -67,10 +67,10 @@ When you unpack a `Storable` class, the values are returned as
 [`UnpackedValue`][lakery.core.unpacker.UnpackedValue] dicts. These values contain the
 following information:
 
--   `value`: The actual value of the field.
--   `serializer` (optional): The serializer to use when saving the value.
--   `storage` (optional): The storage to use when saving the value.
--   `tags` (optional): A dictionary of tags to associate with the value.
+- `value`: The actual value of the field.
+- `serializer` (optional): The serializer to use when saving the value.
+- `storage` (optional): The storage to use when saving the value.
+- `tags` (optional): A dictionary of tags to associate with the value.
 
 If you do not specify a serializer. One will be inferred based on the type of the value.
 If you do not specify a storage, the default storage in the given
@@ -90,10 +90,10 @@ into `UnpackedValueStream` dicts. This is useful when you can't or don't want to
 large amounts of data into memory at once. An `UnpackedValueStream` contains the
 following information:
 
--   `value_stream`: An async iterable that yields the values of the fields.
--   `serializer` (recommended): The serializer to use when saving the values.
--   `storage` (optional): The storage to use when saving the values.
--   `tags` (optional): A dictionary of tags to associate with the value stream.
+- `value_stream`: An async iterable that yields the values of the fields.
+- `serializer` (recommended): The serializer to use when saving the values.
+- `storage` (optional): The storage to use when saving the values.
+- `tags` (optional): A dictionary of tags to associate with the value stream.
 
 In this case providing an explicit serializer is recommended because attempting to infer
 the appropriate serializer will raise a late error since the first value from the stream

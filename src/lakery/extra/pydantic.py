@@ -2,12 +2,14 @@ from __future__ import annotations
 
 from base64 import b64decode
 from base64 import b64encode
+from collections.abc import AsyncIterable
 from collections.abc import Callable
 from collections.abc import Mapping
 from collections.abc import MutableMapping
 from logging import getLogger
 from typing import TYPE_CHECKING
 from typing import Any
+from typing import Literal
 from typing import TypedDict
 from typing import Unpack
 from typing import cast
@@ -21,14 +23,16 @@ from pydantic_walk_core_schema import walk_core_schema
 
 from lakery._internal._utils import frozenclass
 from lakery._internal._utils import get_typed_dict
+from lakery.core.serializer import StreamSerializer
 from lakery.core.storable import Storable
 from lakery.core.storable import StorableConfigDict
 from lakery.core.unpacker import AnyUnpackedValue
 from lakery.core.unpacker import UnpackedValue
+from lakery.core.unpacker import UnpackedValueStream
 from lakery.core.unpacker import Unpacker
 
 if TYPE_CHECKING:
-    from lakery.common.jsonext import AnyJsonExt
+    from lakery.common.jsonext import _AnyJsonExt
     from lakery.common.types import TagMap
     from lakery.core.registry import Registry
     from lakery.core.serializer import Serializer
@@ -78,8 +82,8 @@ class _StorableModelUnpacker(Unpacker["StorableModel"]):
         return {
             "data": {
                 "value": data,
-                "serializer": obj.storage_model_body_serializer(registry),
-                "storage": obj.storage_model_body_storage(registry),
+                "serializer": obj.storable_model_serializer(registry),
+                "storage": obj.storable_model_storage(registry),
             },
             **external,
         }
@@ -143,14 +147,14 @@ class StorableModel(
             # we're defining the schema for a subclass
             return _adapt_third_party_types(handler(source), handler)
 
-    def storage_model_body_storage(self, registry: Registry) -> Storage:
+    def storable_model_storage(self, registry: Registry) -> Storage:
         """Return the storage for the "body" of this model.
 
         "Body" refers to the data within the model that does not have an explicit storage.
         """
         return registry.get_default_storage()
 
-    def storage_model_body_serializer(self, registry: Registry) -> Serializer:
+    def storable_model_serializer(self, registry: Registry) -> Serializer:
         """Return a JSON serializer for the "body" of this model.
 
         "Body" refers to the data within the model that does not have an explicit storage.
@@ -186,7 +190,7 @@ class StorableSpec:
     ```
     """
 
-    serializer: type[Serializer] | None = None
+    serializer: type[Serializer | StreamSerializer] | None = None
     """The serializer to use for this value."""
     storage: type[Storage] | None = None
     """The storage to use for this value."""
@@ -203,12 +207,21 @@ class StorableSpec:
             metadata = _get_schema_metadata(schema)
         else:
             metadata: _SchemaMetadata = {}
+
         if self.serializer is not None:
-            metadata["serializer_name"] = self.serializer.name
+            if issubclass(self.serializer, StreamSerializer):
+                metadata["serializer_name"] = self.serializer.name  # type: ignore
+                metadata["serializer_type"] = "stream_serializer"
+            else:
+                metadata["serializer_name"] = self.serializer.name  # type: ignore
+                metadata["serializer_type"] = "serializer"
+
         if self.storage is not None:
             metadata["storage_name"] = self.storage.name
+
         if self.tags is not None:
             metadata["tags"] = self.tags
+
         _set_schema_metadata(schema, metadata)
         return schema
 
@@ -261,7 +274,7 @@ def _make_validator_func() -> cs.WithInfoValidatorFunction:
         if "__json_ext__" not in maybe_json_ext:
             return maybe_json_ext
 
-        json_ext = cast("AnyJsonExt", maybe_json_ext)
+        json_ext = cast("_AnyJsonExt", maybe_json_ext)
 
         if json_ext["__json_ext__"] == "ref":
             ref_str = json_ext["ref"]
@@ -292,36 +305,62 @@ def _make_validator_func() -> cs.WithInfoValidatorFunction:
 def _make_serializer_func(schema: cs.CoreSchema) -> cs.FieldPlainInfoSerializerFunction:
     metadata = _get_schema_metadata(schema)
     serializer_name = metadata.get("serializer_name")
+    serializer_type_ = metadata.get("serializer_type")
     storage_name = metadata.get("storage_name")
 
-    def serialize(model: BaseModel, value: Any, info: cs.FieldSerializationInfo, /) -> AnyJsonExt:
+    def serialize(model: BaseModel, value: Any, info: cs.FieldSerializationInfo, /) -> _AnyJsonExt:
         context = _get_info_context(info)
         external = context["external"]
         registry = context["registry"]
 
-        cls = type(value)
-        serializer = (
-            registry.get_serializer(serializer_name)
-            if serializer_name is not None
-            else registry.get_serializer_by_type(cls)
+        serializer_type = (
+            serializer_type_
+            if serializer_type_ is not None
+            else ("stream_serializer" if isinstance(value, AsyncIterable) else "serializer")
         )
-        if storage_name is not None:
-            ref_str = _make_ref_str(type(model), info, context)
-            external[ref_str] = UnpackedValue(
-                value=value,
-                serializer=serializer,
-                storage=registry.get_storage(storage_name),
-            )
-            return {"__json_ext__": "ref", "ref": ref_str}
 
-        content = serializer.serialize_data(value)
-        return {
-            "__json_ext__": "content",
-            "content_base64": b64encode(content["data"]).decode("ascii"),
-            "content_encoding": None,
-            "content_type": content["content_type"],
-            "serializer_name": serializer.name,
-        }
+        if serializer_type == "serializer":
+            serializer = (
+                registry.get_serializer(serializer_name)
+                if serializer_name is not None
+                else registry.get_serializer_by_type(type(value))
+            )
+            if storage_name is not None:
+                ref_str = _make_ref_str(type(model), info, context)
+                unpacked = UnpackedValue(
+                    value=value,
+                    serializer=serializer,
+                    storage=registry.get_storage(storage_name),
+                )
+                external[ref_str] = unpacked
+                return {"__json_ext__": "ref", "ref": ref_str}
+            content = serializer.serialize_data(value)
+            return {
+                "__json_ext__": "content",
+                "content_base64": b64encode(content["data"]).decode("ascii"),
+                "content_encoding": content["content_encoding"],
+                "content_type": content["content_type"],
+                "serializer_name": serializer.name,
+            }
+        else:
+            serializer = (
+                registry.get_stream_serializer(serializer_name)
+                if serializer_name is not None
+                else None
+            )
+            storage = (
+                registry.get_storage(storage_name)
+                if storage_name is not None
+                else registry.get_default_storage()
+            )
+            unpacked = UnpackedValueStream(
+                value_stream=value,
+                serializer=serializer,
+                storage=storage,
+            )
+            ref_str = _make_ref_str(type(model), info, context)
+            external[ref_str] = unpacked
+            return {"__json_ext__": "ref", "ref": ref_str}
 
     return serialize
 
@@ -365,6 +404,7 @@ def _set_schema_metadata(schema: cs.CoreSchema, metadata: _SchemaMetadata) -> No
 
 class _SchemaMetadata(TypedDict, total=False):
     serializer_name: str
+    serializer_type: Literal["serializer", "stream_serializer"]
     storage_name: str
     tags: TagMap
 

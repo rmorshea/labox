@@ -152,6 +152,7 @@ ignore = [
     "S105",   # Ignore checks for possible passwords
     "S311",   # Random not suitable for security/cryptographic purposes
     "SIM117", # Use a single `with` statement
+    "PGH003", # Give error code for type ignore
 ]
 unfixable = [
     "COM819", # Trailing comma
@@ -180,19 +181,20 @@ ban-relative-imports = "all"
     "D",      # Docstrings
 ]
 "doccmd_*.py" = [
-    "ANN",    # Type annotations
-    "ARG002", # Unused method argument
-    "ARG003", # Unused argument
-    "B018",   # Useless expression
-    "F704",   # Await statement outside of function
-    "F821",   # Undefined name (see: https://github.com/adamtheturtle/doccmd/issues/275)
-    "FA102",  # Unsafe __futures__ annotations usage
-    "RUF029", # No await in async function
-    "S101",   # Assert statements
-    "S106",   # Possible passwords
-    "SIM115", # Use context manager for opening files
-    "T201",   # Print
-    "TCH002", # Move third-party import into a type-checking block
+    "ANN",      # Type annotations
+    "ARG002",   # Unused method argument
+    "ARG003",   # Unused argument
+    "B018",     # Useless expression
+    "F704",     # Await statement outside of function
+    "F821",     # Undefined name (see: https://github.com/adamtheturtle/doccmd/issues/275)
+    "FA102",    # Unsafe __futures__ annotations usage
+    "RUF029",   # No await in async function
+    "S101",     # Assert statements
+    "S106",     # Possible passwords
+    "SIM115",   # Use context manager for opening files
+    "T201",     # Print
+    "TCH002",   # Move third-party import into a type-checking block
+    "ASYNC230", # Async function should not open file
 ]
 
 [tool.yamlfix]

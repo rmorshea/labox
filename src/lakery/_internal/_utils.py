@@ -109,6 +109,8 @@ else:
 
     def frozenclass(*args, **kwargs):
         """Create a dataclass that's frozen by default."""
+        kwargs.setdefault("frozen", True)
+        kwargs.setdefault("kw_only", True)
         return dataclass(*args, **kwargs)
 
 
