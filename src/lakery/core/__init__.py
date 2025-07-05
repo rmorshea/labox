@@ -1,8 +1,8 @@
 from lakery.core.api.loader import DataLoader
-from lakery.core.api.loader import data_loader
 from lakery.core.api.loader import load_one
+from lakery.core.api.loader import new_loader
 from lakery.core.api.saver import DataSaver
-from lakery.core.api.saver import data_saver
+from lakery.core.api.saver import new_saver
 from lakery.core.api.saver import save_one
 from lakery.core.database import BaseRecord
 from lakery.core.database import ContentRecord
@@ -39,10 +39,10 @@ __all__ = (
     "UnpackedValue",
     "UnpackedValueStream",
     "Unpacker",
-    "data_loader",
-    "data_saver",
     "load_one",
     "load_one",
+    "new_loader",
+    "new_saver",
     "save_one",
     "save_one",
 )

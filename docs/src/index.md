@@ -20,9 +20,8 @@ pip install lakery[all]
 pip install lakery[pydantic,pandas,aws]
 ```
 
-There's a [complete list of extras](./integrations/index.md) in the Integrations
-section, but be sure to checkout how Lakery works with
-[Pydantic](./integrations/3rd-party/pydantic.md).
+There's a [complete list of extras](./integrations) in the Integrations section, but be
+sure to checkout how Lakery works with [Pydantic](./integrations/3rd-party/pydantic.md).
 
 ## Basic Setup
 
@@ -55,7 +54,7 @@ from lakery.core import Registry
 from lakery.extra.os import FileStorage
 
 registry = Registry(
-    modules=["lakery.builtin"],
+    modules=["lakery.builtin", "lakery.extra.pandas", "lakery.extra.pydantic"],
     default_storage=FileStorage("temp", mkdir=True),
 )
 ```
@@ -65,50 +64,54 @@ registry = Registry(
 With setup completed, find some data you want to save:
 
 ```python
-data = {"hello": "world"}
+import pandas as pd
+
+experiment_data = {
+    "name": "Test Experiment",
+    "results": pd.DataFrame(
+        {"measurement_num": [1, 2, 3], "measurement_value": [1.23, 4.56, 7.89]}
+    ),
+}
 ```
 
-Pick a [storable](./concepts/storables.md) to save it with:
+Put that data in a [storable](./concepts/storables.md), in this case a
+[Pydantic](./integrations/3rd-party/pydantic.md):
 
 ```python
-from lakery.builtin import StorableValue
+import pandas as pd
 
-obj = StorableValue(data)
+from lakery.extra.pydantic import StorableModel
+
+
+class ExperimentData(StorableModel, class_id="abc123"):
+    name: str
+    results: pd.DataFrame
+
+
+experiment = ExperimentData(**experiment_data)
 ```
 
-Save the data and return a record of it:
+Save the data and return a [record](./concepts/database.md#manifest-records):
 
 ```python
-import asyncio
-
 from lakery.core import save_one
 
-
-async def save(obj):
-    async with new_async_session() as session:
-        return save_one(obj, session=session, registry=registry)
-
-
-record = asyncio.run(save(obj))
+async with new_async_session() as session:
+    record = save_one(experiment, session=session, registry=registry)
 ```
 
-Behind the scenes Lakery inferred an appropriate serializer (in this case
-[JSON](./integrations/built-ins/serializers.md#json)) and default storage from the
-registry you created in the [setup](#basic-setup) section. Where and how the data was
-stored is recorded in the the [database](./concepts/database.md) so you can retrieve it
-later:
+Now, you can load the data back from the record:
 
 ```python
-import asyncio
-
 from lakery.core import load_one
 
+async with new_async_session() as session:
+    loaded_experiment = load_one(record, session=session, registry=registry)
 
-async def load(record):
-    async with new_async_session() as session:
-        return load_one(record, session=session, registry=registry)
-
-
-loaded_obj = asyncio.run(load(record))
-assert loaded_obj == obj
+assert loaded_experiment == experiment
 ```
+
+## Next Steps
+
+Check out more [usage examples](./usage), or dive into the [concepts](./concepts) and
+[integrations](./integrations) to learn more about how Lakery works.

@@ -60,13 +60,13 @@ async def save_one(
     session: AsyncSession,
 ) -> ManifestRecord:
     """Save a single object to the database."""
-    async with data_saver(registry, session) as saver:
+    async with new_saver(registry, session) as saver:
         future = saver.save_soon(obj, tags=tags)
     return future.result()
 
 
 @contextmanager
-async def data_saver(
+async def new_saver(
     registry: Registry,
     session: AsyncSession,
 ) -> AsyncIterator[DataSaver]:

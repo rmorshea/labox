@@ -48,13 +48,13 @@ async def load_one(
     session: AsyncSession,
 ) -> M:
     """Load a single object from the given manifest record."""
-    async with data_loader(registry, session) as loader:
+    async with new_loader(registry, session) as loader:
         future = loader.load_soon(manifest, cls)
     return future.result()
 
 
 @contextmanager
-async def data_loader(
+async def new_loader(
     registry: Registry,
     session: AsyncSession,
 ) -> AsyncIterator[DataLoader]:
