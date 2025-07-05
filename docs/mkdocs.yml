@@ -6,7 +6,10 @@ docs_dir: src
 repo_url: https://github.com/rmorshea/lakery
 nav:
   - Home: index.md
-  - Usage: usage.md
+  - Usage:
+      - Overview: usage/index.md
+      - Guides: usage/guides.md
+      - Examples: usage/examples.md
   - Concepts:
       - Overview: concepts/index.md
       - Storables: concepts/storables.md
