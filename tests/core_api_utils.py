@@ -35,7 +35,7 @@ async def assert_save_load_equivalence(
 
     async with new_loader(session=session, registry=registry) as ml:
         future_model = ml.load_soon(record, type(obj))
-    loaded_model = future_model.result()
+    loaded_model = future_model.get()
 
     assertion(loaded_model, obj)
 
@@ -54,7 +54,7 @@ async def assert_save_load_stream_equivalence(
 
     async with new_loader(session=session, registry=registry) as ml:
         future_model = ml.load_soon(record, type(original_model))
-    loaded_model = future_model.result()
+    loaded_model = future_model.get()
 
     asserted = assertion(loaded_model, make_model())
     if isawaitable(asserted):
@@ -65,7 +65,7 @@ async def _get_realistic_manifest_record(
     session: AsyncSession,
     future: FutureResult[ManifestRecord],
 ) -> ManifestRecord:
-    returned_record = future.result()
+    returned_record = future.get()
     record_id = returned_record.id
     session.expunge(returned_record)  # expunge to clear any cached state
 

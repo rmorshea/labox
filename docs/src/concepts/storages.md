@@ -10,11 +10,11 @@ class.
 To define a storage you need to implement the [`Storage`][lakery.core.storage.Storage]
 interface with the following:
 
-- `name` - a string that uniquely and permanently identifies the storage.
-- `write_data` - a method that saves a single blob of data to the storage.
-- `read_data` - a method that reads a single blob of data from the storage.
-- `write_data_stream` - a method that saves a stream of data to the storage.
-- `read_data_stream` - a method that reads a stream of data from the storage.
+-   `name` - a string that uniquely and permanently identifies the storage.
+-   `write_data` - a method that saves a single blob of data to the storage.
+-   `read_data` - a method that reads a single blob of data from the storage.
+-   `write_data_stream` - a method that saves a stream of data to the storage.
+-   `read_data_stream` - a method that reads a stream of data from the storage.
 
 The code snippets below show a storage that saves data to files. You can start by
 implementing the `write_data` and `read_data` methods:
@@ -64,7 +64,6 @@ class FileStorage(Storage):
         self,
         stream: AsyncIterator[bytes],
         get_digest: GetStreamDigest,
-        name: str,
         tags: TagMap,
     ) -> str:
         with NamedTemporaryFile(dir=self._root) as temp_file:
@@ -93,21 +92,13 @@ methods. This way, when reading data, the storage can reconstruct the full path 
 data even if the prefix may have changed since the data was written.
 
 A pattern used within Lakery when implementing a storage is to allow users to configure
-their storages with a "router" function that takes in the `Digest` and `name` of the
+their storages with a "router" function that takes in the `Digest` and `tags` of the
 data being saved and returns a dictionary with the storage-specific information needed
 to locate the data later. In the case of the [`S3Storage`][lakery.extra.aws.S3Storage],
 the router function must return an [`S3Pointer`][lakery.extra.aws.S3Pointer] dictionary
 with the `bucket` and `key` where the data is stored. This forces the storage
 implementation to be agnostic about where it's been configured to save data while still
 allowing it to save data in a location that can be reconstructed later.
-
-## Content Name
-
-When saving data, the `write_data` and `write_data_stream` methods accept a `name`
-argument. This is label given to the data by its [unpacker](./unpackers.md). This name
-is not globally unique and is not suitable on its own as storage key that can be used to
-retrieve the data later. It could be used as an additional [tag](#storage-tags) or as a
-prefix in a path to organize the data in the storage.
 
 ## Storage Tags
 

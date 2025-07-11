@@ -4,7 +4,7 @@ Storables define the shape of the data that's saved and loaded by Lakery. Try th
 implementations:
 
 - [Pydantic models](../integrations/3rd-party/pydantic.md)
-- [Built-ins](../integrations/built-ins/storables.md) for simple values and streams.
+- [Built-ins](../integrations/built-ins/storables.md)
 
 ## Defining Storables
 

@@ -50,7 +50,7 @@ async def load_one(
     """Load a single object from the given manifest record."""
     async with new_loader(registry, session) as loader:
         future = loader.load_soon(manifest, cls)
-    return future.result()
+    return future.get()
 
 
 @contextmanager
@@ -141,7 +141,7 @@ async def load_from_manifest_record(
     content_futures: dict[str, FutureResult[Any]] = {}
     async with create_task_group() as tg:
         for c in contents:
-            content_futures[c.content_name] = start_future(
+            content_futures[c.content_key] = start_future(
                 tg,
                 load_from_content_record,
                 c,
@@ -150,7 +150,7 @@ async def load_from_manifest_record(
 
     return unpacker.repack_object(
         cls,
-        {i: f.result() for i, f in content_futures.items()},
+        {i: f.get() for i, f in content_futures.items()},
         registry,
     )
 

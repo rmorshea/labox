@@ -62,7 +62,7 @@ async def save_one(
     """Save a single object to the database."""
     async with new_saver(registry, session) as saver:
         future = saver.save_soon(obj, tags=tags)
-    return future.result()
+    return future.get()
 
 
 @contextmanager
@@ -82,7 +82,7 @@ async def new_saver(
             if e := f.exception():
                 errors.append(e)
             else:
-                m = f.result()
+                m = f.get()
                 _LOG.debug("Saving manifest %s", m.id.hex)
                 manifests.append(m)
 
@@ -144,8 +144,8 @@ async def _save_object(
     manifest_id = uuid4()
     data_record_futures: list[FutureResult[ContentRecord]] = []
     async with create_task_group() as tg:
-        for content_namew, content in obj_contents.items():
-            _LOG.debug("Saving %s in manifest %s", content_namew, manifest_id.hex)
+        for content_keyw, content in obj_contents.items():
+            _LOG.debug("Saving %s in manifest %s", content_keyw, manifest_id.hex)
             match content:
                 case {"value": content_value}:
                     data_record_futures.append(
@@ -154,7 +154,7 @@ async def _save_object(
                             _save_storage_value,
                             tags,
                             manifest_id,
-                            content_namew,
+                            content_keyw,
                             content_value,
                             content.get("serializer"),
                             content.get("storage"),
@@ -169,7 +169,7 @@ async def _save_object(
                             _save_storage_stream,
                             tags,
                             manifest_id,
-                            content_namew,
+                            content_keyw,
                             content_value_stream,
                             content.get("serializer"),
                             content.get("storage"),
@@ -178,7 +178,7 @@ async def _save_object(
                         )
                     )
                 case _:
-                    msg = f"Invalid manifest {content_namew!r} in {obj!r} - {content}"
+                    msg = f"Invalid manifest {content_keyw!r} in {obj!r} - {content}"
                     raise AssertionError(msg)
 
     contents: list[ContentRecord] = []
@@ -190,7 +190,7 @@ async def _save_object(
                 manifest_id.hex,
                 exc_info=(exc.__class__, exc, exc.__traceback__),
             )
-        contents.append(f.result())
+        contents.append(f.get())
 
     return ManifestRecord(
         id=manifest_id,
@@ -204,7 +204,7 @@ async def _save_object(
 async def _save_storage_value(
     tags: TagMap,
     manifest_id: UUID,
-    content_name: str,
+    content_key: str,
     value: Any,
     serializer: Serializer | None,
     storage: Storage | None,
@@ -216,12 +216,12 @@ async def _save_storage_value(
     content = serializer.serialize_data(value)
     digest = _make_value_dump_digest(content)
     merged_tags = {**content_tags, **tags}  # content tags have lower priority
-    storage_data = await storage.write_data(content["data"], digest, content_name, merged_tags)
+    storage_data = await storage.write_data(content["data"], digest, merged_tags)
     return ContentRecord(
         content_encoding=content["content_encoding"],
         content_hash_algorithm=digest["content_hash_algorithm"],
         content_hash=digest["content_hash"],
-        content_name=content_name,
+        content_key=content_key,
         content_size=digest["content_size"],
         content_type=content["content_type"],
         manifest_id=manifest_id,
@@ -236,7 +236,7 @@ async def _save_storage_value(
 async def _save_storage_stream(
     tags: TagMap,
     manifest_id: UUID,
-    content_name: str,
+    content_key: str,
     stream: AsyncIterable[Any],
     serializer: StreamSerializer | None,
     storage: Storage | None,
@@ -257,12 +257,7 @@ async def _save_storage_stream(
         content = serializer.serialize_data_stream(stream)
         byte_stream, get_digest = _wrap_stream_dump(content)
         merged_tags = {**content_tags, **tags}  # content tags have lower priority
-        storage_data = await storage.write_data_stream(
-            byte_stream,
-            get_digest,
-            content_name,
-            merged_tags,
-        )
+        storage_data = await storage.write_data_stream(byte_stream, get_digest, merged_tags)
         try:
             digest = get_digest()
         except ValueError:
@@ -272,7 +267,7 @@ async def _save_storage_stream(
             content_encoding=content["content_encoding"],
             content_hash_algorithm=digest["content_hash_algorithm"],
             content_hash=digest["content_hash"],
-            content_name=content_name,
+            content_key=content_key,
             content_size=digest["content_size"],
             content_type=content["content_type"],
             manifest_id=manifest_id,

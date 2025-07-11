@@ -112,12 +112,12 @@ class FutureResult(Generic[R]):
             return None
 
     @overload
-    def result(self) -> R: ...
+    def get(self) -> R: ...
 
     @overload
-    def result(self, default: D) -> R | D: ...
+    def get(self, default: D) -> R | D: ...
 
-    def result(self, default: D = UNDEFINED) -> R | D:
+    def get(self, default: D = UNDEFINED) -> R | D:
         """Get the result of a future."""
         try:
             return self._result

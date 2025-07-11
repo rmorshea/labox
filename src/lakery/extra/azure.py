@@ -44,7 +44,7 @@ def simple_blob_router(container: str, prefix: str = "") -> BlobRouter:
         A BlobRouter that generates BlobPointers for the specified container and prefix.
     """
 
-    def route(digest: Digest | StreamDigest, name: str, *, temp: bool) -> BlobPointer:  # noqa: ARG001
+    def route(digest: Digest | StreamDigest, tags: TagMap, *, temp: bool) -> BlobPointer:  # noqa: ARG001
         if temp:
             blob = make_temp_path("/", digest, prefix=prefix)
         else:
@@ -76,11 +76,10 @@ class BlobStorage(Storage["BlobPointer"]):
         self,
         data: bytes,
         digest: Digest,
-        name: str,
         tags: TagMap,
     ) -> BlobPointer:
         """Save the given value data."""
-        pointer = self._blob_router(digest, name, temp=False)
+        pointer = self._blob_router(digest, tags, temp=False)
         _LOG.debug("Saving data to %s", pointer)
         blob_client = self._service_client.get_blob_client(
             container=pointer["container"], blob=pointer["blob"]
@@ -112,12 +111,11 @@ class BlobStorage(Storage["BlobPointer"]):
         self,
         data_stream: AsyncIterable[bytes],
         get_digest: GetStreamDigest,
-        name: str,
         tags: TagMap,
     ) -> BlobPointer:
         """Save the given data stream."""
         initial_digest = get_digest(allow_incomplete=True)
-        temp_pointer = self._blob_router(initial_digest, name, temp=True)
+        temp_pointer = self._blob_router(initial_digest, tags, temp=True)
         _LOG.debug("Temporarily saving data to %s", temp_pointer)
 
         temp_blob_client = self._service_client.get_blob_client(
@@ -132,7 +130,7 @@ class BlobStorage(Storage["BlobPointer"]):
             tags=tags,
         )
         try:
-            final_pointer = self._blob_router(get_digest(), "final", temp=False)
+            final_pointer = self._blob_router(get_digest(), tags, temp=False)
             _LOG.debug("Moving data to final location %s", final_pointer)
             final_blob_client = self._service_client.get_blob_client(
                 container=final_pointer["container"], blob=final_pointer["blob"]
@@ -172,12 +170,12 @@ class BlobPointer(TypedDict):
 class BlobRouter(Protocol):
     """A protocol for routing data to Azure Blob Storage by returning a BlobPointer."""
 
-    def __call__(self, digest: Digest | StreamDigest, name: str, *, temp: bool) -> BlobPointer:
-        """Return a BlobPointer for the given digest and name.
+    def __call__(self, digest: Digest | StreamDigest, tags: TagMap, *, temp: bool) -> BlobPointer:
+        """Return a BlobPointer for the given digest and tags.
 
         Args:
             digest: The digest of the data to route.
-            name: The name given to the content by an unpacker - not globally unique.
+            tags: The tags to associate with the content.
             temp: Whether to create a temporary path for the data - used for streaming data.
 
         Returns:
@@ -190,7 +188,7 @@ def _read_only(storage: BlobStorage) -> BlobRouter:
     """Create a read-only blob router that always returns the same container and blob."""
     get_storage = ref(storage)
 
-    def router(digest: Digest | StreamDigest, name: str, *, temp: bool) -> BlobPointer:
+    def router(digest: Digest | StreamDigest, tags: TagMap, *, temp: bool) -> BlobPointer:
         msg = f"{get_storage()} is read-only and cannot write data."
         raise NotImplementedError(msg)
 

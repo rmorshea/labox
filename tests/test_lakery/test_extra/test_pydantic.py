@@ -7,24 +7,24 @@ from lakery.builtin.serializers.json import JsonSerializer
 from lakery.builtin.storages import FileStorage
 from lakery.core.registry import Registry
 from lakery.extra.msgpack import MsgPackSerializer
+from lakery.extra.pydantic import SaveSpec
 from lakery.extra.pydantic import StorableModel
-from lakery.extra.pydantic import StorableSpec
 from tests.core_api_utils import assert_save_load_equivalence
 from tests.core_registry_utils import basic_registry
 
 
-class PydanticStorageModel(StorableModel, class_id="1e76a004"):
+class MyModel(StorableModel, class_id="1e76a004"):
     no_spec: Any
-    spec_with_serializer: Annotated[Any, StorableSpec(serializer=MsgPackSerializer)]
-    spec_with_storage: Annotated[Any, StorableSpec(storage=FileStorage)]
+    spec_with_serializer: Annotated[Any, SaveSpec(serializer=MsgPackSerializer)]
+    spec_with_storage: Annotated[Any, SaveSpec(storage=FileStorage)]
     spec_with_serializer_and_storage: Annotated[
-        Any, StorableSpec(serializer=MsgPackSerializer, storage=FileStorage)
+        Any, SaveSpec(serializer=MsgPackSerializer, storage=FileStorage)
     ]
 
 
 registry = Registry(
     registries=[basic_registry],
-    storables=[PydanticStorageModel],
+    storables=[MyModel],
     default_storage=True,
 )
 assert registry.get_default_storage()
@@ -33,14 +33,14 @@ assert registry.get_default_storage()
 def test_dump_load_storage_model():
     sample = {"hello": "world", "answer": 42}
 
-    model = PydanticStorageModel(
+    model = MyModel(
         no_spec=sample,
         spec_with_serializer=sample,
         spec_with_storage=sample,
         spec_with_serializer_and_storage=sample,
     )
 
-    unpacker = registry.infer_unpacker(PydanticStorageModel)
+    unpacker = registry.infer_unpacker(MyModel)
     contents = unpacker.unpack_object(model, registry)
 
     msgpack_serializer = registry.get_serializer(MsgPackSerializer.name)
@@ -88,14 +88,14 @@ def test_dump_load_storage_model():
         },
     }
 
-    loaded_model = unpacker.repack_object(PydanticStorageModel, contents, registry)
+    loaded_model = unpacker.repack_object(MyModel, contents, registry)
     assert loaded_model == model
 
 
 async def test_save_load_storage_model(session: AsyncSession):
     sample = {"hello": "world", "answer": 42}
     await assert_save_load_equivalence(
-        PydanticStorageModel(
+        MyModel(
             no_spec=sample,
             spec_with_serializer=sample,
             spec_with_storage=sample,

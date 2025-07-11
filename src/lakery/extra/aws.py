@@ -67,7 +67,7 @@ def simple_s3_router(
         temp: If True, the router will create temporary paths for the data.
     """
 
-    def router(digest: Digest, name: str, *, temp: bool) -> S3Pointer:  # noqa: ARG001
+    def router(digest: Digest, tags: TagMap, *, temp: bool) -> S3Pointer:  # noqa: ARG001
         """Route a digest and name to an S3 pointer."""
         if temp:
             key = make_temp_path("/", digest, prefix=prefix)
@@ -111,11 +111,10 @@ class S3Storage(Storage["S3Pointer"]):
         self,
         data: bytes,
         digest: Digest,
-        name: str,
         tags: TagMap,
     ) -> S3Pointer:
         """Save the given value."""
-        pointer = self._router(digest, name, temp=False)
+        pointer = self._router(digest, tags, temp=False)
         put_request: PutObjectRequestRequestTypeDef = {
             "Bucket": pointer["bucket"],
             "Key": pointer["key"],
@@ -147,7 +146,6 @@ class S3Storage(Storage["S3Pointer"]):
         self,
         data_stream: AsyncIterable[bytes],
         get_digest: GetStreamDigest,
-        name: str,
         tags: TagMap,
     ) -> S3Pointer:
         """Save the given data stream.
@@ -162,7 +160,7 @@ class S3Storage(Storage["S3Pointer"]):
             raise NotImplementedError(msg)
 
         initial_digest = get_digest(allow_incomplete=True)
-        temp_pointer = self._router(initial_digest, name, temp=True)
+        temp_pointer = self._router(initial_digest, tags, temp=True)
         tagging = urlencode(tags)
 
         create_multipart_upload: CreateMultipartUploadRequestRequestTypeDef = {
@@ -219,7 +217,7 @@ class S3Storage(Storage["S3Pointer"]):
                 raise
 
             try:
-                final_pointer = self._router(get_digest(), name, temp=False)
+                final_pointer = self._router(get_digest(), tags, temp=False)
                 await self._to_thread(
                     self._client.copy_object,
                     Bucket=final_pointer["bucket"],
@@ -277,12 +275,12 @@ class S3Pointer(TypedDict):
 class S3Router(Protocol):
     """A protocol for routing data to S3 buckets by returning an S3Pointer."""
 
-    def __call__(self, digest: Digest | StreamDigest, name: str, *, temp: bool) -> S3Pointer:
+    def __call__(self, digest: Digest | StreamDigest, tags: TagMap, *, temp: bool) -> S3Pointer:
         """Return an S3 pointer for the given digest and name.
 
         Args:
             digest: The digest of the data to route.
-            name: The name given to the content by an unpacker - not globally unique.
+            tags: Tags from the user or unpacker that describe the data.
             temp: Whether to create a temporary path for the data - used for streaming data.
 
         Returns:
@@ -294,7 +292,7 @@ class S3Router(Protocol):
 def _read_only(storage: S3Storage) -> S3Router:
     get_storage = ref(storage)
 
-    def router(digest: Digest, name: str, *, temp: bool) -> S3Pointer:
+    def router(digest: Digest, tags: TagMap, *, temp: bool) -> S3Pointer:
         msg = f"{get_storage()} is read-only and cannot write data."
         raise NotImplementedError(msg)
 

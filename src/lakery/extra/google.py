@@ -58,7 +58,7 @@ def simple_blob_router(bucket: str, prefix: str = "") -> BlobRouter:
         A BlobRouter that generates BlobPointers for the specified bucket and prefix.
     """
 
-    def route(digest: Digest, name: str, *, temp: bool) -> BlobPointer:  # noqa: ARG001
+    def route(digest: Digest, tags: TagMap, *, temp: bool) -> BlobPointer:  # noqa: ARG001
         if temp:
             blob = make_temp_path("/", digest, prefix=prefix)
         else:
@@ -94,11 +94,10 @@ class BlobStorage(Storage["BlobPointer"]):
         self,
         data: bytes,
         digest: Digest,
-        name: str,
         tags: TagMap,
     ) -> BlobPointer:
         """Save the given data."""
-        pointer = self._storage_router(digest, name, temp=False)
+        pointer = self._storage_router(digest, tags, temp=False)
         _LOG.debug("Saving data to %s", pointer)
         bucket = self._storage_client.bucket(
             pointer["bucket"],
@@ -128,13 +127,12 @@ class BlobStorage(Storage["BlobPointer"]):
         self,
         data_stream: AsyncIterable[bytes],
         get_digest: GetStreamDigest,
-        name: str,
         tags: TagMap,
     ) -> BlobPointer:
         """Save the given data steam."""
         initial_digest = get_digest(allow_incomplete=True)
 
-        temp_pointer = self._storage_router(initial_digest, name, temp=True)
+        temp_pointer = self._storage_router(initial_digest, tags, temp=True)
 
         bucket = self._storage_client.bucket(
             temp_pointer["bucket"],
@@ -154,7 +152,7 @@ class BlobStorage(Storage["BlobPointer"]):
             await self._to_thread(writer.close)
 
         try:
-            final_pointer = self._storage_router(get_digest(), name, temp=False)
+            final_pointer = self._storage_router(get_digest(), tags, temp=False)
             _LOG.debug("Moving data to final location %s", final_pointer)
 
             bucket = self._storage_client.bucket(
@@ -231,12 +229,12 @@ class BlobPointer(TypedDict):
 class BlobRouter(Protocol):
     """A protocol for routing data to Google Cloud Storage by returning a BlobPointer."""
 
-    def __call__(self, digest: Digest, name: str, *, temp: bool) -> BlobPointer:
-        """Return a BlobPointer for the given digest and name.
+    def __call__(self, digest: Digest, tags: TagMap, *, temp: bool) -> BlobPointer:
+        """Return a BlobPointer for the given digest and tags.
 
         Args:
             digest: The digest of the data to route.
-            name: The name given to the content by an unpacker - not globally unique.
+            tags: The tags to associate with the content.
             temp: Whether to create a temporary path for the data - used for streaming data.
 
         Returns:
@@ -248,7 +246,7 @@ class BlobRouter(Protocol):
 def _read_only(storage: BlobStorage) -> BlobRouter:
     storage_ref = ref(storage)
 
-    def router(digest: Digest, name: str, *, temp: bool) -> BlobPointer:
+    def router(digest: Digest, tags: TagMap, *, temp: bool) -> BlobPointer:
         msg = f"{storage_ref()} is read-only and cannot write data."
         raise NotImplementedError(msg)
 

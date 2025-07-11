@@ -31,7 +31,6 @@ class Storage(Generic[T], Component):
         self,
         data: bytes,
         digest: Digest,
-        name: str,
         tags: TagMap,
         /,
     ) -> T:
@@ -40,7 +39,6 @@ class Storage(Generic[T], Component):
         Args:
             data: The data to save.
             digest: A digest describing the data.
-            name: The name given to the content by an unpacker - not globally unique.
             tags: Tags from the user or unpacker that describe the data.
         """
         ...
@@ -57,7 +55,6 @@ class Storage(Generic[T], Component):
         self,
         data_stream: AsyncIterable[bytes],
         get_digest: GetStreamDigest,
-        name: str,
         tags: TagMap,
         /,
     ) -> T:
@@ -66,7 +63,6 @@ class Storage(Generic[T], Component):
         Args:
             data_stream: An async iterable that yields chunks of data to save.
             get_digest: Function returning the digest of the stream content.
-            name: The name given to the content by an unpacker - not globally unique.
             tags: Tags from the user or unpacker that describe the data.
         """
         ...

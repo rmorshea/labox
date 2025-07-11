@@ -101,7 +101,7 @@ s3_storage = S3Storage(
 storages = StorageRegistry([file_storage], default=s3_storage)
 ```
 
-## Loading from Modules
+## Constructing from Modules
 
 You can load all of the above components from modules by passing the name of the module
 to the `Registry` constructor as a string or as a module object:

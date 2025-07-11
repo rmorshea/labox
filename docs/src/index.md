@@ -75,7 +75,7 @@ experiment_data = {
 ```
 
 Put that data in a [storable](./concepts/storables.md), in this case a
-[Pydantic](./integrations/3rd-party/pydantic.md):
+[Pydantic](./integrations/3rd-party/pydantic.md) model:
 
 ```python
 import pandas as pd
