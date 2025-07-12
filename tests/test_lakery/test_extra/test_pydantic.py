@@ -7,7 +7,7 @@ from lakery.builtin.serializers.json import JsonSerializer
 from lakery.builtin.storages import FileStorage
 from lakery.core.registry import Registry
 from lakery.extra.msgpack import MsgPackSerializer
-from lakery.extra.pydantic import SaveSpec
+from lakery.extra.pydantic import ContentSpec
 from lakery.extra.pydantic import StorableModel
 from tests.core_api_utils import assert_save_load_equivalence
 from tests.core_registry_utils import basic_registry
@@ -15,10 +15,10 @@ from tests.core_registry_utils import basic_registry
 
 class MyModel(StorableModel, class_id="1e76a004"):
     no_spec: Any
-    spec_with_serializer: Annotated[Any, SaveSpec(serializer=MsgPackSerializer)]
-    spec_with_storage: Annotated[Any, SaveSpec(storage=FileStorage)]
+    spec_with_serializer: Annotated[Any, ContentSpec(serializer=MsgPackSerializer)]
+    spec_with_storage: Annotated[Any, ContentSpec(storage=FileStorage)]
     spec_with_serializer_and_storage: Annotated[
-        Any, SaveSpec(serializer=MsgPackSerializer, storage=FileStorage)
+        Any, ContentSpec(serializer=MsgPackSerializer, storage=FileStorage)
     ]
 
 

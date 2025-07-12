@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 
 
 __all__ = (
-    "SaveSpec",
+    "ContentSpec",
     "StorableModel",
 )
 
@@ -163,7 +163,7 @@ class StorableModel(
 
 
 @frozenclass
-class SaveSpec:
+class ContentSpec:
     """An annotation for specifying the storage and serialization of a value.
 
     Use [`typing.Annotated`][typing.Annotated] to add this to any type annotation.

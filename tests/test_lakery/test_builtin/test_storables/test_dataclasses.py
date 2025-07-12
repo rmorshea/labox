@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 
-from lakery.builtin.storables.dataclasses import StorableClass
+from lakery.builtin.storables.dataclasses import StorableDataclass
 
 
 @dataclass
-class MyClass(StorableClass, class_id="..."):
+class MyClass(StorableDataclass, class_id="..."):
     """A simple dataclass that is storable."""
 
     no_spec: str

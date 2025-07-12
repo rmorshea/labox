@@ -49,7 +49,10 @@ class _StorableDataclassUnpacker(Unpacker["StorableDataclass"]):
             msg = f"Expected a storable dataclass, got {type(obj)}"
             raise TypeError(msg)
 
-        body, external = dump_json_ext(obj, registry)
+        body, external = dump_json_ext(
+            {f.name: getattr(obj, f.name) for f in dataclasses.fields(obj)},
+            registry,
+        )
 
         return {
             "data": {
@@ -72,7 +75,7 @@ class _StorableDataclassUnpacker(Unpacker["StorableDataclass"]):
             case {"value": data_value}:
                 pass
             case _:
-                msg = "Expected 'data' to contain a 'value' key."
+                msg = f"Expected a 'data' key with 'value', got {data}"
                 raise KeyError(msg)
         kwargs = load_json_ext(data_value, registry, external=contents)
         return cls(**kwargs)
@@ -86,7 +89,7 @@ else:
 
 class Config(StorableConfigDict, total=False):
     extra_fields: Literal["ignore", "forbid"]
-    field_specs: Mapping[str, FieldSpec]
+    field_specs: Mapping[str, ContentSpec]
 
 
 class StorableDataclass(Storable, _FakeBase, unpacker=_StorableDataclassUnpacker()):
@@ -111,7 +114,7 @@ class StorableDataclass(Storable, _FakeBase, unpacker=_StorableDataclassUnpacker
             if get_origin(anno) is Annotated:
                 old_spec = spec = field_specs.get(name, _EMPTY_SPEC)
                 for item in anno.__args__:
-                    if isinstance(item, FieldSpec):
+                    if isinstance(item, ContentSpec):
                         spec = replace(spec, **asdict(item))
                         break
                 if spec is old_spec:  # No changes to the spec
@@ -136,19 +139,24 @@ class _StorableDataclassInfo(TypedDict):
     """Metadata for a storable class."""
 
     extra_fields: Literal["ignore", "forbid"]
-    field_specs: Mapping[str, FieldSpec]
+    field_specs: Mapping[str, ContentSpec]
 
 
 @frozenclass
-class FieldSpec:
+class ContentSpec:
     """Metadata for the field of a storable class."""
 
-    serializer: type[Serializer | StreamSerializer] | str | None = None
+    serializer: type[Serializer | StreamSerializer] | None = None
     """The serializer to use for this value."""
-    storage: type[Storage] | str | None = None
+    storage: type[Storage] | None = None
     """The storage to use for this value."""
     tags: TagMap | None = None
     """Tags to apply to the stored value."""
 
+    def __post_init__(self):
+        if self.tags is not None and self.storage is None:
+            msg = "Tags can only be set if storage is also set."
+            raise ValueError(msg)
 
-_EMPTY_SPEC = FieldSpec()
+
+_EMPTY_SPEC = ContentSpec()
