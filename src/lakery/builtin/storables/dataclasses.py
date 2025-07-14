@@ -27,7 +27,6 @@ from lakery.core.unpacker import Unpacker
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-    from lakery.common.types import TagMap
     from lakery.core.registry import Registry
     from lakery.core.serializer import Serializer
     from lakery.core.serializer import StreamSerializer
@@ -150,13 +149,6 @@ class ContentSpec:
     """The serializer to use for this value."""
     storage: type[Storage] | None = None
     """The storage to use for this value."""
-    tags: TagMap | None = None
-    """Tags to apply to the stored value."""
-
-    def __post_init__(self):
-        if self.tags is not None and self.storage is None:
-            msg = "Tags can only be set if storage is also set."
-            raise ValueError(msg)
 
 
 _EMPTY_SPEC = ContentSpec()

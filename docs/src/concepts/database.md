@@ -50,13 +50,10 @@ The `lakery_contents` table contains pointers to the actual content of stored ob
 | [`serializer_type`][lakery.core.database.ContentRecord.serializer_type]               | `ENUM`      | Indicates whether the serializer is a [stream](./serializers.md#stream-serializers) or a [value](./serializers.md#basic-serializers). |
 | [`storage_name`][lakery.core.database.ContentRecord.storage_name]                     | `TEXT`      | The name of the storage where the content is stored.                                                                                  |
 | [`storage_data`][lakery.core.database.ContentRecord.storage_data]                     | `JSONB`     | Data used by the storage to locate the content                                                                                        |
-| [`tags`][lakery.core.database.ContentRecord.tags]                                     | `JSONB`     | Tags that were returned with the content by the unpacker.                                                                             |
 
 A content record is saved in the `lakery_contents` table for each
 [unpacked value](./unpackers.md#unpacked-values) or
 [unpacked stream](./unpackers.md#unpacked-streams) returned by an unpacker when
 deconstructing a `Storable` object. The `content_key` of each record comes from the keys
 in the mapping returned by the
-[`unpack_object`][lakery.core.unpacker.Unpacker.unpack_object] method. Each unpacked
-value or stream may also have associated tags, which will be stored in the `tags`
-column.
+[`unpack_object`][lakery.core.unpacker.Unpacker.unpack_object] method.

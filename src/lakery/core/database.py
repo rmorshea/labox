@@ -162,8 +162,6 @@ class ContentRecord(_StrMixin, BaseRecord, kw_only=True):
     """The information needed to load data from the storage."""
     created_at: Mapped[DateTimeTZ] = mapped_column(default=func.now())
     """The timestamp when the content was created."""
-    tags: Mapped[TagMap | None] = mapped_column(JSON_OR_JSONB)
-    """User defined tags associated with the content."""
 
 
 UniqueConstraint(

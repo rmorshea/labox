@@ -80,6 +80,7 @@ schema of Pydantic models does not have this limitation, so you can use
 
 ```python
 import numpy as np
+from datetime import UTC, datetime
 from lakery.extra.pydantic import StorableModel
 
 
@@ -104,9 +105,9 @@ from lakery.core import Storable
 from lakery.core import save_one
 
 obj = ExperimentData(
-    description="Experiment 1",
-    parameters={"learning_rate": 0.01, "batch_size": 32},
-    results={"accuracy": [0.8, 0.85, 0.9], "loss": [0.5, 0.4, 0.3]},
+    experiment_name="protein_folding_analysis_trial_1",
+    parameters={"temperature": 298.15, "ph": 7.4, "concentration": 0.1},
+    results={"binding_affinity": [12.3, 15.7, 9.8], "stability": [85.2, 78.9, 92.1]}
 )
 async with new_async_session() as session:
     record = save_one(obj, session=session, registry=registry)
@@ -128,15 +129,15 @@ from lakery.core import new_saver
 
 objs = [
     ExperimentData(
-        description="Experiment 1",
-        parameters={"learning_rate": 0.01, "batch_size": 32},
-        results={"accuracy": [0.8, 0.85, 0.9], "loss": [0.5, 0.4, 0.3]},
+        experiment_name="protein_folding_analysis_trial_1",
+        parameters={"temperature": 298.15, "ph": 7.4, "concentration": 0.1},
+        results={"binding_affinity": [12.3, 15.7, 9.8], "stability": [85.2, 78.9, 92.1]}
     ),
     ExperimentData(
-        description="Experiment 2",
-        parameters={"learning_rate": 0.001, "batch_size": 64},
-        results={"accuracy": [0.75, 0.8, 0.85], "loss": [0.6, 0.5, 0.4]},
-    ),
+        experiment_name="protein_folding_analysis_trial_2",
+        parameters={"temperature": 310.15, "ph": 7.2, "concentration": 0.2},
+        results={"binding_affinity": [14.1, 9.3, 11.2], "stability": [79.8, 83.4, 88.7]}
+    )
 ]
 async with new_async_session() as session:
     async with new_saver(session=session, registry=registry) as ms:
@@ -184,46 +185,33 @@ async with new_async_session() as session:
 
 ## Adding Tags
 
-### Manifest Tags
-
-You can add tags to manifest records when saving storables. These tags are associated
-with the entire storable and can be used for filtering and organization. Tags are
-provided as a dictionary of string key-value pairs.
+You can add tags when saving storables. These tags are included in the
+[manifest record](./concepts/database.md#manifest-records) and passed to the underlying
+storage when saving each piece of content. Tags are provided as a dictionary of string
+key-value pairs. This is useful for adding metadata to your records, such billing
+information, project names, or any other relevant information that can help you identify
+and manage your saved data.
 
 ```python
 from lakery.core import save_one
 
 obj = ExperimentData(
-    description="Experiment 1",
-    parameters={"learning_rate": 0.01, "batch_size": 32},
-    results={"accuracy": [0.8, 0.85, 0.9], "loss": [0.5, 0.4, 0.3]},
+    experiment_name="protein_folding_analysis_trial_1",
+    parameters={"temperature": 298.15, "ph": 7.4, "concentration": 0.1},
+    results={"binding_affinity": [12.3, 15.7, 9.8], "stability": [85.2, 78.9, 92.1]}
 )
 async with new_async_session() as session:
     record = save_one(
         obj,
         session=session,
         registry=registry,
-        tags={"experiment_type": "baseline", "model": "cnn"}
+        tags={
+            "funding_source": "nsf_grant_12345"
+            "project": "protein_dynamics_2024",
+            "phase": "initial_screening",
+        }
     )
 ```
 
 This is similarly possible when saving in bulk with the `new_saver` context manager's
 `saver.save_soon` method.
-
-### Content Tags
-
-Content tags can be applied to values within a storable when using if a separate storage
-location is desired for that piece of content. This is done using the `ContentSpec`
-class from `lakery.extra.pydantic`. The `ContentSpec` is meant to be used as
-[`Annotated`][typing.Annotated] metadata for the field.
-
-```python
-from typing import Annotated
-from lakery.extra.pydantic import StorableModel, ContentSpec
-from lakery.extra.aws import S3Storage
-
-class ExperimentData(StorableModel):
-    description: str
-    parameters: dict[str, float]
-    results: Annotated[dict[str, np.ndarray], ContentSpec(storage=S3Storage, tags={"type": "results"})]
-```

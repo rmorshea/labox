@@ -31,7 +31,7 @@ class DatabaseStorage(Storage):
         self.warn_size = warn_size
         self.error_size = error_size
 
-    async def write_data(self, data: bytes, digest: Digest, _name: str, _tags: TagMap) -> str:
+    async def write_data(self, data: bytes, digest: Digest, _tags: TagMap) -> str:
         """Save the given value data."""
         if not JSON_CONTENT_TYPE_PATTERN.match(digest["content_type"]):
             msg = f"{self} only supports JSON content types, got {digest['content_type']!r}."
@@ -56,7 +56,7 @@ class DatabaseStorage(Storage):
         """Load data using the given information."""
         return info.encode("utf-8")
 
-    async def write_data_stream(self, data_stream, get_digest, _name: str, _tags: TagMap) -> str:
+    async def write_data_stream(self, data_stream, get_digest, _tags: TagMap) -> str:
         """Save the given data stream."""
         msg = (
             f"{self} does not support writing data streams. "

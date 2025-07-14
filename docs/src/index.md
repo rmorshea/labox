@@ -83,13 +83,17 @@ import pandas as pd
 from lakery.extra.pydantic import StorableModel
 
 
-class ExperimentData(StorableModel, class_id="abc123"):
+class ExperimentData(StorableModel, class_id="..."):
     name: str
     results: pd.DataFrame
 
 
 experiment = ExperimentData(**experiment_data)
 ```
+
+!!! note
+
+    See [here](./concepts/storables.md#class-ids) for info on the details of class IDs.
 
 Save the data and return a [record](./concepts/database.md#manifest-records):
 

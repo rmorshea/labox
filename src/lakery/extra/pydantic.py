@@ -33,7 +33,6 @@ from lakery.core.unpacker import Unpacker
 
 if TYPE_CHECKING:
     from lakery.common.jsonext import _AnyJsonExt
-    from lakery.common.types import TagMap
     from lakery.core.registry import Registry
     from lakery.core.serializer import Serializer
     from lakery.core.storage import Storage
@@ -194,8 +193,6 @@ class ContentSpec:
     """The serializer to use for this value."""
     storage: type[Storage] | None = None
     """The storage to use for this value."""
-    tags: TagMap | None = None
-    """Tags to apply to the stored value."""
 
     def __get_pydantic_core_schema__(
         self,
@@ -218,9 +215,6 @@ class ContentSpec:
 
         if self.storage is not None:
             metadata["storage_name"] = self.storage.name
-
-        if self.tags is not None:
-            metadata["tags"] = self.tags
 
         _set_schema_metadata(schema, metadata)
         return schema
@@ -406,7 +400,6 @@ class _SchemaMetadata(TypedDict, total=False):
     serializer_name: str
     serializer_type: Literal["serializer", "stream_serializer"]
     storage_name: str
-    tags: TagMap
 
 
 def _make_validation_context(ctx: _LakeryValidationContext) -> dict[str, Any]:

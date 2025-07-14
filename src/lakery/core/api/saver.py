@@ -158,7 +158,6 @@ async def _save_object(
                             content_value,
                             content.get("serializer"),
                             content.get("storage"),
-                            content.get("tags") or {},
                             registry,
                         )
                     )
@@ -173,7 +172,6 @@ async def _save_object(
                             content_value_stream,
                             content.get("serializer"),
                             content.get("storage"),
-                            content.get("tags") or {},
                             registry,
                         )
                     )
@@ -208,15 +206,13 @@ async def _save_storage_value(
     value: Any,
     serializer: Serializer | None,
     storage: Storage | None,
-    content_tags: TagMap,
     registry: Registry,
 ) -> ContentRecord:
     storage = storage or registry.get_default_storage()
     serializer = serializer or registry.get_serializer_by_type(type(value))
     content = serializer.serialize_data(value)
     digest = _make_value_dump_digest(content)
-    merged_tags = {**content_tags, **tags}  # content tags have lower priority
-    storage_data = await storage.write_data(content["data"], digest, merged_tags)
+    storage_data = await storage.write_data(content["data"], digest, tags)
     return ContentRecord(
         content_encoding=content["content_encoding"],
         content_hash_algorithm=digest["content_hash_algorithm"],
@@ -229,7 +225,6 @@ async def _save_storage_value(
         serializer_type=SerializerTypeEnum.Serializer,
         storage_data=storage.serialize_storage_data(storage_data),
         storage_name=storage.name,
-        tags=content_tags,
     )
 
 
@@ -240,7 +235,6 @@ async def _save_storage_stream(
     stream: AsyncIterable[Any],
     serializer: StreamSerializer | None,
     storage: Storage | None,
-    content_tags: TagMap,
     registry: Registry,
 ) -> ContentRecord:
     storage = storage or registry.get_default_storage()
@@ -256,8 +250,7 @@ async def _save_storage_stream(
 
         content = serializer.serialize_data_stream(stream)
         byte_stream, get_digest = _wrap_stream_dump(content)
-        merged_tags = {**content_tags, **tags}  # content tags have lower priority
-        storage_data = await storage.write_data_stream(byte_stream, get_digest, merged_tags)
+        storage_data = await storage.write_data_stream(byte_stream, get_digest, tags)
         try:
             digest = get_digest()
         except ValueError:
@@ -275,7 +268,6 @@ async def _save_storage_stream(
             serializer_type=SerializerTypeEnum.StreamSerializer,
             storage_data=storage.serialize_storage_data(storage_data),
             storage_name=storage.name,
-            tags=content_tags,
         )
     raise AssertionError  # nocov
 
