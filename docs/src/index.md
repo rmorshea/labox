@@ -1,6 +1,6 @@
 # Lakery
 
-A data storage framework for Python.
+A storage framework for heterogeneous data in Python.
 
 ## Installation
 

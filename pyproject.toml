@@ -10,7 +10,7 @@ packages = ["src/lakery"]
 [project]
 name = "lakery"
 version = "0.0.1a1"
-description = "A data storage framework for Python."
+description = "A storage framework for heterogeneous data in Python."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { file = "LICENSE.txt" }
