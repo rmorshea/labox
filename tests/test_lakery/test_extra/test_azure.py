@@ -13,8 +13,8 @@ from azure.core.exceptions import ResourceNotFoundError
 from azure.storage.blob import BlobType
 from azure.storage.blob import ContentSettings
 
-from lakery.extra.azure import BlobStorage
-from lakery.extra.azure import simple_blob_router
+from labox.extra.azure import BlobStorage
+from labox.extra.azure import simple_blob_router
 from tests.core_storage_utils import parametrize_storage_assertions
 
 if TYPE_CHECKING:
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
     from azure.storage.blob.aio import BlobServiceClient
 
-    from lakery.common.types import TagMap
+    from labox.common.types import TagMap
 
 
 @parametrize_storage_assertions

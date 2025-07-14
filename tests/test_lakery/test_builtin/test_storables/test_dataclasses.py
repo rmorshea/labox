@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from lakery.builtin.storables.dataclasses import StorableDataclass
+from labox.builtin.storables.dataclasses import StorableDataclass
 
 
 @dataclass

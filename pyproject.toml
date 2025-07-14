@@ -3,12 +3,12 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.sdist]
-include = ["src/lakery", "docs"]
+include = ["src/labox", "docs"]
 [tool.hatch.build.targets.wheel]
-packages = ["src/lakery"]
+packages = ["src/labox"]
 
 [project]
-name = "lakery"
+name = "labox"
 version = "0.0.1a1"
 description = "A storage framework for heterogeneous data in Python."
 readme = "README.md"
@@ -29,31 +29,31 @@ dependencies = [
 ]
 [project.optional-dependencies]
 all = [
-    "lakery[aws]",
-    "lakery[azure]",
-    "lakery[google]",
-    "lakery[imageio]",
-    "lakery[msgpack]",
-    "lakery[numpy]",
-    "lakery[pandas]",
-    "lakery[plotly]",
-    "lakery[polars]",
-    "lakery[pyarrow]",
-    "lakery[pydantic]",
+    "labox[aws]",
+    "labox[azure]",
+    "labox[google]",
+    "labox[imageio]",
+    "labox[msgpack]",
+    "labox[numpy]",
+    "labox[pandas]",
+    "labox[plotly]",
+    "labox[polars]",
+    "labox[pyarrow]",
+    "labox[pydantic]",
 ]
 aws = ["boto3>=1,<2"]
 azure = ["azure-storage-blob>=12,<13"]
 google = ["google-cloud-storage>=2,<3"]
 msgpack = ["msgpack>=1,<2"]
 numpy = ["numpy>=2,<3"]
-pandas = ["pandas>=2,<3", "lakery[pyarrow]"]
+pandas = ["pandas>=2,<3", "labox[pyarrow]"]
 plotly = ["plotly>=5,<6"]
 polars = ["polars>=1.18.0"]
 pyarrow = ["pyarrow>=18,<19"]
 pydantic = ["pydantic-walk-core-schema>=1.0.0", "pydantic>=2,<3"]
 imageio = ["imageio>=2,<3"]
 [project.urls]
-Source = "https://github.com/rmorshea/lakery"
+Source = "https://github.com/rmorshea/labox"
 
 [dependency-groups]
 lint = [
@@ -75,7 +75,7 @@ dev = [
     { include-group = "docs" },
     { include-group = "lint" },
     { include-group = "test" },
-    "lakery[all]",
+    "labox[all]",
 ]
 util = ["click==8.1.7", "ipykernel==6.29.5", "copier==9.4.1"]
 docs = [
@@ -160,7 +160,7 @@ unfixable = [
 fixable = ["ALL"]
 extend-safe-fixes = ["TCH"]
 [tool.ruff.lint.isort]
-known-first-party = ["lakery"]
+known-first-party = ["labox"]
 force-single-line = true
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"
@@ -201,11 +201,11 @@ ban-relative-imports = "all"
 line_length = 100
 
 [tool.coverage.run]
-source_pkgs = ["lakery", "tests"]
+source_pkgs = ["labox", "tests"]
 branch = true
 omit = []
 [tool.coverage.paths]
-lakery = ["src"]
+labox = ["src"]
 tests = ["tests"]
 [tool.coverage.report]
 exclude_lines = [

@@ -3,12 +3,12 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio.session import AsyncSession
 
-from lakery.builtin.serializers.json import JsonSerializer
-from lakery.builtin.storages import FileStorage
-from lakery.core.registry import Registry
-from lakery.extra.msgpack import MsgPackSerializer
-from lakery.extra.pydantic import ContentSpec
-from lakery.extra.pydantic import StorableModel
+from labox.builtin.serializers.json import JsonSerializer
+from labox.builtin.storages import FileStorage
+from labox.core.registry import Registry
+from labox.extra.msgpack import MsgPackSerializer
+from labox.extra.pydantic import ContentSpec
+from labox.extra.pydantic import StorableModel
 from tests.core_api_utils import assert_save_load_equivalence
 from tests.core_registry_utils import basic_registry
 

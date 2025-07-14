@@ -8,12 +8,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio.session import AsyncSession
 from sqlalchemy.orm import raiseload
 
-from lakery._internal._anyio import FutureResult
-from lakery.core.api.loader import new_loader
-from lakery.core.api.saver import new_saver
-from lakery.core.database import ManifestRecord
-from lakery.core.registry import Registry
-from lakery.core.storable import Storable
+from labox._internal._anyio import FutureResult
+from labox.core.api.loader import new_loader
+from labox.core.api.saver import new_saver
+from labox.core.database import ManifestRecord
+from labox.core.registry import Registry
+from labox.core.storable import Storable
 
 M = TypeVar("M", bound=Storable)
 

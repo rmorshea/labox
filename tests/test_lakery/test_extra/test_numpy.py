@@ -1,6 +1,6 @@
 import numpy as np
 
-from lakery.extra.numpy import NpySerializer
+from labox.extra.numpy import NpySerializer
 from tests.core_serializer_utils import make_value_serializer_test
 
 

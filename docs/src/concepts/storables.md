@@ -1,6 +1,6 @@
 # Storables
 
-Storables define the shape of the data that's saved and loaded by Lakery. Try these
+Storables define the shape of the data that's saved and loaded by Labox. Try these
 implementations:
 
 - [Pydantic models](../integrations/3rd-party/pydantic.md)
@@ -9,13 +9,13 @@ implementations:
 ## Defining Storables
 
 To define a base storable class users can extend you need to inherit from
-[`Storable`][lakery.core.storable.Storable] and provide an [`unpacker`](./unpackers.md).
+[`Storable`][labox.core.storable.Storable] and provide an [`unpacker`](./unpackers.md).
 The unpacker is responsible for destructuring instances of the class when saving and
 reconstructing them when loading.
 
 ```python
-from lakery import Storable
-from lakery import Unpacker
+from labox import Storable
+from labox import Unpacker
 
 my_unpacker: Unpacker
 
@@ -58,12 +58,12 @@ accessible while allowing you to create new data with the updated.
 
 ## Class IDs
 
-The `class_id` within the [config][lakery.core.storable.Storable.get_storable_config] of
+The `class_id` within the [config][labox.core.storable.Storable.get_storable_config] of
 a `Storable` class uniquely identify it when saving and loading data. This is important
-because it's how Lakery knows which class to use when reconstituting data. That means
-you should **never copy or change this value** once it's been used to save production
-data. On the other hand you are free to rename the class or move it to a different
-module without any issues since the `class_id`, rather than an "import path", is what
+because it's how Labox knows which class to use when reconstituting data. That means you
+should **never copy or change this value** once it's been used to save production data.
+On the other hand you are free to rename the class or move it to a different module
+without any issues since the `class_id`, rather than an "import path", is what
 identifies it.
 
 !!! note
@@ -74,12 +74,12 @@ identifies it.
 ### Generating IDs
 
 When defining a `Storable` class you plan to save and load data with you can declare a
-placeholder `class_id` value like `"..."`. This is a signal to Lakery that you intend to
-generate a unique ID later. Lakery will then issue a warning when you run the code,
+placeholder `class_id` value like `"..."`. This is a signal to Labox that you intend to
+generate a unique ID later. Labox will then issue a warning when you run the code,
 prompting you to replace the placeholder with a unique ID it suggests.
 
 ```python
-from lakery import Storable
+from labox import Storable
 
 
 class MyStorable(Storable, class_id="..."):
@@ -94,7 +94,7 @@ MyStorable does not have a valid storable class ID. Got '...'. Consider using 'a
 
 !!! note
 
-    In the future, Lakery will come with a linter that automatically generates unique
+    In the future, Labox will come with a linter that automatically generates unique
     class IDs as you work.
 
 ### Class ID Format

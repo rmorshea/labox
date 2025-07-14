@@ -1,14 +1,14 @@
 # Serializers
 
-Lakery serializers convert values or streams of values into binary data that
+Labox serializers convert values or streams of values into binary data that
 [storage backends](storages.md) can save. Likewise, they can also convert binary data
 back into values or streams of values.
 
 ## Basic Serializers
 
 Basic serializers are used to convert singular values to and from binary data. To define
-one you must inherit from the [`Serializer`][lakery.core.serializer.Serializer] class
-and provide the following:
+one you must inherit from the [`Serializer`][labox.core.serializer.Serializer] class and
+provide the following:
 
 - `name` - a string that uniquely and permanently identifies the serializer.
 - `types` - a tuple of types that this serializer can handle. This is used for
@@ -21,8 +21,8 @@ and provide the following:
 The code below shows a serializer that turns UTF-8 strings into binary data and back.
 
 ```python
-from lakery.core.serializer import SerializedData
-from lakery.core.serializer import Serializer
+from labox.core.serializer import SerializedData
+from labox.core.serializer import Serializer
 
 
 class Utf8Serializer(Serializer[str]):
@@ -46,7 +46,7 @@ class Utf8Serializer(Serializer[str]):
 
 Stream serializers are used to asynchronsouly convert streams of values to and from
 streams of binary data. To define one you must inherit from the
-[`StreamSerializer`][lakery.core.serializer.StreamSerializer] class and provide the
+[`StreamSerializer`][labox.core.serializer.StreamSerializer] class and provide the
 following:
 
 - `name` - a string that uniquely and permanently identifies the serializer.
@@ -54,9 +54,9 @@ following:
     serializer type inference.
 - `serialize_data_stream` - a method that takes an
     [`AsyncIterator`][collections.abc.AsyncIterator] of values and returns a
-    [`SerializedDataStream`][lakery.core.serializer.SerializedDataStream].
+    [`SerializedDataStream`][labox.core.serializer.SerializedDataStream].
 - `deserialize_data_stream` - a method that takes a
-    [`SerializedDataStream`][lakery.core.serializer.SerializedDataStream] and returns an
+    [`SerializedDataStream`][labox.core.serializer.SerializedDataStream] and returns an
     [`AsyncIterator`][collections.abc.AsyncIterator] of values.
 
 It's usually easiest to start with the `serialize_data_stream` method. The code snippets
@@ -65,8 +65,8 @@ below show a stream serializer that turns UTF-8 strings into a stream of bytes a
 ```python
 from collections.abc import AsyncGenerator
 
-from lakery.core.serializer import SerializedDataStream
-from lakery.core.serializer import StreamSerializer
+from labox.core.serializer import SerializedDataStream
+from labox.core.serializer import StreamSerializer
 
 
 class Utf8StreamSerializer(StreamSerializer[str]):
@@ -116,7 +116,7 @@ async def decode_async_byte_stream(
 !!! note
 
     You can import this utility from
-    [`lakery.common.streaming.decode_async_byte_stream`][lakery.common.streaming.decode_async_byte_stream].
+    [`labox.common.streaming.decode_async_byte_stream`][labox.common.streaming.decode_async_byte_stream].
 
 With this you'll be able to implement the `deserialize_data_stream` method like so:
 

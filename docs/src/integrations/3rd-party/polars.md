@@ -2,4 +2,4 @@
 
 !!! note
 
-    Install with `pip install lakery[polars]`
+    Install with `pip install labox[polars]`

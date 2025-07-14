@@ -2,4 +2,4 @@
 
 !!! note
 
-    Install with `pip install lakery[google]`
+    Install with `pip install labox[google]`

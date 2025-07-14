@@ -2,4 +2,4 @@
 
 !!! note
 
-    Install with `pip install lakery[msgpack]`
+    Install with `pip install labox[msgpack]`

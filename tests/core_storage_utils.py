@@ -12,12 +12,12 @@ from typing import TypeVar
 
 import pytest
 
-from lakery.core.api.saver import _wrap_stream_dump
+from labox.core.api.saver import _wrap_stream_dump
 
 if TYPE_CHECKING:
-    from lakery.core.storage import Digest
-    from lakery.core.storage import GetStreamDigest
-    from lakery.core.storage import Storage
+    from labox.core.storage import Digest
+    from labox.core.storage import GetStreamDigest
+    from labox.core.storage import Storage
 
 
 F = TypeVar("F", bound=Callable)

@@ -10,8 +10,8 @@ from typing import TypeVar
 
 import pytest
 
-from lakery.core.serializer import Serializer
-from lakery.core.serializer import StreamSerializer
+from labox.core.serializer import Serializer
+from labox.core.serializer import StreamSerializer
 
 T = TypeVar("T")
 

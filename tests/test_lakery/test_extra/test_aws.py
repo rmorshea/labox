@@ -6,8 +6,8 @@ import boto3
 import moto
 import pytest
 
-from lakery.extra.aws import S3Storage
-from lakery.extra.aws import simple_s3_router
+from labox.extra.aws import S3Storage
+from labox.extra.aws import simple_s3_router
 from tests.core_storage_utils import parametrize_storage_assertions
 
 if TYPE_CHECKING:

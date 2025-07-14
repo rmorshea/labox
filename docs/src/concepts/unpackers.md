@@ -24,8 +24,8 @@ provide the following:
 In the simplest case, this might look something like the following:
 
 ```python
-from lakery import UnpackedValue
-from lakery import Unpacker
+from labox import UnpackedValue
+from labox import Unpacker
 
 
 class MyUnpacker(Unpacker):
@@ -41,7 +41,7 @@ class MyUnpacker(Unpacker):
 Then in your `Storable` class you can use this unpacker:
 
 ```python
-from lakery import Storable
+from labox import Storable
 
 
 class MyStorable(Storable, class_id="abc123", unpacker=MyUnpacker()): ...
@@ -66,7 +66,7 @@ identified by a string within the unpacked dictionary. This string is called the
 ## Unpacked Values
 
 When you unpack a `Storable` class, the values are returned as
-[`UnpackedValue`][lakery.core.unpacker.UnpackedValue] dicts. These values contain the
+[`UnpackedValue`][labox.core.unpacker.UnpackedValue] dicts. These values contain the
 following information:
 
 - `value`: The actual value of the field.

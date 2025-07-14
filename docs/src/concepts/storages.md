@@ -2,12 +2,11 @@
 
 Laykery storages are used to persist data from a [serializer](./serializers.md). All
 storage implementations must support persisting singular blobs of data as well as
-streams of data when subclassing the [`Storage`][lakery.core.storage.Storage] base
-class.
+streams of data when subclassing the [`Storage`][labox.core.storage.Storage] base class.
 
 ## Defining a Storage
 
-To define a storage you need to implement the [`Storage`][lakery.core.storage.Storage]
+To define a storage you need to implement the [`Storage`][labox.core.storage.Storage]
 interface with the following:
 
 - `name` - a string that uniquely and permanently identifies the storage.
@@ -22,9 +21,9 @@ implementing the `write_data` and `read_data` methods:
 ```python
 from pathlib import Path
 
-from lakery import Digest
-from lakery import Storage
-from lakery import TagMap
+from labox import Digest
+from labox import Storage
+from labox import TagMap
 
 
 class FileStorage(Storage):
@@ -91,11 +90,11 @@ in the example above), then this prefix must be included in the
 methods. This way, when reading data, the storage can reconstruct the full path to the
 data even if the prefix may have changed since the data was written.
 
-A pattern used within Lakery when implementing a storage is to allow users to configure
+A pattern used within Labox when implementing a storage is to allow users to configure
 their storages with a "router" function that takes in the `Digest` and `tags` of the
 data being saved and returns a dictionary with the storage-specific information needed
-to locate the data later. In the case of the [`S3Storage`][lakery.extra.aws.S3Storage],
-the router function must return an [`S3Pointer`][lakery.extra.aws.S3Pointer] dictionary
+to locate the data later. In the case of the [`S3Storage`][labox.extra.aws.S3Storage],
+the router function must return an [`S3Pointer`][labox.extra.aws.S3Pointer] dictionary
 with the `bucket` and `key` where the data is stored. This forces the storage
 implementation to be agnostic about where it's been configured to save data while still
 allowing it to save data in a location that can be reconstructed later.
@@ -115,7 +114,7 @@ example above, the storage data is a string that forms part of a file path where
 data was put. More generally these methods may return anything which is JSON
 serializable, such as a dictionary. You may customize how this data is serialized and
 deserialized by overwriting the `serialize_storage_data` and `deserialize_storage_data`
-methods of the [`Storage`][lakery.core.storage.Storage] class.
+methods of the [`Storage`][labox.core.storage.Storage] class.
 
 ## Storage Names
 

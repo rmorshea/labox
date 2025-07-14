@@ -2,4 +2,4 @@
 
 !!! note
 
-    Install with `pip install lakery[pandas]`
+    Install with `pip install labox[pandas]`

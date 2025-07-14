@@ -2,4 +2,4 @@
 
 !!! note
 
-    Install with `pip install lakery[azure]`
+    Install with `pip install labox[azure]`

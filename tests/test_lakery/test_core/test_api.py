@@ -1,9 +1,9 @@
 from sqlalchemy.ext.asyncio.session import AsyncSession
 
-from lakery.builtin.storables import StorableStream
-from lakery.builtin.storables import StorableValue
-from lakery.core import load_one
-from lakery.core import save_one
+from labox.builtin.storables import StorableStream
+from labox.builtin.storables import StorableValue
+from labox.core import load_one
+from labox.core import save_one
 from tests.core_api_utils import assert_save_load_equivalence
 from tests.core_api_utils import assert_save_load_stream_equivalence
 from tests.core_registry_utils import basic_registry

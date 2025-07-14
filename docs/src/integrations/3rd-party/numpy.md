@@ -2,4 +2,4 @@
 
 !!! note
 
-    Install with `pip install lakery[numpy]`
+    Install with `pip install labox[numpy]`

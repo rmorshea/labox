@@ -2,4 +2,4 @@
 
 !!! note
 
-    Install with `pip install lakery[pydantic]`
+    Install with `pip install labox[pydantic]`

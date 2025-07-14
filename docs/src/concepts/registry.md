@@ -1,19 +1,19 @@
 # Registries
 
-Lakery stores [serializers](#adding-serializers), [storages](#adding-storages),
+Labox stores [serializers](#adding-serializers), [storages](#adding-storages),
 [unpackers](#adding-unpackers) and [storables](#adding-storables) in a registry that
-Lakery uses when saving and loading data. For example, when saving data, Lakery infers
-the appropriate serializer for a value (if not explicitly specified) based on the set of
+Labox uses when saving and loading data. For example, when saving data, Labox infers the
+appropriate serializer for a value (if not explicitly specified) based on the set of
 serializers that have been registered.
 
 ## Adding Storables
 
 You can add [storables](./storages.md) to a registry by passing a list of them to the
-[`Registry`][lakery.core.registry.Registry] constructor:
+[`Registry`][labox.core.registry.Registry] constructor:
 
 ```python
-from lakery import Registry
-from lakery import StorableValue
+from labox import Registry
+from labox import StorableValue
 
 reg = Registry(storables=[StorableValue])
 ```
@@ -24,11 +24,11 @@ registry.
 ## Adding Unpackers
 
 If an unpacker is not already registered for a storable, you can add it to the registry
-by passing it to the [`Registry`][lakery.core.registry.Registry] constructor:
+by passing it to the [`Registry`][labox.core.registry.Registry] constructor:
 
 ```python
-from lakery import Registry
-from lakery import Unpacker
+from labox import Registry
+from labox import Unpacker
 
 my_unpacker: Unpacker
 reg = Registry(unpackers=[my_unpacker])
@@ -36,38 +36,38 @@ reg = Registry(unpackers=[my_unpacker])
 
 If you add an unpacker explicitly it will take precedence over any unpacker registered
 with a storable. Specifically, it will be used to unpack any of its
-[`types`][lakery.core.unpacker.Unpacker.types] based on the standard
+[`types`][labox.core.unpacker.Unpacker.types] based on the standard
 [type inference](#type-inference) logic.
 
 ## Adding Serializers
 
-You can add [`Serializer`][lakery.core.serializer.Serializer] and
-[`StreamSerializer`][lakery.core.serializer.StreamSerializer] instances to a registry
+You can add [`Serializer`][labox.core.serializer.Serializer] and
+[`StreamSerializer`][labox.core.serializer.StreamSerializer] instances to a registry
 through the `serializers` argument:
 
 ```python
-from lakery import Registry
-from lakery.builtin import iso8601_serializer
-from lakery.builtin import json_serializer
+from labox import Registry
+from labox.builtin import iso8601_serializer
+from labox.builtin import json_serializer
 
 reg = Registry(serializers=[iso8601_serializer, json_serializer])
 ```
 
-If no serializer is specified when saving a value, Lakery will infer the appropriate one
-whether the serializers [`types`][lakery.core.serializer.Serializer.types] match using
+If no serializer is specified when saving a value, Labox will infer the appropriate one
+whether the serializers [`types`][labox.core.serializer.Serializer.types] match using
 [type inference](#type-inference) logic.
 
 ### Infering Serializers
 
 ## Adding Storages
 
-A storage registry is used to map storage names to storage instances. This allows Lakery
+A storage registry is used to map storage names to storage instances. This allows Labox
 to know which storage to use when saving or loading data.
 
 ```python
-from lakery.core import StorageRegistry
-from lakery.extra.aws import S3Storage
-from lakery.extra.os import FileStorage
+from labox.core import StorageRegistry
+from labox.extra.aws import S3Storage
+from labox.extra.os import FileStorage
 
 file_storage = FileStorage("mydir", mkdir=True)
 s3_storage = S3Storage(
@@ -87,9 +87,9 @@ a storage has not otherwise been specified.
 ```python
 import boto3
 
-from lakery.core import StorageRegistry
-from lakery.extra.aws import S3Storage
-from lakery.extra.os import FileStorage
+from labox.core import StorageRegistry
+from labox.extra.aws import S3Storage
+from labox.extra.os import FileStorage
 
 file_storage = FileStorage("mydir", mkdir=True)
 s3_storage = S3Storage(
@@ -107,9 +107,9 @@ You can load all of the above components from modules by passing the name of the
 to the `Registry` constructor as a string or as a module object:
 
 ```python
-from lakery import Registry
+from labox import Registry
 
-reg = Registry(modules=["lakery.builtin", "myapp.serializers"])
+reg = Registry(modules=["labox.builtin", "myapp.serializers"])
 ```
 
 Components are loaded from the module by inspecting the `__all__` attribute of the
@@ -119,11 +119,11 @@ you to control which components are loaded from a module.
 ## Merging Registries
 
 One or more registries can be merged together using the `registries` argument of the
-[`Registry`][lakery.core.registry.Registry] constructor. This allows you to combine
+[`Registry`][labox.core.registry.Registry] constructor. This allows you to combine
 multiple registries into a single one.
 
 ```python
-from lakery import Registry
+from labox import Registry
 
 reg1: Registry
 reg2: Registry
@@ -157,8 +157,8 @@ def get_unpacker_by_type(cls: type, unpackers: dict[type, Unpacker]) -> Unpacker
 ```
 
 The serializer and unpacker mappings are constructed from the
-[`types`][lakery.core.serializer.Serializer.types] and
-[`types`][lakery.core.unpacker.Unpacker.types] attributes respectively.
+[`types`][labox.core.serializer.Serializer.types] and
+[`types`][labox.core.unpacker.Unpacker.types] attributes respectively.
 
 ## Precedence
 

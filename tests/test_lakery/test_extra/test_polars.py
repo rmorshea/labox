@@ -1,6 +1,6 @@
 import polars as pl
 
-from lakery.extra.polars import ParquetDataFrameSerializer
+from labox.extra.polars import ParquetDataFrameSerializer
 from tests.core_serializer_utils import make_value_serializer_test
 
 

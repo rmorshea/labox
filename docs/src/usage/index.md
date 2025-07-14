@@ -2,14 +2,14 @@
 
 ## Database Setup
 
-To use Lakery, you'll need to have set up the Lakery [database](./concepts/database.md)
+To use Labox, you'll need to have set up the Labox [database](./concepts/database.md)
 scheme as well as establish a
 [SQLAlchemy connection](https://docs.sqlalchemy.org/en/20/orm/session_basics.html) to
 it. The latter is typically done using an async SQLAlchemy engine and session maker.To
 setup the schema SQLAlchemy recommends managing migrations with a tool like
 [alembic](https://alembic.sqlalchemy.org/en/latest/). But for the sake of simplicity,
-you can create the tables directly using the `create_all` method of Lakery's
-`BaseRecord` class. This will create the necessary tables in the database.
+you can create the tables directly using the `create_all` method of Labox's `BaseRecord`
+class. This will create the necessary tables in the database.
 
 ```python
 from sqlalchemy.ext.asyncio import async_sessionmaker
@@ -22,7 +22,7 @@ BaseRecord.create_all(engine).run()
 
 ## Registry Setup
 
-When saving and loading data, Lakery makes use of [registry](./concepts/registry.md) to
+When saving and loading data, Labox makes use of [registry](./concepts/registry.md) to
 know what [storables](./concepts/storables.md), [unpackers](./concepts/unpackers.md),
 and [serializers](./concepts/serializers.md) and [storages](./concepts/storages.md) are
 available. A quick way to set up a registry is to
@@ -30,12 +30,12 @@ available. A quick way to set up a registry is to
 these components are defined.
 
 ```python
-from lakery import Registry
+from labox import Registry
 
 registry = Registry(
     modules=[
-        "lakery.builtin",
-        "lakery.extra.pydantic",
+        "labox.builtin",
+        "labox.extra.pydantic",
     ]
 )
 ```
@@ -47,7 +47,7 @@ There's two main ways to create a [storable](./concepts/storables.md).
 With [Pydantic models](../integrations/3rd-party/pydantic.md).
 
 ```python
-from lakery.extra.pydantic import StorableModel
+from labox.extra.pydantic import StorableModel
 
 
 class ExperimentData(StorableModel):
@@ -61,7 +61,7 @@ Or with [dataclasses](../integrations/built-ins/storables.md#dataclasses).
 ```python
 from dataclasses import dataclass
 
-from lakery.builtin import StorableDataclass
+from labox.builtin import StorableDataclass
 
 
 @dataclass
@@ -82,7 +82,7 @@ schema of Pydantic models does not have this limitation, so you can use
 ```python
 import numpy as np
 
-from lakery.extra.pydantic import StorableModel
+from labox.extra.pydantic import StorableModel
 
 
 class ExperimentData(StorableModel):
@@ -95,14 +95,14 @@ class ExperimentData(StorableModel):
 
 ### Saving One
 
-If you have a single storable to save you can use the [`save_one`][lakery.core.save_one]
+If you have a single storable to save you can use the [`save_one`][labox.core.save_one]
 function. To call it you'll need a [SQLAlchemy session](#database-setup) and
-[Lakery registry](#registry-setup). Once the object has been saved it will return a
+[Labox registry](#registry-setup). Once the object has been saved it will return a
 [record](./concepts/database.md#manifest-records) that can be used to
 [load](#loading-one) the storable later.
 
 ```python
-from lakery.core import save_one
+from labox.core import save_one
 
 obj = ExperimentData(
     experiment_name="protein_folding_analysis_trial_1",
@@ -115,16 +115,16 @@ async with new_async_session() as session:
 
 ### Saving in Bulk
 
-To save many storables at once you can use the [`new_saver`][lakery.core.new_saver]
+To save many storables at once you can use the [`new_saver`][labox.core.new_saver]
 context manager. This will create a saver object that's able to save multiple storables
 concurrently. As above, you'll need a [SQLAlchemy session](#database-setup) and
-[Lakery registry](#registry-setup). The saver's `save_soon` method accepts a single
+[Labox registry](#registry-setup). The saver's `save_soon` method accepts a single
 storable and returns a future that will, once the context exits, resolve to a
 [record](./concepts/database.md#manifest-records) for that storable. The records can
 then be used to [load](#loading-in-bulk) the storables later.
 
 ```python
-from lakery.core import new_saver
+from labox.core import new_saver
 
 objs = [
     ExperimentData(
@@ -148,14 +148,14 @@ async with new_async_session() as session:
 
 ### Loading One
 
-If you have a single record to load you can use the [`load_one`][lakery.core.load_one]
+If you have a single record to load you can use the [`load_one`][labox.core.load_one]
 function. You'll need the [record](./concepts/database.md#manifest-records) returned
 from saving, a [SQLAlchemy session](#database-setup) and
-[Lakery registry](#registry-setup). The function will return the original storable
+[Labox registry](#registry-setup). The function will return the original storable
 object.
 
 ```python
-from lakery.core import load_one
+from labox.core import load_one
 
 # Using the record from saving above
 async with new_async_session() as session:
@@ -164,16 +164,16 @@ async with new_async_session() as session:
 
 ### Loading in Bulk
 
-To load many storables at once you can use the [`new_loader`][lakery.core.new_loader]
+To load many storables at once you can use the [`new_loader`][labox.core.new_loader]
 context manager. This will create a loader object that's able to load multiple storables
 concurrently. As above, you'll need the
 [records](./concepts/database.md#manifest-records) from saving, a
-[SQLAlchemy session](#database-setup) and [Lakery registry](#registry-setup). The
+[SQLAlchemy session](#database-setup) and [Labox registry](#registry-setup). The
 loader's `load_soon` method accepts a record and storable type, returning a future that
 will, once the context exits, resolve to the original storable object.
 
 ```python
-from lakery.core import new_loader
+from labox.core import new_loader
 
 # Using the records from saving above
 async with new_async_session() as session:
@@ -192,7 +192,7 @@ information, project names, or any other relevant information that can help you 
 and manage your saved data.
 
 ```python
-from lakery.core import save_one
+from labox.core import save_one
 
 obj = ExperimentData(
     experiment_name="protein_folding_analysis_trial_1",

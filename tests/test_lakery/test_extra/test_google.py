@@ -7,8 +7,8 @@ from typing import cast
 
 from google.cloud.exceptions import NotFound
 
-from lakery.extra.google import BlobStorage
-from lakery.extra.google import simple_blob_router
+from labox.extra.google import BlobStorage
+from labox.extra.google import simple_blob_router
 from tests.core_storage_utils import parametrize_storage_assertions
 
 if TYPE_CHECKING:
@@ -16,8 +16,8 @@ if TYPE_CHECKING:
     from google.cloud.storage import Bucket
     from google.cloud.storage import Client
 
-    from lakery.extra.google import ReaderType
-    from lakery.extra.google import WriterType
+    from labox.extra.google import ReaderType
+    from labox.extra.google import WriterType
 
 
 @parametrize_storage_assertions

@@ -16,7 +16,7 @@ src = root / "src"
 
 for path in sorted(src.rglob("*.py")):
     module_path = path.relative_to(src).with_suffix("")
-    doc_path = path.relative_to(src / "lakery").with_suffix(".md")
+    doc_path = path.relative_to(src / "labox").with_suffix(".md")
     full_doc_path = Path("reference", doc_path)
 
     parts = tuple(module_path.parts)

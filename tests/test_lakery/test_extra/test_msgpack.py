@@ -1,5 +1,5 @@
-from lakery.extra.msgpack import MsgPackSerializer
-from lakery.extra.msgpack import MsgPackStreamSerializer
+from labox.extra.msgpack import MsgPackSerializer
+from labox.extra.msgpack import MsgPackStreamSerializer
 from tests.core_serializer_utils import make_stream_serializer_test
 from tests.core_serializer_utils import make_value_serializer_test
 

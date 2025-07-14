@@ -4,7 +4,7 @@ _src_path: https://github.com/rmorshea/python-copier-template
 author_email: ryan.morshead@gmail.com
 author_name: Ryan Morshead
 project_description: A data storage framework for Python.
-project_title: Lakery
-python_package_name: lakery
-python_version_range: '>=3.11'
-repo_url: https://github.com/rmorshea/lakery
+project_title: Labox
+python_package_name: labox
+python_version_range: ">=3.11"
+repo_url: https://github.com/rmorshea/labox

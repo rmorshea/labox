@@ -1,9 +1,9 @@
 ---
 site_author: Ryan Morshead
 site_description: A data storage framework for Python.
-site_name: Lakery
+site_name: Labox
 docs_dir: src
-repo_url: https://github.com/rmorshea/lakery
+repo_url: https://github.com/rmorshea/labox
 nav:
   - Home: index.md
   - Usage:

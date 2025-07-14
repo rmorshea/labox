@@ -2,4 +2,4 @@
 
 !!! note
 
-    Install with `pip install lakery[plotly]`
+    Install with `pip install labox[plotly]`

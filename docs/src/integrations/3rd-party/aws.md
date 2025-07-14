@@ -2,4 +2,4 @@
 
 !!! note
 
-    Install with `pip install lakery[aws]`
+    Install with `pip install labox[aws]`

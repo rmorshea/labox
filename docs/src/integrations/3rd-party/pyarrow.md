@@ -2,4 +2,4 @@
 
 !!! note
 
-    Install with `pip install lakery[pyarrow]`
+    Install with `pip install labox[pyarrow]`

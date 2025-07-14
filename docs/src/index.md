@@ -1,4 +1,4 @@
-# Lakery
+# Labox
 
 A storage framework for heterogeneous data in Python.
 
@@ -7,21 +7,21 @@ A storage framework for heterogeneous data in Python.
 To install the core package:
 
 ```bash
-pip install lakery
+pip install labox
 ```
 
 To include the core package and extra integrations:
 
 ```bash
 # all extras
-pip install lakery[all]
+pip install labox[all]
 
 # or specific extras
-pip install lakery[pydantic,pandas,aws]
+pip install labox[pydantic,pandas,aws]
 ```
 
 There's a [complete list of extras](./integrations) in the Integrations section, but be
-sure to checkout how Lakery works with [Pydantic](./integrations/3rd-party/pydantic.md).
+sure to checkout how Labox works with [Pydantic](./integrations/3rd-party/pydantic.md).
 
 ## Basic Setup
 
@@ -37,10 +37,10 @@ new_async_session = async_sessionmaker(engine, expire_on_commit=True)
 BaseRecord.create_all(engine).run()
 ```
 
-Then use the engine to create Lakery's tables:
+Then use the engine to create Labox's tables:
 
 ```python
-from lakery.core import BaseRecord
+from labox.core import BaseRecord
 
 BaseRecord.create_all(engine).run()
 ```
@@ -50,11 +50,11 @@ Establish a [registry](./concepts/registry.md) with the
 [storages](./concepts/storages.md) you plan to use.
 
 ```python
-from lakery.core import Registry
-from lakery.extra.os import FileStorage
+from labox.core import Registry
+from labox.extra.os import FileStorage
 
 registry = Registry(
-    modules=["lakery.builtin", "lakery.extra.pandas", "lakery.extra.pydantic"],
+    modules=["labox.builtin", "labox.extra.pandas", "labox.extra.pydantic"],
     default_storage=FileStorage("temp", mkdir=True),
 )
 ```
@@ -80,7 +80,7 @@ Put that data in a [storable](./concepts/storables.md), in this case a
 ```python
 import pandas as pd
 
-from lakery.extra.pydantic import StorableModel
+from labox.extra.pydantic import StorableModel
 
 
 class ExperimentData(StorableModel, class_id="..."):
@@ -98,7 +98,7 @@ experiment = ExperimentData(**experiment_data)
 Save the data and return a [record](./concepts/database.md#manifest-records):
 
 ```python
-from lakery.core import save_one
+from labox.core import save_one
 
 async with new_async_session() as session:
     record = save_one(experiment, session=session, registry=registry)
@@ -107,7 +107,7 @@ async with new_async_session() as session:
 Now, you can load the data back from the record:
 
 ```python
-from lakery.core import load_one
+from labox.core import load_one
 
 async with new_async_session() as session:
     loaded_experiment = load_one(record, session=session, registry=registry)
@@ -118,4 +118,4 @@ assert loaded_experiment == experiment
 ## Next Steps
 
 Check out more [usage examples](./usage), or dive into the [concepts](./concepts) and
-[integrations](./integrations) to learn more about how Lakery works.
+[integrations](./integrations) to learn more about how Labox works.
