@@ -12,11 +12,11 @@
    inkscape:export-filename="logo.svg"
    inkscape:export-xdpi="96"
    inkscape:export-ydpi="96"
+   xml:space="preserve"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
-   xmlns:svg="http://www.w3.org/2000/svg">
-  <sodipodi:namedview
+   xmlns:svg="http://www.w3.org/2000/svg"><sodipodi:namedview
      id="namedview1"
      pagecolor="#505050"
      bordercolor="#eeeeee"
@@ -27,16 +27,16 @@
      inkscape:deskcolor="#505050"
      inkscape:document-units="px"
      showgrid="true"
-     inkscape:zoom="17.486451"
-     inkscape:cx="36.942888"
-     inkscape:cy="18.871754"
-     inkscape:window-width="3440"
-     inkscape:window-height="1387"
+     inkscape:zoom="12.540458"
+     inkscape:cx="55.540236"
+     inkscape:cy="43.419466"
+     inkscape:window-width="1512"
+     inkscape:window-height="916"
      inkscape:window-x="0"
-     inkscape:window-y="25"
+     inkscape:window-y="38"
      inkscape:window-maximized="1"
-     inkscape:current-layer="layer1">
-    <inkscape:grid
+     inkscape:current-layer="layer1"
+     showguides="false"><inkscape:grid
        id="grid1"
        units="px"
        originx="0"
@@ -49,19 +49,21 @@
        opacity="0.14901961"
        empspacing="5"
        enabled="true"
-       visible="true" />
-    <inkscape:page
+       visible="true" /><inkscape:page
        x="0"
        y="0"
        width="100"
        height="100"
        id="page2"
        margin="0"
-       bleed="0" />
-  </sodipodi:namedview>
-  <defs
-     id="defs1">
-    <inkscape:path-effect
+       bleed="0" /></sodipodi:namedview><defs
+     id="defs1"><inkscape:perspective
+       sodipodi:type="inkscape:persp3d"
+       inkscape:vp_x="-192.13711 : 240.26371 : 1"
+       inkscape:vp_y="0 : 1633.2488 : 0"
+       inkscape:vp_z="300 : 240 : 1"
+       inkscape:persp3d-origin="69.22808 : 13.301829 : 1"
+       id="perspective6" /><inkscape:path-effect
        effect="fillet_chamfer"
        id="path-effect12"
        is_visible="true"
@@ -77,8 +79,7 @@
        apply_no_radius="true"
        apply_with_radius="true"
        only_selected="false"
-       hide_knots="false" />
-    <inkscape:path-effect
+       hide_knots="false" /><inkscape:path-effect
        effect="fillet_chamfer"
        id="path-effect5"
        is_visible="true"
@@ -94,8 +95,7 @@
        apply_no_radius="true"
        apply_with_radius="true"
        only_selected="false"
-       hide_knots="false" />
-    <inkscape:path-effect
+       hide_knots="false" /><inkscape:path-effect
        effect="fillet_chamfer"
        id="path-effect2"
        is_visible="false"
@@ -111,8 +111,7 @@
        apply_no_radius="true"
        apply_with_radius="true"
        only_selected="false"
-       hide_knots="false" />
-    <inkscape:path-effect
+       hide_knots="false" /><inkscape:path-effect
        effect="fillet_chamfer"
        id="path-effect1"
        is_visible="true"
@@ -128,8 +127,7 @@
        apply_no_radius="true"
        apply_with_radius="true"
        only_selected="false"
-       hide_knots="false" />
-    <inkscape:path-effect
+       hide_knots="false" /><inkscape:path-effect
        effect="fillet_chamfer"
        id="path-effect5-6"
        is_visible="true"
@@ -145,21 +143,72 @@
        apply_no_radius="true"
        apply_with_radius="true"
        only_selected="false"
-       hide_knots="false" />
-  </defs>
-  <g
+       hide_knots="false" /></defs><g
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
-     id="layer1">
-    <path
-       id="rect4"
-       style="fill:#fbc986;fill-opacity:1;stroke:#3f3a57;stroke-width:10;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
-       d="m 90,39.279297 c -3.491891,-1.157322 -11.261206,-2.93048 -19.041016,0.730469 -10.479249,4.931226 -15.718624,6.903717 -31.4375,0 C 26.95973,34.492652 14.539286,37.760067 10,39.308594 V 90 h 80 z" />
-    <path
-       id="path4"
-       style="fill:#fda3d1;fill-opacity:1;stroke:#3f3a57;stroke-width:10;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
-       d="m 10,25 v 14.308594 c 4.539286,-1.548527 16.95973,-4.815942 29.521484,0.701172 15.718876,6.903717 20.958251,4.931226 31.4375,0 C 78.738794,36.348817 86.508109,38.121975 90,39.279297 V 25 A 15,15 45 0 0 75,10 H 25 A 15,15 135 0 0 10,25 Z"
-       inkscape:path-effect="#path-effect12"
-       inkscape:original-d="m 10,10 v 29.308594 c 4.539286,-1.548527 16.95973,-4.815942 29.521484,0.701172 15.718876,6.903717 20.958251,4.931226 31.4375,0 C 78.738794,36.348817 86.508109,38.121975 90,39.279297 V 10 Z" />
-  </g>
-</svg>
+     id="layer1"><rect
+       style="fill:#0d181e;fill-opacity:1;stroke:none;stroke-linecap:square;stroke-miterlimit:4.2;stroke-width:1.0015748;stroke-dasharray:none"
+       id="rect66"
+       width="100"
+       height="100"
+       x="0"
+       y="0" /><circle
+       style="fill:#49bf40;fill-opacity:1;stroke:none;stroke-width:9.74497;stroke-linecap:square;stroke-miterlimit:4.2;stroke-dasharray:none;stroke-opacity:1"
+       id="path63-4-4"
+       r="16.610737"
+       cy="41.870285"
+       cx="39.59621" /><circle
+       style="fill:#3b9933;fill-opacity:1;stroke:none;stroke-width:7.9076;stroke-linecap:square;stroke-miterlimit:4.2;stroke-dasharray:none;stroke-opacity:1"
+       id="path63-4-6"
+       cy="19"
+       cx="66"
+       r="13.478859" /><circle
+       style="fill:#2c7326;fill-opacity:1;stroke:none;stroke-width:9.74497;stroke-linecap:square;stroke-miterlimit:4.2;stroke-dasharray:none;stroke-opacity:1"
+       id="path63-4"
+       r="16.610737"
+       cy="51.493851"
+       cx="60" /><path
+       style="fill:#0d181e;fill-opacity:1;stroke:#eef3f6;stroke-width:7.35169;stroke-linecap:square;stroke-linejoin:round;stroke-miterlimit:4.2;stroke-dasharray:none;stroke-opacity:1"
+       d="M 50.470834,90.579049 84.857152,78.008057 c 0,-29.332312 0,-29.332312 0,-29.332312 l -34.386318,8.380661 z"
+       id="path59" /><path
+       style="fill:#0d181e;fill-opacity:1;stroke:#eef3f6;stroke-width:7.35169;stroke-linecap:square;stroke-linejoin:round;stroke-miterlimit:4.2;stroke-dasharray:none;stroke-opacity:1"
+       d="M 50.028191,90.575841 15.142848,78.006778 c 0,-29.327816 0,-29.327816 0,-29.327816 l 34.885343,8.379376 z"
+       id="path59-3" /><path
+       style="fill:none;fill-opacity:1;stroke:#eef3f6;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4.2;stroke-dasharray:none;stroke-opacity:1"
+       id="path69"
+       sodipodi:type="arc"
+       sodipodi:cx="62.831978"
+       sodipodi:cy="17.262411"
+       sodipodi:rx="5.9998116"
+       sodipodi:ry="5.9998116"
+       sodipodi:start="3.3161256"
+       sodipodi:end="4.3720498"
+       sodipodi:arc-type="arc"
+       d="M 56.923317,16.220555 A 5.9998116,5.9998116 0 0 1 60.8292,11.60674"
+       sodipodi:open="true" /><path
+       style="fill:none;fill-opacity:1;stroke:#eef3f6;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4.2;stroke-dasharray:none;stroke-opacity:1"
+       id="path69-0-4"
+       sodipodi:type="arc"
+       sodipodi:cx="39.958397"
+       sodipodi:cy="31.642139"
+       sodipodi:rx="6.0189953"
+       sodipodi:ry="6.0189953"
+       sodipodi:start="3.3161256"
+       sodipodi:end="4.3720498"
+       sodipodi:arc-type="arc"
+       d="m 34.030844,30.596952 a 6.0189953,6.0189953 0 0 1 3.918371,-4.628567"
+       sodipodi:open="true"
+       transform="rotate(8.8540436)" /><path
+       style="fill:none;fill-opacity:1;stroke:#eef3f6;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4.2;stroke-dasharray:none;stroke-opacity:1"
+       id="path69-0-4-5"
+       sodipodi:type="arc"
+       sodipodi:cx="52.103554"
+       sodipodi:cy="49.765354"
+       sodipodi:rx="6.0189953"
+       sodipodi:ry="6.0189953"
+       sodipodi:start="3.3161256"
+       sodipodi:end="4.3720498"
+       sodipodi:arc-type="arc"
+       d="m 46.176001,48.720166 a 6.0189953,6.0189953 0 0 1 3.918371,-4.628567"
+       sodipodi:open="true"
+       transform="rotate(-2.7989617)" /></g></svg>
