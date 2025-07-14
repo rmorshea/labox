@@ -177,7 +177,6 @@ async def load_from_content_record(
                 "value": value,
                 "serializer": serializer,
                 "storage": storage,
-                "tags": record.tags,
             }
         case SerializerTypeEnum.StreamSerializer:
             serializer = registry.get_stream_serializer(record.serializer_name)
@@ -195,7 +194,6 @@ async def load_from_content_record(
                 "value_stream": stream,
                 "serializer": serializer,
                 "storage": storage,
-                "tags": record.tags,
             }
         case _:  # nocov
             msg = f"Unknown serializer type: {record.serializer_type}"

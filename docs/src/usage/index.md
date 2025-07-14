@@ -60,6 +60,7 @@ Or with [dataclasses](../integrations/built-ins/storables.md#dataclasses).
 
 ```python
 from dataclasses import dataclass
+
 from lakery.builtin import StorableDataclass
 
 
@@ -80,7 +81,7 @@ schema of Pydantic models does not have this limitation, so you can use
 
 ```python
 import numpy as np
-from datetime import UTC, datetime
+
 from lakery.extra.pydantic import StorableModel
 
 
@@ -101,13 +102,12 @@ function. To call it you'll need a [SQLAlchemy session](#database-setup) and
 [load](#loading-one) the storable later.
 
 ```python
-from lakery.core import Storable
 from lakery.core import save_one
 
 obj = ExperimentData(
     experiment_name="protein_folding_analysis_trial_1",
     parameters={"temperature": 298.15, "ph": 7.4, "concentration": 0.1},
-    results={"binding_affinity": [12.3, 15.7, 9.8], "stability": [85.2, 78.9, 92.1]}
+    results={"binding_affinity": [12.3, 15.7, 9.8], "stability": [85.2, 78.9, 92.1]},
 )
 async with new_async_session() as session:
     record = save_one(obj, session=session, registry=registry)
@@ -124,20 +124,19 @@ storable and returns a future that will, once the context exits, resolve to a
 then be used to [load](#loading-in-bulk) the storables later.
 
 ```python
-from lakery.core import Storable
 from lakery.core import new_saver
 
 objs = [
     ExperimentData(
         experiment_name="protein_folding_analysis_trial_1",
         parameters={"temperature": 298.15, "ph": 7.4, "concentration": 0.1},
-        results={"binding_affinity": [12.3, 15.7, 9.8], "stability": [85.2, 78.9, 92.1]}
+        results={"binding_affinity": [12.3, 15.7, 9.8], "stability": [85.2, 78.9, 92.1]},
     ),
     ExperimentData(
         experiment_name="protein_folding_analysis_trial_2",
         parameters={"temperature": 310.15, "ph": 7.2, "concentration": 0.2},
-        results={"binding_affinity": [14.1, 9.3, 11.2], "stability": [79.8, 83.4, 88.7]}
-    )
+        results={"binding_affinity": [14.1, 9.3, 11.2], "stability": [79.8, 83.4, 88.7]},
+    ),
 ]
 async with new_async_session() as session:
     async with new_saver(session=session, registry=registry) as ms:
@@ -198,7 +197,7 @@ from lakery.core import save_one
 obj = ExperimentData(
     experiment_name="protein_folding_analysis_trial_1",
     parameters={"temperature": 298.15, "ph": 7.4, "concentration": 0.1},
-    results={"binding_affinity": [12.3, 15.7, 9.8], "stability": [85.2, 78.9, 92.1]}
+    results={"binding_affinity": [12.3, 15.7, 9.8], "stability": [85.2, 78.9, 92.1]},
 )
 async with new_async_session() as session:
     record = save_one(
@@ -206,10 +205,10 @@ async with new_async_session() as session:
         session=session,
         registry=registry,
         tags={
-            "funding_source": "nsf_grant_12345"
+            "funding_source": "nsf_grant_12345",
             "project": "protein_dynamics_2024",
             "phase": "initial_screening",
-        }
+        },
     )
 ```
 

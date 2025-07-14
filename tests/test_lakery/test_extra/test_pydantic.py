@@ -66,22 +66,22 @@ def test_dump_load_storage_model():
                 },
                 "spec_with_storage": {
                     "__json_ext__": "ref",
-                    "ref": "ref.PydanticStorageModel.spec_with_storage.1",
+                    "ref": "ref.MyModel.spec_with_storage.1",
                 },
                 "spec_with_serializer_and_storage": {
                     "__json_ext__": "ref",
-                    "ref": "ref.PydanticStorageModel.spec_with_serializer_and_storage.2",
+                    "ref": "ref.MyModel.spec_with_serializer_and_storage.2",
                 },
             },
             "serializer": json_serializer,
             "storage": local_storage,
         },
-        "ref.PydanticStorageModel.spec_with_storage.1": {
+        "ref.MyModel.spec_with_storage.1": {
             "serializer": json_serializer,
             "storage": local_storage,
             "value": {"answer": 42, "hello": "world"},
         },
-        "ref.PydanticStorageModel.spec_with_serializer_and_storage.2": {
+        "ref.MyModel.spec_with_serializer_and_storage.2": {
             "serializer": msgpack_serializer,
             "storage": local_storage,
             "value": {"answer": 42, "hello": "world"},

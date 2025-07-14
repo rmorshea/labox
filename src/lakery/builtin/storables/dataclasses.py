@@ -2,19 +2,14 @@ from __future__ import annotations
 
 import dataclasses
 from dataclasses import KW_ONLY
-from dataclasses import asdict
 from dataclasses import is_dataclass
-from dataclasses import replace
 from typing import TYPE_CHECKING
-from typing import Annotated
 from typing import Any
 from typing import ClassVar
 from typing import Literal
 from typing import TypedDict
 from typing import TypeVar
 from typing import Unpack
-from typing import get_origin
-from typing import get_type_hints
 
 from lakery._internal._utils import frozenclass
 from lakery.common.jsonext import dump_json_ext
@@ -96,33 +91,16 @@ class StorableDataclass(Storable, _FakeBase, unpacker=_StorableDataclassUnpacker
 
     _storable_class_info: ClassVar[_StorableDataclassInfo] = {
         "extra_fields": "forbid",
-        "field_specs": {},
     }
 
     def __init_subclass__(cls, **kwargs: Unpack[Config]):
         # Ensure this is always kw_only
         cls.__annotations__ = {"_": KW_ONLY, **cls.__annotations__}
-
-        inherited_field_specs = cls._storable_class_info["field_specs"]
-        inherited_extra_fields = cls._storable_class_info["extra_fields"]
-
-        field_specs = {**s} if (s := cls._storable_class_info.get("field_specs")) else {}
-        for name, anno in get_type_hints(cls, include_extras=True).items():
-            if name in field_specs:
-                continue  # Was explicitly set in the class kwargs
-            if get_origin(anno) is Annotated:
-                old_spec = spec = field_specs.get(name, _EMPTY_SPEC)
-                for item in anno.__args__:
-                    if isinstance(item, ContentSpec):
-                        spec = replace(spec, **asdict(item))
-                        break
-                if spec is old_spec:  # No changes to the spec
-                    continue
-                field_specs[name] = spec
-
         cls._storable_class_info = {
-            "field_specs": {**inherited_field_specs, **field_specs},
-            "extra_fields": kwargs.get("extra_fields", inherited_extra_fields),
+            "extra_fields": kwargs.get(
+                "extra_fields",
+                cls._storable_class_info["extra_fields"],
+            ),
         }
 
     def storable_dataclass_serializer(self, registry: Registry) -> Serializer:
@@ -138,7 +116,6 @@ class _StorableDataclassInfo(TypedDict):
     """Metadata for a storable class."""
 
     extra_fields: Literal["ignore", "forbid"]
-    field_specs: Mapping[str, ContentSpec]
 
 
 @frozenclass

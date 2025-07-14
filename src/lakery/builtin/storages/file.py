@@ -49,7 +49,6 @@ class FileStorage(Storage[str]):
         self,
         data: bytes,
         digest: Digest,
-        _name: str,
         _tags: TagMap,
     ) -> str:
         """Save the given data."""
@@ -70,7 +69,6 @@ class FileStorage(Storage[str]):
         self,
         data_stream: AsyncIterable[bytes],
         get_digest: GetStreamDigest,
-        _name: str,
         _tags: TagMap,
     ) -> str:
         """Save the given data stream."""

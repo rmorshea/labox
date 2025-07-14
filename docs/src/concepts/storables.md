@@ -3,8 +3,8 @@
 Storables define the shape of the data that's saved and loaded by Lakery. Try these
 implementations:
 
--   [Pydantic models](../integrations/3rd-party/pydantic.md)
--   [Built-ins](../integrations/built-ins/storables.md)
+- [Pydantic models](../integrations/3rd-party/pydantic.md)
+- [Built-ins](../integrations/built-ins/storables.md)
 
 ## Defining Storables
 
@@ -47,10 +47,10 @@ compatible and which are not.
 
 In general, you should avoid:
 
--   Removing fields from the class.
--   Changing the expected type of fields (though converting or adding to a union type is
+- Removing fields from the class.
+- Changing the expected type of fields (though converting or adding to a union type is
     generally safe).
--   Renaming fields if there is no way to provide an alias for the old name.
+- Renaming fields if there is no way to provide an alias for the old name.
 
 If you must make a change that is not compatible with existing data, you should create a
 new `Storable` class with a new `class_id`. This will ensure that existing data remains
