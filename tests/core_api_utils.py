@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio.session import AsyncSession
 from sqlalchemy.orm import raiseload
 
-from labox._internal._anyio import FutureResult
+from labox.common.anyio import TaskFuture
 from labox.core.api.loader import new_loader
 from labox.core.api.saver import new_saver
 from labox.core.database import ManifestRecord
@@ -35,7 +35,7 @@ async def assert_save_load_equivalence(
 
     async with new_loader(session=session, registry=registry) as ml:
         future_model = ml.load_soon(record, type(obj))
-    loaded_model = future_model.get()
+    loaded_model = future_model.value
 
     assertion(loaded_model, obj)
 
@@ -54,7 +54,7 @@ async def assert_save_load_stream_equivalence(
 
     async with new_loader(session=session, registry=registry) as ml:
         future_model = ml.load_soon(record, type(original_model))
-    loaded_model = future_model.get()
+    loaded_model = future_model.value
 
     asserted = assertion(loaded_model, make_model())
     if isawaitable(asserted):
@@ -63,9 +63,9 @@ async def assert_save_load_stream_equivalence(
 
 async def _get_realistic_manifest_record(
     session: AsyncSession,
-    future: FutureResult[ManifestRecord],
+    future: TaskFuture[ManifestRecord],
 ) -> ManifestRecord:
-    returned_record = future.get()
+    returned_record = future.value
     record_id = returned_record.id
     session.expunge(returned_record)  # expunge to clear any cached state
 

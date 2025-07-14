@@ -13,10 +13,9 @@ from anysync import contextmanager
 from sqlalchemy import inspect as orm_inspect
 from sqlalchemy import select
 
-from labox._internal._anyio import FutureResult
-from labox._internal._anyio import set_future_exception_forcefully
-from labox._internal._anyio import start_future
-from labox._internal._anyio import start_with_future
+from labox.common.anyio import TaskFuture
+from labox.common.anyio import start_future
+from labox.common.anyio import start_with_future
 from labox.common.exceptions import NotRegistered
 from labox.core.database import ContentRecord
 from labox.core.database import ManifestRecord
@@ -36,7 +35,7 @@ if TYPE_CHECKING:
 
 M = TypeVar("M")
 
-_Requests = tuple[ManifestRecord, type[Any] | None, FutureResult[Any]]
+_Requests = tuple[ManifestRecord, type[Any] | None, TaskFuture[Any]]
 _RecordGroup = tuple[ManifestRecord, Sequence[ContentRecord]]
 
 
@@ -50,7 +49,7 @@ async def load_one(
     """Load a single object from the given manifest record."""
     async with new_loader(registry, session) as loader:
         future = loader.load_soon(manifest, cls)
-    return future.get()
+    return future.value
 
 
 @contextmanager
@@ -73,12 +72,12 @@ async def new_loader(
             try:
                 actual_cls = registry.get_storable(manifest.class_id)
             except NotRegistered as error:
-                set_future_exception_forcefully(future, error)
+                future.set_exception(error)
                 continue
 
             if expected_cls and not issubclass(actual_cls, expected_cls):
                 msg = f"Expected {expected_cls}, but {manifest} is {actual_cls}."
-                set_future_exception_forcefully(future, TypeError(msg))
+                future.set_exception(TypeError(msg))
                 continue
 
             start_with_future(
@@ -101,7 +100,7 @@ class _DataLoader:
         manifest: ManifestRecord,
         cls: type[M],
         /,
-    ) -> FutureResult[M]: ...
+    ) -> TaskFuture[M]: ...
 
     @overload
     def load_soon(
@@ -109,16 +108,16 @@ class _DataLoader:
         manifest: ManifestRecord,
         cls: None = ...,
         /,
-    ) -> FutureResult[Any]: ...
+    ) -> TaskFuture[Any]: ...
 
     def load_soon(
         self,
         manifest: ManifestRecord,
         cls: type[Any] | None = None,
         /,
-    ) -> FutureResult[Any]:
+    ) -> TaskFuture[Any]:
         """Load an object from the given manifest record."""
-        future = FutureResult()
+        future = TaskFuture()
         self._requests.append((manifest, cls, future))
         return future
 
@@ -138,7 +137,7 @@ async def load_from_manifest_record(
     unpacker = registry.get_unpacker(manifest.unpacker_name)
     cls = registry.get_storable(manifest.class_id)
 
-    content_futures: dict[str, FutureResult[Any]] = {}
+    content_futures: dict[str, TaskFuture[Any]] = {}
     async with create_task_group() as tg:
         for c in contents:
             content_futures[c.content_key] = start_future(
@@ -150,7 +149,7 @@ async def load_from_manifest_record(
 
     return unpacker.repack_object(
         cls,
-        {i: f.get() for i, f in content_futures.items()},
+        {i: f.value for i, f in content_futures.items()},
         registry,
     )
 

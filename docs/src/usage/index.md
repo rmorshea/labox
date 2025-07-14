@@ -140,8 +140,8 @@ objs = [
 ]
 async with new_async_session() as session:
     async with new_saver(session=session, registry=registry) as ms:
-        future_records = [ms.save_soon(s) for s in objs]
-    record = [r.get() for r in future_records]
+        futures = [ms.save_soon(s) for s in objs]
+    records = [f.value for f in futures]
 ```
 
 ## Loading Storables
@@ -178,8 +178,8 @@ from labox.core import new_loader
 # Using the records from saving above
 async with new_async_session() as session:
     async with new_loader(session=session, registry=registry) as ml:
-        future_objs = [ml.load_soon(r, ExperimentData) for r in records]
-    loaded_objs = [future.get() for future in future_objs]
+        futures = [ml.load_soon(r, ExperimentData) for r in records]
+    loaded_objs = [f.value for f in futures]
 ```
 
 ## Adding Tags

@@ -18,9 +18,9 @@ from anyio import create_task_group
 from anyio.abc import CapacityLimiter
 from anyio.to_thread import run_sync
 
-from labox._internal._anyio import start_as_async_iterator
 from labox._internal._temp_path import make_path_from_digest
 from labox._internal._temp_path import make_temp_path
+from labox.common.anyio import as_async_iterator
 from labox.common.exceptions import NoStorageData
 from labox.common.streaming import write_async_byte_stream_into
 from labox.core.storage import Digest
@@ -247,7 +247,7 @@ class S3Storage(Storage["S3Pointer"]):
             raise NoStorageData(msg) from error
 
         async with create_task_group() as tg:
-            with start_as_async_iterator(
+            with as_async_iterator(
                 tg,
                 result["Body"].iter_chunks(self._stream_reader_part_size),
             ) as chunks:

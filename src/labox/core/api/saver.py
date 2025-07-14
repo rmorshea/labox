@@ -16,8 +16,8 @@ from uuid import uuid4
 from anyio import create_task_group
 from anysync import contextmanager
 
-from labox._internal._anyio import FutureResult
-from labox._internal._anyio import start_future
+from labox.common.anyio import TaskFuture
+from labox.common.anyio import start_future
 from labox.core.database import ContentRecord
 from labox.core.database import ManifestRecord
 from labox.core.database import SerializerTypeEnum
@@ -62,7 +62,7 @@ async def save_one(
     """Save a single object to the database."""
     async with new_saver(registry, session) as saver:
         future = saver.save_soon(obj, tags=tags)
-    return future.get()
+    return future.value
 
 
 @contextmanager
@@ -71,7 +71,7 @@ async def new_saver(
     session: AsyncSession,
 ) -> AsyncIterator[DataSaver]:
     """Create a context manager for saving data."""
-    futures: list[FutureResult[ManifestRecord]] = []
+    futures: list[TaskFuture[ManifestRecord]] = []
     try:
         async with create_task_group() as tg:
             yield _DataSaver(tg, futures, registry)
@@ -79,10 +79,10 @@ async def new_saver(
         errors: list[BaseException] = []
         manifests: list[ManifestRecord] = []
         for f in futures:
-            if e := f.exception():
+            if e := f.exception:
                 errors.append(e)
             else:
-                m = f.get()
+                m = f.value
                 _LOG.debug("Saving manifest %s", m.id.hex)
                 manifests.append(m)
 
@@ -98,7 +98,7 @@ class _DataSaver:
     def __init__(
         self,
         task_group: TaskGroup,
-        futures: list[FutureResult[ManifestRecord]],
+        futures: list[TaskFuture[ManifestRecord]],
         registry: Registry,
     ):
         self._futures = futures
@@ -110,7 +110,7 @@ class _DataSaver:
         obj: Storable,
         *,
         tags: Mapping[str, str] | None = None,
-    ) -> FutureResult[ManifestRecord]:
+    ) -> TaskFuture[ManifestRecord]:
         """Schedule the object to be saved."""
         self._registry.has_storable(type(obj), raise_if_missing=True)
 
@@ -142,7 +142,7 @@ async def _save_object(
     obj_contents: Mapping[str, AnyUnpackedValue] = unpacker.unpack_object(obj, registry)
 
     manifest_id = uuid4()
-    data_record_futures: list[FutureResult[ContentRecord]] = []
+    data_record_futures: list[TaskFuture[ContentRecord]] = []
     async with create_task_group() as tg:
         for content_keyw, content in obj_contents.items():
             _LOG.debug("Saving %s in manifest %s", content_keyw, manifest_id.hex)
@@ -181,14 +181,14 @@ async def _save_object(
 
     contents: list[ContentRecord] = []
     for k, f in zip(obj_contents, data_record_futures, strict=False):
-        if exc := f.exception():
+        if exc := f.exception:
             _LOG.error(
                 "Failed to save %s in manifest %s",
                 k,
                 manifest_id.hex,
                 exc_info=(exc.__class__, exc, exc.__traceback__),
             )
-        contents.append(f.get())
+        contents.append(f.value)
 
     return ManifestRecord(
         id=manifest_id,

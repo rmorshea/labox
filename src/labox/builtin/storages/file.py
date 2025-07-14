@@ -8,8 +8,8 @@ from uuid import uuid4
 
 from anyio import create_task_group
 
-from labox._internal._anyio import start_as_async_iterator
 from labox._internal._temp_path import make_file_name_from_digest
+from labox.common.anyio import as_async_iterator
 from labox.core.storage import Storage
 
 if TYPE_CHECKING:
@@ -94,7 +94,7 @@ class FileStorage(Storage[str]):
         path = _str_to_path(location)
         _LOG.debug("Loading data stream from %s", path)
         async with create_task_group() as tg:
-            with start_as_async_iterator(tg, _iter_file_chunks(path, self.chunk_size)) as chunks:
+            with as_async_iterator(tg, _iter_file_chunks(path, self.chunk_size)) as chunks:
                 async for c in chunks:
                     yield c
 
