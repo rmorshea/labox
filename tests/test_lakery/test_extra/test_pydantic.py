@@ -48,28 +48,28 @@ def test_dump_load_storage_model():
     local_storage = registry.get_storage(FileStorage.name)
 
     assert contents == {
-        "data": {
+        "body": {
             "value": {
                 "no_spec": {
-                    "__json_ext__": "content",
+                    "__labox__": "content",
                     "content_base64": "eyJoZWxsbyI6IndvcmxkIiwiYW5zd2VyIjo0Mn0=",
                     "content_encoding": None,
                     "content_type": "application/json",
                     "serializer_name": JsonSerializer.name,
                 },
                 "spec_with_serializer": {
-                    "__json_ext__": "content",
+                    "__labox__": "content",
                     "content_base64": "gqVoZWxsb6V3b3JsZKZhbnN3ZXIq",
                     "content_encoding": None,
                     "content_type": "application/msgpack",
                     "serializer_name": MsgPackSerializer.name,
                 },
                 "spec_with_storage": {
-                    "__json_ext__": "ref",
+                    "__labox__": "ref",
                     "ref": "ref.MyModel.spec_with_storage.1",
                 },
                 "spec_with_serializer_and_storage": {
-                    "__json_ext__": "ref",
+                    "__labox__": "ref",
                     "ref": "ref.MyModel.spec_with_serializer_and_storage.2",
                 },
             },

@@ -21,6 +21,8 @@ from pydantic import GetCoreSchemaHandler
 from pydantic_core import core_schema as cs
 from pydantic_walk_core_schema import walk_core_schema
 
+from labox._internal._simplify import LaboxContentDict
+from labox._internal._simplify import LaboxRefDict
 from labox._internal._utils import frozenclass
 from labox._internal._utils import get_typed_dict
 from labox.core.serializer import StreamSerializer
@@ -32,7 +34,6 @@ from labox.core.unpacker import UnpackedValueStream
 from labox.core.unpacker import Unpacker
 
 if TYPE_CHECKING:
-    from labox.common.jsonext import _AnyJsonExt
     from labox.core.registry import Registry
     from labox.core.serializer import Serializer
     from labox.core.storage import Storage
@@ -79,7 +80,7 @@ class _StorableModelUnpacker(Unpacker["StorableModel"]):
         )
 
         return {
-            "data": {
+            "body": {
                 "value": data,
                 "serializer": obj.storable_model_serializer(registry),
                 "storage": obj.storable_model_storage(registry),
@@ -96,13 +97,13 @@ class _StorableModelUnpacker(Unpacker["StorableModel"]):
         """Load the model from storage content."""
         contents = dict(contents)
         try:
-            data_content = contents["data"]
-            data = data_content["value"]  # type: ignore[reportGeneralTypeIssues]
+            unpacked_body = contents["body"]
+            body_value = unpacked_body["value"]  # type: ignore[reportGeneralTypeIssues]
         except KeyError:
-            msg = "Missing or malformed 'data' key in model contents."
+            msg = "Missing or malformed 'body' key in model contents."
             raise ValueError(msg) from None
         return cls.model_validate(
-            data,
+            body_value,
             context=_make_validation_context(
                 _LaboxValidationContext(external=contents, registry=registry)
             ),
@@ -255,23 +256,23 @@ def _adapt_core_schema(schema: cs.CoreSchema) -> cs.JsonOrPythonSchema:
 
 
 def _make_validator_func() -> cs.WithInfoValidatorFunction:
-    def validate(maybe_json_ext: Any, info: cs.FieldValidationInfo, /) -> Any:
+    def validate(maybe_labox_dict: Any, info: cs.FieldValidationInfo, /) -> Any:
         if not _has_info_context(info):
-            return maybe_json_ext
+            return maybe_labox_dict
 
         context = _get_info_context(info)
         registry = context["registry"]
 
-        if not isinstance(maybe_json_ext, Mapping):
-            return maybe_json_ext
+        if not isinstance(maybe_labox_dict, Mapping):
+            return maybe_labox_dict
 
-        if "__json_ext__" not in maybe_json_ext:
-            return maybe_json_ext
+        if "__labox__" not in maybe_labox_dict:
+            return maybe_labox_dict
 
-        json_ext = cast("_AnyJsonExt", maybe_json_ext)
+        labox_dict = cast("LaboxContentDict | LaboxRefDict", maybe_labox_dict)
 
-        if json_ext["__json_ext__"] == "ref":
-            ref_str = json_ext["ref"]
+        if labox_dict["__labox__"] == "ref":
+            ref_str = labox_dict["ref"]
             match context["external"][ref_str]:
                 case {"value": value}:
                     return value
@@ -280,17 +281,17 @@ def _make_validator_func() -> cs.WithInfoValidatorFunction:
                 case _:
                     msg = f"Invalid external content reference: {ref_str}."
                     raise ValueError(msg)
-        elif json_ext["__json_ext__"] == "content":
-            serializer = registry.get_serializer(json_ext["serializer_name"])
+        elif labox_dict["__labox__"] == "content":
+            serializer = registry.get_serializer(labox_dict["serializer_name"])
             return serializer.deserialize_data(
                 {
-                    "data": b64decode(json_ext["content_base64"].encode("ascii")),
-                    "content_encoding": json_ext["content_encoding"],
-                    "content_type": json_ext["content_type"],
+                    "data": b64decode(labox_dict["content_base64"].encode("ascii")),
+                    "content_encoding": labox_dict["content_encoding"],
+                    "content_type": labox_dict["content_type"],
                 }
             )
         else:  # nocov
-            msg = f"Unknown JSON extension type: {json_ext['__json_ext__']}."
+            msg = f"Unknown Labox JSON type: {labox_dict['__labox__']}."
             raise ValueError(msg)
 
     return validate
@@ -302,7 +303,11 @@ def _make_serializer_func(schema: cs.CoreSchema) -> cs.FieldPlainInfoSerializerF
     serializer_type_ = metadata.get("serializer_type")
     storage_name = metadata.get("storage_name")
 
-    def serialize(model: BaseModel, value: Any, info: cs.FieldSerializationInfo, /) -> _AnyJsonExt:
+    def serialize(
+        model: BaseModel,
+        value: Any,
+        info: cs.FieldSerializationInfo,
+    ) -> LaboxContentDict | LaboxRefDict:
         context = _get_info_context(info)
         external = context["external"]
         registry = context["registry"]
@@ -327,15 +332,15 @@ def _make_serializer_func(schema: cs.CoreSchema) -> cs.FieldPlainInfoSerializerF
                     storage=registry.get_storage(storage_name),
                 )
                 external[ref_str] = unpacked
-                return {"__json_ext__": "ref", "ref": ref_str}
+                return {"__labox__": "ref", "ref": ref_str}
             content = serializer.serialize_data(value)
-            return {
-                "__json_ext__": "content",
-                "content_base64": b64encode(content["data"]).decode("ascii"),
-                "content_encoding": content["content_encoding"],
-                "content_type": content["content_type"],
-                "serializer_name": serializer.name,
-            }
+            return LaboxContentDict(
+                __labox__="content",
+                content_base64=b64encode(content["data"]).decode("ascii"),
+                content_encoding=content["content_encoding"],
+                content_type=content["content_type"],
+                serializer_name=serializer.name,
+            )
         else:
             serializer = (
                 registry.get_stream_serializer(serializer_name)
@@ -354,7 +359,7 @@ def _make_serializer_func(schema: cs.CoreSchema) -> cs.FieldPlainInfoSerializerF
             )
             ref_str = _make_ref_str(type(model), info, context)
             external[ref_str] = unpacked
-            return {"__json_ext__": "ref", "ref": ref_str}
+            return LaboxRefDict(__labox__="ref", ref=ref_str)
 
     return serialize
 
