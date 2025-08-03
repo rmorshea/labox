@@ -47,7 +47,7 @@ __all__ = (
 _LOG = getLogger(__name__)
 
 
-class _StorableModelUnpacker(Unpacker["StorableModel"]):
+class StorableModelUnpacker(Unpacker["StorableModel"]):
     """Unpacker for [`StorableModel`][labox.extra.pydantic.StorableModel] objects."""
 
     name = "labox.pydantic@v1"
@@ -122,7 +122,7 @@ class StorableModel(
     Storable,
     BaseModel,
     arbitrary_types_allowed=True,
-    storable_unpacker=_StorableModelUnpacker(),
+    storable_unpacker=StorableModelUnpacker(),
 ):
     """A Pydantic model that can be stored by Labox."""
 

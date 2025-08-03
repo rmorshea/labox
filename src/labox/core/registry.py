@@ -230,8 +230,6 @@ def _info_from_explicit_kwargs(kwargs: RegistryKwargs) -> _RegistryInfo:
     for unpacker in kwargs.get("unpackers") or ():
         _check_name_defined_on_class(unpacker)
         unpacker_by_name[unpacker.name] = unpacker
-        for cls in unpacker.types:
-            unpacker_by_type[cls] = unpacker
 
     for serializer in kwargs.get("serializers") or ():
         _check_name_defined_on_class(serializer)

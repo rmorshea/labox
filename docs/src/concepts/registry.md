@@ -34,10 +34,9 @@ my_unpacker: Unpacker
 reg = Registry(unpackers=[my_unpacker])
 ```
 
-If you add an unpacker explicitly it will take precedence over any unpacker registered
-with a storable. Specifically, it will be used to unpack any of its
-[`types`][labox.core.unpacker.Unpacker.types] based on the standard
-[type inference](#type-inference) logic.
+This is typically only required if the unpacker for an existing storable has been
+replaced. In this case, you can register the old unpacker to maintain backwards
+compatibility.
 
 ## Adding Serializers
 

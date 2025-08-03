@@ -31,9 +31,6 @@ D = TypeVar("D", bound=Mapping[str, Any], default=Mapping[str, Any])
 class Unpacker(Generic[S, D], Component):
     """A base for classes that decompose storable objects into their constituent parts."""
 
-    types: tuple[type[S], ...] = ()
-    """The types of objects that this packer can handle."""
-
     @abc.abstractmethod
     @not_implemented
     def unpack_object(self, obj: S, registry: Registry, /) -> D:
