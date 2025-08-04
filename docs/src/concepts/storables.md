@@ -4,7 +4,7 @@ Storables define the shape of the data that's saved and loaded by Labox. Try the
 implementations:
 
 - [Pydantic models](../integrations/3rd-party/pydantic.md)
-- [Built-ins](../integrations/built-ins/storables.md)
+- [Built-ins](../integrations/built-ins/storables.md) (e.g. `dataclasses`)
 
 ## Defining Storables
 

@@ -54,14 +54,10 @@ data.
 
 Each [value](#unpacked-values) or [stream](#unpacked-streams) returned by an unpacker is
 identified by a string within the unpacked dictionary. This string is called the
-"content name". This string gets passed along to:
-
-- The [`ContentRecord`](./database.md#content-records) that is saved as a pointer to
-    the data. The name is unique amongst all the content records for a given
-    [`ManifestRecord`](./database.md#manifest-records).
-- The [storage](./storages.md#storage-names) where the data is saved. From the
-    storage's perspective, the content name is not globally unique and is not suitable
-    as a storage key on its own.
+"content name". This string gets passed along to the
+[`ContentRecord`](./database.md#content-records) that is saved as a pointer to
+the data. The name is unique amongst all the content records for a given
+[`ManifestRecord`](./database.md#manifest-records).
 
 ## Unpacked Values
 
@@ -83,9 +79,9 @@ allowing you to unpack some fields into memory while streaming others.
 ## Unpacked Streams
 
 In addition to unpacked values, you can also unpack the fields of a `Storable` class
-into `UnpackedValueStream` dicts. This is useful when you can't or don't want to load
-large amounts of data into memory at once. An `UnpackedValueStream` contains the
-following information:
+into [`UnpackedValueStream`](labox.core.unpacker.UnpackedValueStream)
+dicts. This is useful when you can't or don't want to load large amounts of data into
+memory at once. An `UnpackedValueStream` contains the following information:
 
 - `value_stream`: An async iterable that yields the values of the fields.
 - `serializer` (recommended): The serializer to use when saving the values.

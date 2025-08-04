@@ -32,7 +32,9 @@ T = TypeVar("T", default=Any)
 __all__ = ("StorableDataclass",)
 
 
-class _StorableDataclassUnpacker(Unpacker["StorableDataclass"]):
+class StorableDataclassUnpacker(Unpacker["StorableDataclass"]):
+    """Unpacker for [`StorableDataclass`][labox.builtin.storables.dataclasses.StorableDataclass]."""
+
     name = "labox.builtin.dataclass@v1"
 
     def unpack_object(
@@ -88,7 +90,7 @@ class Config(StorableConfigDict, total=False):
     extra_fields: Literal["ignore", "forbid"]
 
 
-class StorableDataclass(Storable, _FakeBase, unpacker=_StorableDataclassUnpacker()):
+class StorableDataclass(Storable, _FakeBase, unpacker=StorableDataclassUnpacker()):
     """A base for user-defined storable dataclasses."""
 
     _storable_class_info: ClassVar[_StorableDataclassInfo] = {
