@@ -72,12 +72,12 @@ class ExperimentData(StorableDataclass):
 ```
 
 Both look similar, but Pydantic models allow for more complex serialization and storage
-options. For example, if you cannot nest non-JSON compatible types inside the value of a
+options. For example, you cannot nest non-JSON compatible types inside the value of a
 field. In this case, if you swapped out `dict[str, list[float]]` for
 `dict[str, np.ndarray]` the dataclass only knows how to serialize the outer-most
-structure (the `dict`), but not the inner structure (the `np.ndarray`). The underlying
-schema of Pydantic models does not have this limitation, so you can use
-`dict[str, np.ndarray]` directly without any issues:
+structure (the `dict`), but not the inner structure (the `np.ndarray`). Pydantic models
+do not have this limitation, so you can use `dict[str, np.ndarray]` directly without
+any issues:
 
 ```python
 import numpy as np
