@@ -8,7 +8,6 @@ from typing import Generic
 from typing import Protocol
 from typing import TypedDict
 from typing import TypeVar
-from typing import cast
 
 from typing_extensions import AsyncGenerator
 
@@ -50,8 +49,6 @@ class Serializer(Generic[T, O], Component):
 
     def configure(self, options: O) -> Serializer[T, O]:
         """Create a new serializer with the given options."""
-        if type(options) is dict and type(self.options) is dict:
-            options = cast("O", {**self.options, **options})
         return replace(self, options=options)
 
 
@@ -80,8 +77,6 @@ class StreamSerializer(Generic[T, O], Component):
 
     def configure(self, options: O) -> StreamSerializer[T, O]:
         """Create a new stream serializer with the given options."""
-        if type(options) is dict and type(self.options) is dict:
-            options = cast("O", {**self.options, **options})
         return replace(self, options=options)
 
 
