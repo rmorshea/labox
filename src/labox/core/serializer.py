@@ -21,8 +21,8 @@ if TYPE_CHECKING:
 T = TypeVar("T", default=Any)
 O = TypeVar("O", default=Any)  # noqa: E741
 T_co = TypeVar("T_co", covariant=True, default=Any)
-T_contra = TypeVar("T_contra", contravariant=True, default=Any)
-O_contra = TypeVar("O_contra", contravariant=True, default=Any)
+T_con = TypeVar("T_con", contravariant=True, default=Any)
+O_con = TypeVar("O_con", contravariant=True, default=Any)
 
 
 @dataclass(frozen=True)
@@ -33,7 +33,7 @@ class Serializer(Generic[T, O], Component):
     """A function that serializes the given value."""
     deserialize_func: DeserializeFunc[T, O]
     """A function that deserializes the given value."""
-    options: O | None = None
+    options: O
     """Options for serialization and deserialization."""
     types: tuple[type[T], ...] = ()
     """The types that the serializer can handle."""
@@ -63,7 +63,7 @@ class StreamSerializer(Generic[T, O], Component):
     """A function that serializes the given stream of values."""
     deserialize_func: DeserializeStreamFunc[T, O]
     """A function that deserializes the given stream of values."""
-    options: O | None = None
+    options: O
     """Options for serialization and deserialization."""
     types: tuple[type[T], ...] = ()
     """The types that the serializer can handle."""
@@ -85,42 +85,34 @@ class StreamSerializer(Generic[T, O], Component):
         return replace(self, options=options)
 
 
-class SerializeFunc(Protocol[T_contra, O_contra]):
+class SerializeFunc(Protocol[T_con, O_con]):
     """A function that serializes the given value."""
 
-    def __call__(self, value: T_contra, options: O_contra | None = ..., /) -> SerializedData:
+    def __call__(self, value: T_con, options: O_con, /) -> SerializedData:
         """Serialize the given value."""
         ...
 
 
-class DeserializeFunc(Protocol[T_co, O_contra]):
+class DeserializeFunc(Protocol[T_co, O_con]):
     """A function that deserializes the given value."""
 
-    def __call__(self, data: SerializedData, options: O_contra | None = ..., /) -> T_co:
+    def __call__(self, data: SerializedData, options: O_con, /) -> T_co:
         """Deserialize the given value."""
         ...
 
 
-class SerializeStreamFunc(Protocol[T_contra, O_contra]):
+class SerializeStreamFunc(Protocol[T_con, O_con]):
     """A function that serializes the given stream of values."""
 
-    def __call__(
-        self,
-        value: AsyncIterable[T_contra],
-        options: O_contra | None = ...,
-    ) -> SerializedDataStream:
+    def __call__(self, value: AsyncIterable[T_con], options: O_con, /) -> SerializedDataStream:
         """Serialize the given stream of values."""
         ...
 
 
-class DeserializeStreamFunc(Protocol[T_co, O_contra]):
+class DeserializeStreamFunc(Protocol[T_co, O_con]):
     """A function that deserializes the given stream of values."""
 
-    def __call__(
-        self,
-        data: SerializedDataStream,
-        options: O_contra | None = ...,
-    ) -> AsyncGenerator[T_co]:
+    def __call__(self, data: SerializedDataStream, options: O_con, /) -> AsyncGenerator[T_co]:
         """Deserialize the given stream of values."""
         ...
 
