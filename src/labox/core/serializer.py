@@ -1,79 +1,127 @@
 from __future__ import annotations
 
-import abc
+from dataclasses import dataclass
+from dataclasses import replace
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Generic
+from typing import Protocol
 from typing import TypedDict
 from typing import TypeVar
+from typing import cast
 
 from typing_extensions import AsyncGenerator
 
 from labox._internal._component import Component
-from labox._internal._utils import not_implemented
-from labox._internal._utils import validate_versioned_class_name
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable
 
 
 T = TypeVar("T", default=Any)
+O = TypeVar("O", default=Any)  # noqa: E741
+T_co = TypeVar("T_co", covariant=True, default=Any)
+T_contra = TypeVar("T_contra", contravariant=True, default=Any)
+O_contra = TypeVar("O_contra", contravariant=True, default=Any)
 
 
-class Serializer(Generic[T], Component):
-    """A protocol for serializing/deserializing values."""
+@dataclass(frozen=True)
+class Serializer(Generic[T, O], Component):
+    """An object that can serialize and deserialize data."""
 
+    serialize_func: SerializeFunc[T, O]
+    """A function that serializes the given value."""
+    deserialize_func: DeserializeFunc[T, O]
+    """A function that deserializes the given value."""
+    options: O | None = None
+    """Options for serialization and deserialization."""
     types: tuple[type[T], ...] = ()
-    """The types that the serializer can handle
-
-    Used for type inference in the [registry][labox.core.registry.Registry].
-    """
+    """The types that the serializer can handle."""
     content_types: tuple[str, ...] = ()
-    """The content types that the serializer uses.
+    """The content types that the serializer uses."""
 
-    Used to get serializers by content type in the [registry][labox.core.registry.Registry].
-    """
+    def serialize(self, value: T) -> SerializedData:
+        """Serialize the given value."""
+        return self.serialize_func(value, self.options)
 
-    def __init_subclass__(cls) -> None:
-        validate_versioned_class_name(cls)
+    def deserialize(self, data: SerializedData) -> T:
+        """Deserialize the given data."""
+        return self.deserialize_func(data, self.options)
 
-    @abc.abstractmethod
-    @not_implemented
-    def serialize_data(self, value: T, /) -> SerializedData:
+    def configure(self, options: O) -> Serializer[T, O]:
+        """Create a new serializer with the given options."""
+        if type(options) is dict and type(self.options) is dict:
+            options = cast("O", {**self.options, **options})
+        return replace(self, options=options)
+
+
+@dataclass(frozen=True)
+class StreamSerializer(Generic[T, O], Component):
+    """An object that can serialize and deserialize streams of data."""
+
+    serialize_func: SerializeStreamFunc[T, O]
+    """A function that serializes the given stream of values."""
+    deserialize_func: DeserializeStreamFunc[T, O]
+    """A function that deserializes the given stream of values."""
+    options: O | None = None
+    """Options for serialization and deserialization."""
+    types: tuple[type[T], ...] = ()
+    """The types that the serializer can handle."""
+    content_types: tuple[str, ...] = ()
+    """The content types that the serializer uses."""
+
+    def serialize(self, value: AsyncIterable[T]) -> SerializedDataStream:
+        """Serialize the given stream of values."""
+        return self.serialize_func(value, self.options)
+
+    def deserialize(self, data: SerializedDataStream) -> AsyncGenerator[T]:
+        """Deserialize the given stream of values."""
+        return self.deserialize_func(data, self.options)
+
+    def configure(self, options: O) -> StreamSerializer[T, O]:
+        """Create a new stream serializer with the given options."""
+        if type(options) is dict and type(self.options) is dict:
+            options = cast("O", {**self.options, **options})
+        return replace(self, options=options)
+
+
+class SerializeFunc(Protocol[T_contra, O_contra]):
+    """A function that serializes the given value."""
+
+    def __call__(self, value: T_contra, options: O_contra | None = ..., /) -> SerializedData:
         """Serialize the given value."""
         ...
 
-    @abc.abstractmethod
-    @not_implemented
-    def deserialize_data(self, content: SerializedData, /) -> T:
+
+class DeserializeFunc(Protocol[T_co, O_contra]):
+    """A function that deserializes the given value."""
+
+    def __call__(self, data: SerializedData, options: O_contra | None = ..., /) -> T_co:
         """Deserialize the given value."""
         ...
 
 
-class StreamSerializer(Generic[T], Component):
-    """A protocol for serializing/deserializing streams of values."""
+class SerializeStreamFunc(Protocol[T_contra, O_contra]):
+    """A function that serializes the given stream of values."""
 
-    types: tuple[type[T], ...] = ()
-    """The types that the serializer can handle.
-
-    Used for type inference in the [registry][labox.core.registry.Registry].
-    """
-    content_types: tuple[str, ...] = ()
-    """The content types that the serializer uses.
-
-    Used to get serializers by content type in the [registry][labox.core.registry.Registry].
-    """
-
-    @abc.abstractmethod
-    @not_implemented
-    def serialize_data_stream(self, stream: AsyncIterable[T], /) -> SerializedDataStream:
-        """Serialize the given stream."""
+    def __call__(
+        self,
+        value: AsyncIterable[T_contra],
+        options: O_contra | None = ...,
+    ) -> SerializedDataStream:
+        """Serialize the given stream of values."""
         ...
 
-    @abc.abstractmethod
-    @not_implemented
-    def deserialize_data_stream(self, content: SerializedDataStream, /) -> AsyncGenerator[T]:
-        """Deserialize the given stream."""
+
+class DeserializeStreamFunc(Protocol[T_co, O_contra]):
+    """A function that deserializes the given stream of values."""
+
+    def __call__(
+        self,
+        data: SerializedDataStream,
+        options: O_contra | None = ...,
+    ) -> AsyncGenerator[T_co]:
+        """Deserialize the given stream of values."""
         ...
 
 
