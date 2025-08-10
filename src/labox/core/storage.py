@@ -8,8 +8,6 @@ from typing import TypedDict
 from typing import TypeVar
 
 from labox._internal._component import Component
-from labox._internal._json import DEFAULT_JSON_DECODER
-from labox._internal._json import DEFAULT_JSON_ENCODER
 from labox._internal._utils import not_implemented
 
 if TYPE_CHECKING:
@@ -72,14 +70,6 @@ class Storage(Generic[T], Component):
     def read_data_stream(self, info: T, /) -> AsyncGenerator[bytes]:
         """Load a stream of data using the given information."""
         ...
-
-    def serialize_storage_data(self, info: T) -> str:
-        """Dump the storage information to a JSON string."""
-        return DEFAULT_JSON_ENCODER.encode(info)
-
-    def deserialize_storage_data(self, data: str) -> T:
-        """Load the storage information from a JSON string."""
-        return DEFAULT_JSON_DECODER.decode(data)
 
 
 class Digest(TypedDict):

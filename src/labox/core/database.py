@@ -149,11 +149,13 @@ class ContentRecord(_StrMixin, BaseRecord, kw_only=True):
     """The size of the data in bytes"""
     serializer_name: Mapped[str] = mapped_column()
     """The name of the serializer used to serialize the data."""
+    serializer_config: Mapped[str] = mapped_column(RawJson)
+    """The configuration used to serialize the data."""
     serializer_type: Mapped[SerializerTypeEnum] = mapped_column()
     """The type of the serializer used to serialize the data."""
     storage_name: Mapped[str] = mapped_column()
     """The name of the storage backend used to store the data."""
-    storage_data: Mapped[str] = mapped_column(RawJson)
+    storage_config: Mapped[str] = mapped_column(RawJson)
     """The information needed to load data from the storage."""
     created_at: Mapped[DateTimeTZ] = mapped_column(default=func.now())
     """The timestamp when the content was created."""

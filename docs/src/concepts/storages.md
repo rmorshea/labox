@@ -9,11 +9,11 @@ streams of data when subclassing the [`Storage`][labox.core.storage.Storage] bas
 To define a storage you need to implement the [`Storage`][labox.core.storage.Storage]
 interface with the following:
 
-- `name` - a string that uniquely and permanently identifies the storage.
-- `write_data` - a method that saves a single blob of data to the storage.
-- `read_data` - a method that reads a single blob of data from the storage.
-- `write_data_stream` - a method that saves a stream of data to the storage.
-- `read_data_stream` - a method that reads a stream of data from the storage.
+-   `name` - a string that uniquely and permanently identifies the storage.
+-   `write_data` - a method that saves a single blob of data to the storage.
+-   `read_data` - a method that reads a single blob of data from the storage.
+-   `write_data_stream` - a method that saves a stream of data to the storage.
+-   `read_data_stream` - a method that reads a stream of data from the storage.
 
 The code snippets below show a storage that saves data to files. You can start by
 implementing the `write_data` and `read_data` methods:
@@ -86,7 +86,7 @@ When implementing a storage, the most important thing to keep in mind is that a 
 implementation must be able to read from any location is has written to. So, for
 example, if one of the configuration options your storage accepts is a path prefix (as
 in the example above), then this prefix must be included in the
-[storage data](#storage-data) returned by the `write_data` and `write_data_stream`
+[storage config](#storage-config) returned by the `write_data` and `write_data_stream`
 methods. This way, when reading data, the storage can reconstruct the full path to the
 data even if the prefix may have changed since the data was written.
 
@@ -105,16 +105,18 @@ In the example above, the `write_data` and `write_data_stream` methods accept a`
 argument. This is a dictionary of tags that were provided when
 [saving](../usage/index.md#adding-tags) the data.
 
-## Storage Data
+## Storage Config
 
 When a storage saves data via its `write_data` and `write_data_stream` methods,
 information that is used to retrieve it later is returned. This information is called
-"storage data" and is distinct from the data which is being stored remotely. In the
-example above, the storage data is a string that forms part of a file path where the
+"storage config" and is distinct from the data which is being stored remotely. In the
+example above, the storage config is a string that forms part of a file path where the
 data was put. More generally these methods may return anything which is JSON
 serializable, such as a dictionary. You may customize how this data is serialized and
-deserialized by overwriting the `serialize_storage_data` and `deserialize_storage_data`
-methods of the [`Storage`][labox.core.storage.Storage] class.
+deserialized by replacing the default
+[`json_encoder`][labox.core.storage.Storage.json_encoder] and
+[`json_decoder`][labox.core.storage.Storage.json_decoder] attributes of the
+[`Storage`][labox.core.storage.Storage] class.
 
 ## Storage Names
 

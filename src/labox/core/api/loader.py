@@ -161,12 +161,13 @@ async def load_from_content_record(
 ) -> UnpackedValue | UnpackedValueStream:
     """Load the given content from the given record."""
     storage = registry.get_storage(record.storage_name)
-    storage_data = storage.deserialize_storage_data(record.storage_data)
+    storage_data = registry.decode_json(record.storage_config)
     match record.serializer_type:
         case SerializerTypeEnum.Serializer:
             serializer = registry.get_serializer(record.serializer_name)
             value = serializer.deserialize_data(
                 {
+                    "config": registry.decode_json(record.serializer_config),
                     "content_encoding": record.content_encoding,
                     "content_type": record.content_type,
                     "data": await storage.read_data(storage_data),
@@ -184,6 +185,7 @@ async def load_from_content_record(
                 raise TypeError(msg)
             stream = serializer.deserialize_data_stream(
                 {
+                    "config": registry.decode_json(record.serializer_config),
                     "content_encoding": record.content_encoding,
                     "content_type": record.content_type,
                     "data_stream": storage.read_data_stream(storage_data),

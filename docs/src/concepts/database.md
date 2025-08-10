@@ -49,7 +49,7 @@ The `labox_contents` table contains pointers to the actual content of stored obj
 | [`serializer_name`][labox.core.database.ContentRecord.serializer_name]               | `TEXT`      | The name of the serializer used to serialize the content.                                                                             |
 | [`serializer_type`][labox.core.database.ContentRecord.serializer_type]               | `ENUM`      | Indicates whether the serializer is a [stream](./serializers.md#stream-serializers) or a [value](./serializers.md#basic-serializers). |
 | [`storage_name`][labox.core.database.ContentRecord.storage_name]                     | `TEXT`      | The name of the storage where the content is stored.                                                                                  |
-| [`storage_data`][labox.core.database.ContentRecord.storage_data]                     | `JSONB`     | Data used by the storage to locate the content                                                                                        |
+| [`storage_config`][labox.core.database.ContentRecord.storage_config]                 | `JSONB`     | Data used by the storage to locate the content                                                                                        |
 
 A content record is saved in the `labox_contents` table for each
 [unpacked value](./unpackers.md#unpacked-values) or

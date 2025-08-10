@@ -4,6 +4,7 @@ import abc
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Generic
+from typing import NotRequired
 from typing import TypedDict
 from typing import TypeVar
 
@@ -18,9 +19,10 @@ if TYPE_CHECKING:
 
 
 T = TypeVar("T", default=Any)
+J = TypeVar("J", default=Any)
 
 
-class Serializer(Generic[T], Component):
+class Serializer(Generic[T, J], Component):
     """A protocol for serializing/deserializing values."""
 
     types: tuple[type[T], ...] = ()
@@ -39,13 +41,13 @@ class Serializer(Generic[T], Component):
 
     @abc.abstractmethod
     @not_implemented
-    def serialize_data(self, value: T, /) -> SerializedData:
+    def serialize_data(self, value: T, /) -> SerializedData[J]:
         """Serialize the given value."""
         ...
 
     @abc.abstractmethod
     @not_implemented
-    def deserialize_data(self, content: SerializedData, /) -> T:
+    def deserialize_data(self, content: SerializedData[J], /) -> T:
         """Deserialize the given value."""
         ...
 
@@ -66,18 +68,18 @@ class StreamSerializer(Generic[T], Component):
 
     @abc.abstractmethod
     @not_implemented
-    def serialize_data_stream(self, stream: AsyncIterable[T], /) -> SerializedDataStream:
+    def serialize_data_stream(self, stream: AsyncIterable[T], /) -> SerializedDataStream[J]:
         """Serialize the given stream."""
         ...
 
     @abc.abstractmethod
     @not_implemented
-    def deserialize_data_stream(self, content: SerializedDataStream, /) -> AsyncGenerator[T]:
+    def deserialize_data_stream(self, content: SerializedDataStream[J], /) -> AsyncGenerator[T]:
         """Deserialize the given stream."""
         ...
 
 
-class SerializedData(TypedDict):
+class SerializedData(Generic[J], TypedDict):
     """The serialized representation of a value."""
 
     data: bytes
@@ -86,9 +88,11 @@ class SerializedData(TypedDict):
     """The encoding of the data."""
     content_type: str
     """The MIME type of the data."""
+    config: NotRequired[J]
+    """Additional configuration for the serializer, if any."""
 
 
-class SerializedDataStream(TypedDict):
+class SerializedDataStream(Generic[J], TypedDict):
     """The serialized representation of a stream of values."""
 
     data_stream: AsyncGenerator[bytes]
@@ -97,3 +101,5 @@ class SerializedDataStream(TypedDict):
     """The encoding of the data."""
     content_type: str
     """The MIME type of the data."""
+    config: NotRequired[J]
+    """Additional configuration for the serializer, if any."""

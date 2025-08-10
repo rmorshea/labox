@@ -221,9 +221,10 @@ async def _save_storage_value(
         content_size=digest["content_size"],
         content_type=content["content_type"],
         manifest_id=manifest_id,
+        serializer_config=registry.encode_json(content.get("config")),
         serializer_name=serializer.name,
         serializer_type=SerializerTypeEnum.Serializer,
-        storage_data=storage.serialize_storage_data(storage_data),
+        storage_config=registry.encode_json(storage_data),
         storage_name=storage.name,
     )
 
@@ -266,7 +267,8 @@ async def _save_storage_stream(
             manifest_id=manifest_id,
             serializer_name=serializer.name,
             serializer_type=SerializerTypeEnum.StreamSerializer,
-            storage_data=storage.serialize_storage_data(storage_data),
+            serializer_config=registry.encode_json(content.get("config")),
+            storage_config=registry.encode_json(storage_data),
             storage_name=storage.name,
         )
     raise AssertionError  # nocov

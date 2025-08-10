@@ -5,9 +5,9 @@ from codecs import getincrementaldecoder
 from io import StringIO
 from typing import TYPE_CHECKING
 
-from labox._internal._json import DEFAULT_JSON_DECODER
-from labox._internal._json import DEFAULT_JSON_ENCODER
-from labox._internal._json import JSON_TYPES
+from labox.common.json import DEFAULT_JSON_DECODER
+from labox.common.json import DEFAULT_JSON_ENCODER
+from labox.common.json import JSON_TYPES
 from labox.common.streaming import decode_async_byte_stream
 from labox.core.serializer import SerializedData
 from labox.core.serializer import SerializedDataStream

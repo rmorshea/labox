@@ -1,14 +1,20 @@
-from collections.abc import Sequence
+from __future__ import annotations
+
 from io import BytesIO
 from mimetypes import MimeTypes
+from typing import TYPE_CHECKING
+from typing import TypedDict
 
-import numpy as np
 from imageio import v3 as imageio
-from numpy.typing import NDArray
 
 from labox._internal._utils import frozenclass
 from labox.core.serializer import SerializedData
 from labox.core.serializer import Serializer
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from numpy.typing import NDArray
 
 __all__ = (
     "Media",
@@ -23,18 +29,21 @@ class Media:
 
     data: NDArray | Sequence[NDArray]
     """The media data."""
-    content_type: str
-    """The type of media the data represents (e.g. `"image/png"`)."""
-    content_encoding: str | None = None
-    """The encoding of the media data (e.g. `"base64"`)."""
-    strict: bool = True
-    """Whether to use [mimetypes.common_types][mimetypes.common_types] to guess the extension."""
+    extension: str | None = None
+    """The file extension of the media data."""
+    plugin: str | None = None
+    """The plugin used to read/write the media data."""
+
+    def __post_init__(self) -> None:
+        if self.extension and self.plugin:
+            msg = "Cannot set both extension and plugin. Use one or the other."
+            raise ValueError(msg)
 
 
 _DEFAULT_MIMETYPES = MimeTypes()
 
 
-class MediaSerializer(Serializer[Media]):
+class MediaSerializer(Serializer[Media, "_MediaSerializerConfig"]):
     """Serializer for ImageIO Arrays."""
 
     name = "labox.imageio@v1"
@@ -43,38 +52,50 @@ class MediaSerializer(Serializer[Media]):
     def __init__(self, mimetypes: MimeTypes = _DEFAULT_MIMETYPES) -> None:
         self.mimetypes = mimetypes
 
-    def serialize_data(self, media: Media) -> SerializedData:
+    def serialize_data(self, media: Media) -> SerializedData[_MediaSerializerConfig]:
         """Serialize the given array."""
         buffer = BytesIO()
         imageio.imwrite(
             buffer,
-            media.data if isinstance(media.data, np.ndarray) else list(media.data),
-            extension=self._guess_extension(media.content_type),
+            media.data,
+            extension=media.extension,  # type: ignore
+            plugin=media.plugin,  # type: ignore
         )
+
+        if media.extension is not None:
+            content_type, content_encoding = self.mimetypes.guess_type(media.extension)
+        else:
+            content_type = None
+            content_encoding = None
+
         return {
             "data": buffer.getvalue(),
-            "content_type": media.content_type,
-            "content_encoding": media.content_encoding,
+            "content_type": content_type or "application/octet-stream",
+            "content_encoding": content_encoding,
+            "config": {"plugin": media.plugin, "extension": media.extension},
         }
 
-    def deserialize_data(self, content: SerializedData) -> Media:
+    def deserialize_data(self, content: SerializedData[_MediaSerializerConfig]) -> Media:
         """Deserialize the given array."""
-        ext = self._guess_extension(content["content_type"])
+        config = content.get("config", {"plugin": None, "extension": None})
         buffer = BytesIO(content["data"])
-        data = imageio.imread(buffer, extension=ext)
+        data = imageio.imread(
+            buffer,
+            extension=config.get("extension"),  # type: ignore
+            plugin=config.get("plugin"),  # type: ignore
+        )
         return Media(
             data=data,
-            content_type=content["content_type"],
-            content_encoding=content.get("content_encoding"),
+            extension=config.get("extension"),
+            plugin=config.get("plugin"),
         )
 
-    def _guess_extension(self, content_type: str) -> str:
-        """Guess the extension for the given content type."""
-        ext = self.mimetypes.guess_extension(content_type)
-        if ext is None:
-            msg = f"{self} ould not guess extension for content type {content_type!r}."
-            raise ValueError(msg)
-        return ext
+
+class _MediaSerializerConfig(TypedDict):
+    plugin: str | None
+    """The plugin used to read/write the media data."""
+    extension: str | None
+    """The file extension of the media data."""
 
 
 media_serializer = MediaSerializer()
