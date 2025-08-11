@@ -73,21 +73,22 @@ class Storable:
 
     @overload
     @classmethod
-    def get_storable_config(cls, *, allow_none: bool) -> StorableConfig | None: ...
+    def storable_config(cls, *, allow_none: bool) -> StorableConfig | None: ...
 
     @overload
     @classmethod
-    def get_storable_config(cls, *, allow_none: Literal[False] = ...) -> StorableConfig: ...
+    def storable_config(cls, *, allow_none: Literal[False] = ...) -> StorableConfig: ...
 
     @classmethod
-    def get_storable_config(cls, *, allow_none: bool = False) -> StorableConfig | None:
+    def storable_config(cls, *, allow_none: bool = False) -> StorableConfig | None:
         """Get the configuration for this storable class."""
         if cls._storable_class_id is None:
             if allow_none:
                 return None
             msg = (
                 f"{full_class_name(cls)} does not have a valid storable class ID."
-                f" Got {cls._storable_class_id!r}. Consider using {uuid4().hex!r}."
+                f" Got {cls._storable_class_id!r}. Consider using {uuid4().hex[:8]!r} "
+                f"when defining the class."
             )
             raise ValueError(msg)
         if cls._storable_unpacker is None:

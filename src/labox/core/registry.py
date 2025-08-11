@@ -86,9 +86,9 @@ class Registry:
         if not issubclass(cls, Storable):
             msg = f"The class {full_class_name(cls)} is not a storable class."
             raise TypeError(msg)
-        if (
-            cfg := cls.get_storable_config(allow_none=True)
-        ) is not None and cfg.class_id in self._info["storable_by_id"]:
+        if (cfg := cls.storable_config(allow_none=True)) is not None and cfg.class_id in self._info[
+            "storable_by_id"
+        ]:
             return True
 
         if raise_if_missing:
@@ -222,7 +222,7 @@ def _info_from_explicit_kwargs(kwargs: RegistryKwargs) -> _RegistryInfo:
     unpacker_by_type: dict[type[Any], Unpacker] = {}
 
     for cls in kwargs.get("storables") or ():
-        cfg = cls.get_storable_config()
+        cfg = cls.storable_config()
         unpacker_by_type[cls] = cfg.unpacker
         unpacker_by_name[cfg.unpacker.name] = cfg.unpacker
         storable_by_id[cfg.class_id] = cls
@@ -312,7 +312,7 @@ def _kwargs_from_modules(
             case type():
                 if (
                     issubclass(value, Storable)
-                    and value.get_storable_config(allow_none=True) is not None
+                    and value.storable_config(allow_none=True) is not None
                 ):
                     storables.append(value)
 

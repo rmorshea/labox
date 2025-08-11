@@ -11,6 +11,7 @@ from labox.extra.pydantic import ContentSpec
 from labox.extra.pydantic import StorableModel
 from tests.core_api_utils import assert_save_load_equivalence
 from tests.core_registry_utils import basic_registry
+from tests.core_storable_utils import make_storable_unpack_repack_test
 
 
 class MyModel(StorableModel, class_id="1e76a004"):
@@ -22,85 +23,77 @@ class MyModel(StorableModel, class_id="1e76a004"):
     ]
 
 
-registry = Registry(
-    registries=[basic_registry],
-    storables=[MyModel],
-    default_storage=True,
-)
-assert registry.get_default_storage()
+SAMPLE = {"hello": "world", "answer": 42}
+
+REGISTRY = Registry(registries=[basic_registry], storables=[MyModel], default_storage=True)
+JSON_SERIALIZER = REGISTRY.get_serializer(JsonSerializer.name)
+MSG_PACK_SERIALIZER = REGISTRY.get_serializer(MsgPackSerializer.name)
+LOCAL_STORAGE = REGISTRY.get_storage(FileStorage.name)
 
 
-def test_dump_load_storage_model():
-    sample = {"hello": "world", "answer": 42}
-
-    model = MyModel(
-        no_spec=sample,
-        spec_with_serializer=sample,
-        spec_with_storage=sample,
-        spec_with_serializer_and_storage=sample,
-    )
-
-    unpacker = registry.infer_unpacker(MyModel)
-    contents = unpacker.unpack_object(model, registry)
-
-    msgpack_serializer = registry.get_serializer(MsgPackSerializer.name)
-    json_serializer = registry.get_serializer(JsonSerializer.name)
-    local_storage = registry.get_storage(FileStorage.name)
-
-    assert contents == {
-        "body": {
-            "value": {
-                "no_spec": {
-                    "__labox__": "content",
-                    "content_base64": "eyJoZWxsbyI6IndvcmxkIiwiYW5zd2VyIjo0Mn0=",
-                    "content_encoding": None,
-                    "content_type": "application/json",
-                    "serializer_name": JsonSerializer.name,
+test_unpack_repack_storable_model = make_storable_unpack_repack_test(
+    [
+        (
+            MyModel(
+                no_spec=SAMPLE,
+                spec_with_serializer=SAMPLE,
+                spec_with_storage=SAMPLE,
+                spec_with_serializer_and_storage=SAMPLE,
+            ),
+            {
+                "body": {
+                    "value": {
+                        "no_spec": {
+                            "__labox__": "content",
+                            "content_base64": "eyJoZWxsbyI6IndvcmxkIiwiYW5zd2VyIjo0Mn0=",
+                            "content_encoding": None,
+                            "content_type": "application/json",
+                            "serializer_name": JsonSerializer.name,
+                        },
+                        "spec_with_serializer": {
+                            "__labox__": "content",
+                            "content_base64": "gqVoZWxsb6V3b3JsZKZhbnN3ZXIq",
+                            "content_encoding": None,
+                            "content_type": "application/msgpack",
+                            "serializer_name": MsgPackSerializer.name,
+                        },
+                        "spec_with_storage": {
+                            "__labox__": "ref",
+                            "ref": "ref.MyModel.spec_with_storage.1",
+                        },
+                        "spec_with_serializer_and_storage": {
+                            "__labox__": "ref",
+                            "ref": "ref.MyModel.spec_with_serializer_and_storage.2",
+                        },
+                    },
+                    "serializer": JSON_SERIALIZER,
+                    "storage": LOCAL_STORAGE,
                 },
-                "spec_with_serializer": {
-                    "__labox__": "content",
-                    "content_base64": "gqVoZWxsb6V3b3JsZKZhbnN3ZXIq",
-                    "content_encoding": None,
-                    "content_type": "application/msgpack",
-                    "serializer_name": MsgPackSerializer.name,
+                "ref.MyModel.spec_with_storage.1": {
+                    "serializer": JSON_SERIALIZER,
+                    "storage": LOCAL_STORAGE,
+                    "value": {"answer": 42, "hello": "world"},
                 },
-                "spec_with_storage": {
-                    "__labox__": "ref",
-                    "ref": "ref.MyModel.spec_with_storage.1",
-                },
-                "spec_with_serializer_and_storage": {
-                    "__labox__": "ref",
-                    "ref": "ref.MyModel.spec_with_serializer_and_storage.2",
+                "ref.MyModel.spec_with_serializer_and_storage.2": {
+                    "serializer": MSG_PACK_SERIALIZER,
+                    "storage": LOCAL_STORAGE,
+                    "value": {"answer": 42, "hello": "world"},
                 },
             },
-            "serializer": json_serializer,
-            "storage": local_storage,
-        },
-        "ref.MyModel.spec_with_storage.1": {
-            "serializer": json_serializer,
-            "storage": local_storage,
-            "value": {"answer": 42, "hello": "world"},
-        },
-        "ref.MyModel.spec_with_serializer_and_storage.2": {
-            "serializer": msgpack_serializer,
-            "storage": local_storage,
-            "value": {"answer": 42, "hello": "world"},
-        },
-    }
-
-    loaded_model = unpacker.repack_object(MyModel, contents, registry)
-    assert loaded_model == model
+        )
+    ],
+    REGISTRY,
+)
 
 
 async def test_save_load_storage_model(session: AsyncSession):
-    sample = {"hello": "world", "answer": 42}
     await assert_save_load_equivalence(
         MyModel(
-            no_spec=sample,
-            spec_with_serializer=sample,
-            spec_with_storage=sample,
-            spec_with_serializer_and_storage=sample,
+            no_spec=SAMPLE,
+            spec_with_serializer=SAMPLE,
+            spec_with_storage=SAMPLE,
+            spec_with_serializer_and_storage=SAMPLE,
         ),
-        registry,
+        REGISTRY,
         session,
     )

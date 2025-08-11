@@ -10,12 +10,12 @@ Basic serializers are used to convert singular values to and from binary data. T
 one you must inherit from the [`Serializer`][labox.core.serializer.Serializer] class and
 provide the following:
 
--   `name` - a string that uniquely and permanently identifies the serializer.
--   `types` - a tuple of types that this serializer can handle. This is used for
+- `name` - a string that uniquely and permanently identifies the serializer.
+- `types` - a tuple of types that this serializer can handle. This is used for
     serializer type inference.
--   `serialize_data` - a method that takes a value and returns a dictionary of
+- `serialize_data` - a method that takes a value and returns a dictionary of
     serialized data.
--   `deserialize_data` - a method that takes serialized data and returns the original
+- `deserialize_data` - a method that takes serialized data and returns the original
     value.
 
 The code below shows a serializer that turns UTF-8 strings into binary data and back.
@@ -49,13 +49,13 @@ streams of binary data. To define one you must inherit from the
 [`StreamSerializer`][labox.core.serializer.StreamSerializer] class and provide the
 following:
 
--   `name` - a string that uniquely and permanently identifies the serializer.
--   `types` - a tuple of types that this serializer can handle. This is used for
+- `name` - a string that uniquely and permanently identifies the serializer.
+- `types` - a tuple of types that this serializer can handle. This is used for
     serializer type inference.
--   `serialize_data_stream` - a method that takes an
+- `serialize_data_stream` - a method that takes an
     [`AsyncIterator`][collections.abc.AsyncIterator] of values and returns a
     [`SerializedDataStream`][labox.core.serializer.SerializedDataStream].
--   `deserialize_data_stream` - a method that takes a
+- `deserialize_data_stream` - a method that takes a
     [`SerializedDataStream`][labox.core.serializer.SerializedDataStream] and returns an
     [`AsyncIterator`][collections.abc.AsyncIterator] of values.
 

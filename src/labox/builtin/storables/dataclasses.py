@@ -47,7 +47,7 @@ class StorableDataclassUnpacker(Unpacker["StorableDataclass"]):
             raise TypeError(msg)
 
         external: dict[str, AnyUnpackedValue] = {}
-        body = _dump_storable_dataclass(obj, registry=registry, external=external, path=())
+        body = _dump_storable_dataclass(obj, registry=registry, external=external, path=("/ref",))
         return {
             "body": {
                 "serializer": obj.storable_dataclass_serializer(registry),
@@ -63,15 +63,16 @@ class StorableDataclassUnpacker(Unpacker["StorableDataclass"]):
         contents: Mapping[str, AnyUnpackedValue],
         registry: Registry,
     ) -> StorableDataclass:
-        contents = dict(contents)  # Make a copy to avoid modifying the original
-        data = contents.pop("data", None)
-        match data:
-            case {"value": data_value}:
+        match contents:
+            case {"body": {"value": data_value}, **external}:
                 pass
+            case {"body": body}:
+                msg = f"No 'value' in body: {body}"
+                raise ValueError(msg)
             case _:
-                msg = f"Expected a 'data' key with 'value', got {data}"
-                raise KeyError(msg)
-        obj = _load_storable_dataclass(data_value, registry, external=contents)
+                msg = "No 'body' in contents."
+                raise ValueError(msg)
+        obj = _load_storable_dataclass(data_value, registry, external=external)
         if not isinstance(obj, cls):
             msg = f"Expected {cls.__name__}, got {type(obj).__name__}"
             raise TypeError(msg)
@@ -106,6 +107,7 @@ class StorableDataclass(Storable, _FakeBase, unpacker=StorableDataclassUnpacker(
                 cls._storable_class_info["extra_fields"],
             ),
         }
+        super().__init_subclass__(**kwargs)
 
     def storable_dataclass_serializer(self, registry: Registry) -> Serializer:
         """Return the serializer for the body of this storable class."""
@@ -205,7 +207,7 @@ def _dump_storable_dataclass(
             )
     return _LaboxStorableDataclassDict(
         __labox__="storable_dataclass",
-        class_id=obj.get_storable_config().class_id.hex,
+        class_id=obj.storable_config().class_id.hex,
         class_name=f"{obj.__class__.__module__}.{obj.__class__.__qualname__}",
         fields=field_dict,
     )

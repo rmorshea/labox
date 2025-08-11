@@ -137,7 +137,7 @@ async def _save_object(
 ) -> ManifestRecord:
     """Save the given data to the database."""
     cls = obj.__class__
-    cfg = cls.get_storable_config()
+    cfg = cls.storable_config()
     unpacker = cfg.unpacker or registry.infer_unpacker(cls)
     obj_contents: Mapping[str, AnyUnpackedValue] = unpacker.unpack_object(obj, registry)
 
