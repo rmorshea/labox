@@ -17,6 +17,7 @@ from uuid import UUID
 from labox._internal._simplify import LaboxRefDict
 from labox._internal._simplify import dump_content_dict
 from labox._internal._simplify import load_content_dict
+from labox._internal._utils import full_class_name
 from labox.core.serializer import Serializer
 from labox.core.serializer import StreamSerializer
 from labox.core.storable import Storable
@@ -208,7 +209,7 @@ def _dump_storable_dataclass(
     return _LaboxStorableDataclassDict(
         __labox__="storable_dataclass",
         class_id=obj.storable_config().class_id.hex,
-        class_name=f"{obj.__class__.__module__}.{obj.__class__.__qualname__}",
+        class_name=full_class_name(obj),
         fields=field_dict,
     )
 

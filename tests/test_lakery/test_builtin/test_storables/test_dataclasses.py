@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from dataclasses import field
 from typing import Any
 
+from labox._internal._utils import full_class_name
 from labox.builtin.serializers.json import JsonSerializer
 from labox.builtin.storables.dataclasses import StorableDataclass
 from labox.builtin.storages.file import FileStorage
@@ -45,7 +46,7 @@ test_dataclass_unpack_repack = make_storable_unpack_repack_test(
                     "value": {
                         "__labox__": "storable_dataclass",
                         "class_id": "bed9897b000000000000000000000000",
-                        "class_name": "tests.test_lakery.test_builtin.test_storables.test_dataclasses.MyClass",
+                        "class_name": full_class_name(MyClass),
                         "fields": {
                             "no_spec": {
                                 "answer": 42,
