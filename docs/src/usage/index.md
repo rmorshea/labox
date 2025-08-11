@@ -76,8 +76,8 @@ options. For example, you cannot nest non-JSON compatible types inside the value
 field. In this case, if you swapped out `dict[str, list[float]]` for
 `dict[str, np.ndarray]` the dataclass only knows how to serialize the outer-most
 structure (the `dict`), but not the inner structure (the `np.ndarray`). Pydantic models
-do not have this limitation, so you can use `dict[str, np.ndarray]` directly without
-any issues:
+do not have this limitation, so you can use `dict[str, np.ndarray]` directly without any
+issues:
 
 ```python
 import numpy as np

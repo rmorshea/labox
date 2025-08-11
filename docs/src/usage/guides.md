@@ -1,3 +1,3 @@
 # Guides
 
-## Working with Async Streams
+## Async Streams
