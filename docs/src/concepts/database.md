@@ -3,9 +3,9 @@
 The [PostgreSQL](https://www.postgresql.org/) database schema for Labox contains two
 types of records:
 
--   [Manifest Records](#manifest-records): Contains metadata about a stored object and
+- [Manifest Records](#manifest-records): Contains metadata about a stored object and
     its associated content.
--   [Content Records](#content-records): Pointers to the actual content of the stored
+- [Content Records](#content-records): Pointers to the actual content of the stored
     object.
 
 Each manifest record corresponds to a single [`Storable`](./storables.md) object while
