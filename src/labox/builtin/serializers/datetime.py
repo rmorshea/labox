@@ -11,7 +11,7 @@ __all__ = ("Iso8601Serializer", "iso8601_serializer")
 class Iso8601Serializer(Serializer[datetime]):
     """A serializer for JSON data."""
 
-    name = "labox.iso8601@v1"
+    name = "labox.datetime.iso8601@v1"
     types = (datetime,)
 
     def serialize_data(self, value: datetime) -> SerializedData:

@@ -1,4 +1,5 @@
 import re
+from collections.abc import AsyncGenerator
 from warnings import warn
 
 from labox.common.types import TagMap
@@ -12,7 +13,7 @@ ERROR_SIZE_DEFAULT = 100 * 1024  # 100 KB
 JSON_CONTENT_TYPE_PATTERN = re.compile(r"^application/(.*?\+?json|json\+?.*?)\;?.*$")
 
 
-class DatabaseStorage(Storage):
+class DatabaseStorage(Storage[str]):
     """Stores data directly in the database instead of remotely.
 
     Is constrained to:
@@ -52,9 +53,9 @@ class DatabaseStorage(Storage):
 
         return data.decode("utf-8")
 
-    async def read_data(self, info: str) -> bytes:
+    async def read_data(self, config: str) -> bytes:
         """Load data using the given information."""
-        return info.encode("utf-8")
+        return config.encode("utf-8")
 
     async def write_data_stream(self, data_stream, get_digest, _tags: TagMap) -> str:
         """Save the given data stream."""
@@ -64,7 +65,7 @@ class DatabaseStorage(Storage):
         )
         raise NotImplementedError(msg)
 
-    def read_data_stream(self, info: str):
+    def read_data_stream(self, config: str) -> AsyncGenerator[bytes]:
         """Load a stream of data using the given information."""
         msg = (
             f"{self} does not support reading data streams. "
@@ -72,11 +73,11 @@ class DatabaseStorage(Storage):
         )
         raise NotImplementedError(msg)
 
-    def serialize_json_storage_data(self, info: str) -> str:
-        """Return the info as-is because it is already a JSON string."""
-        return info
+    def serialize_config(self, config: str, /) -> str:
+        """Return the config as-is because it is already a JSON string."""
+        return config
 
-    def deserialize_json_storage_data(self, data: str) -> str:
+    def deserialize_config(self, data: str) -> str:
         """Return the data as-is because it is already a JSON string."""
         return data
 

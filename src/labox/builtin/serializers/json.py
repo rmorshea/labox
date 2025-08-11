@@ -21,8 +21,6 @@ if TYPE_CHECKING:
 from labox.common.types import JsonType
 
 __all__ = (
-    "DEFAULT_JSON_DECODER",
-    "DEFAULT_JSON_ENCODER",
     "JSON_TYPES",
     "JsonSerializer",
     "JsonStreamSerializer",

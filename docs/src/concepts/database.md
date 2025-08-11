@@ -3,9 +3,9 @@
 The [PostgreSQL](https://www.postgresql.org/) database schema for Labox contains two
 types of records:
 
-- [Manifest Records](#manifest-records): Contains metadata about a stored object and
+-   [Manifest Records](#manifest-records): Contains metadata about a stored object and
     its associated content.
-- [Content Records](#content-records): Pointers to the actual content of the stored
+-   [Content Records](#content-records): Pointers to the actual content of the stored
     object.
 
 Each manifest record corresponds to a single [`Storable`](./storables.md) object while
@@ -46,6 +46,7 @@ The `labox_contents` table contains pointers to the actual content of stored obj
 | [`content_size`][labox.core.database.ContentRecord.content_size]                     | `BIGINT`    | The size of the content in bytes.                                                                                                     |
 | [`content_hash`][labox.core.database.ContentRecord.content_hash]                     | `TEXT`      | A hash of the content.                                                                                                                |
 | [`content_hash_algorithm`][labox.core.database.ContentRecord.content_hash_algorithm] | `TEXT`      | The algorithm used to compute the content hash (e.g., `sha256`).                                                                      |
+| [`serializer_config`][labox.core.database.ContentRecord.serializer_config]           | `JSONB`     | Configuration data for the serializer used to serialize the content.                                                                  |
 | [`serializer_name`][labox.core.database.ContentRecord.serializer_name]               | `TEXT`      | The name of the serializer used to serialize the content.                                                                             |
 | [`serializer_type`][labox.core.database.ContentRecord.serializer_type]               | `ENUM`      | Indicates whether the serializer is a [stream](./serializers.md#stream-serializers) or a [value](./serializers.md#basic-serializers). |
 | [`storage_name`][labox.core.database.ContentRecord.storage_name]                     | `TEXT`      | The name of the storage where the content is stored.                                                                                  |

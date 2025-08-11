@@ -9,6 +9,8 @@ from typing import TypeVar
 
 from labox._internal._component import Component
 from labox._internal._utils import not_implemented
+from labox.common.json import DEFAULT_JSON_DECODER
+from labox.common.json import DEFAULT_JSON_ENCODER
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
@@ -17,10 +19,10 @@ if TYPE_CHECKING:
     from labox.common.types import TagMap
 
 
-T = TypeVar("T")
+C = TypeVar("C")
 
 
-class Storage(Generic[T], Component):
+class Storage(Generic[C], Component):
     """A protocol for storing and retrieving data."""
 
     @abc.abstractmethod
@@ -31,7 +33,7 @@ class Storage(Generic[T], Component):
         digest: Digest,
         tags: TagMap,
         /,
-    ) -> T:
+    ) -> C:
         """Save the given data and return information that can be used to retrieve it.
 
         Args:
@@ -43,7 +45,7 @@ class Storage(Generic[T], Component):
 
     @abc.abstractmethod
     @not_implemented
-    async def read_data(self, info: T, /) -> bytes:
+    async def read_data(self, config: C, /) -> bytes:
         """Load data using the given information."""
         ...
 
@@ -55,7 +57,7 @@ class Storage(Generic[T], Component):
         get_digest: GetStreamDigest,
         tags: TagMap,
         /,
-    ) -> T:
+    ) -> C:
         """Save the given stream and return information that can be used to retrieve it.
 
         Args:
@@ -67,9 +69,17 @@ class Storage(Generic[T], Component):
 
     @abc.abstractmethod
     @not_implemented
-    def read_data_stream(self, info: T, /) -> AsyncGenerator[bytes]:
+    def read_data_stream(self, info: C, /) -> AsyncGenerator[bytes]:
         """Load a stream of data using the given information."""
         ...
+
+    def serialize_config(self, config: C, /) -> str:
+        """Serialize the configuration to a JSON string."""
+        return DEFAULT_JSON_ENCODER.encode(config)
+
+    def deserialize_config(self, config: str, /) -> C:
+        """Deserialize the configuration from a JSON string."""
+        return DEFAULT_JSON_DECODER.decode(config)
 
 
 class Digest(TypedDict):

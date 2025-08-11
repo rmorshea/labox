@@ -1,5 +1,4 @@
 import csv
-import json
 from collections.abc import Sequence
 from io import StringIO
 from typing import Literal
@@ -13,7 +12,7 @@ from labox.core.serializer import Serializer
 class CsvOptions(TypedDict, total=False):
     """Configuration for CSV serialization."""
 
-    dialect: csv.Dialect
+    dialect: str
     delimiter: str
     quotechar: str | None
     escapechar: str | None
@@ -24,7 +23,7 @@ class CsvOptions(TypedDict, total=False):
     strict: bool
 
 
-class CsvSerializer(Serializer[Sequence]):
+class CsvSerializer(Serializer[Sequence, CsvOptions]):
     """Serializer for CSV format."""
 
     name = "labox.csv@v1"
@@ -35,9 +34,9 @@ class CsvSerializer(Serializer[Sequence]):
         """Initialize the CSV serializer with optional format parameters."""
         self.options = options
 
-    def serialize_data(self, value: Sequence) -> SerializedData:
+    def serialize_data(self, value: Sequence) -> SerializedData[CsvOptions]:
         """Serialize the given value to CSV."""
-        buffer = StringIO(f"#{json.dumps(self.options)}\n")
+        buffer = StringIO()
         writer = csv.writer(buffer, **self.options)
         for row in value:
             writer.writerow(row)
@@ -45,15 +44,16 @@ class CsvSerializer(Serializer[Sequence]):
             "content_encoding": "utf-8",
             "content_type": "text/csv",
             "data": buffer.getvalue().encode("utf-8"),
+            "config": self.options,
         }
 
-    def deserialize_data(self, content: SerializedData) -> Sequence:
+    def deserialize_data(self, content: SerializedData[CsvOptions]) -> Sequence:
         """Deserialize the given CSV data."""
+        options = content.get("config", {})
         buffer = StringIO(content["data"].decode("utf-8"))
-        options = json.loads(buffer.readline().lstrip("#").strip())
         reader = csv.reader(buffer, **options)
         return list(reader)
 
 
 csv_serializer = CsvSerializer()
-""""Default instance of the CSV serializer."""
+""""CSV serializer with default options."""

@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Protocol
 from typing import TypeVar
 
 if TYPE_CHECKING:
@@ -21,19 +20,3 @@ DEFAULT_JSON_ENCODER = json.JSONEncoder(separators=(",", ":"), allow_nan=False)
 """The default JSON encoder used for serialization."""
 DEFAULT_JSON_DECODER = json.JSONDecoder()
 """The default JSON decoder used for deserialization."""
-
-
-class JsonEncoder(Protocol):
-    """A protocol for JSON encoders."""
-
-    def encode(self, obj: Any, /) -> str:
-        """Encode an object to a JSON string."""
-        ...
-
-
-class JsonDecoder(Protocol):
-    """A protocol for JSON decoders."""
-
-    def decode(self, dat: str, /) -> Any:
-        """Decode a JSON string to an object."""
-        ...

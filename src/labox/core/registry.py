@@ -18,8 +18,6 @@ from ruyaml import import_module
 from labox._internal._utils import full_class_name
 from labox._internal._utils import validate_typed_dict
 from labox.common.exceptions import NotRegistered
-from labox.common.json import DEFAULT_JSON_DECODER
-from labox.common.json import DEFAULT_JSON_ENCODER
 from labox.core.serializer import Serializer
 from labox.core.serializer import StreamSerializer
 from labox.core.storable import Storable
@@ -32,9 +30,6 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
     from types import ModuleType
     from uuid import UUID
-
-    from labox.common.json import JsonDecoder
-    from labox.common.json import JsonEncoder
 
 
 T = TypeVar("T")
@@ -60,10 +55,6 @@ class RegistryKwargs(TypedDict, total=False):
     """Storages to register."""
     default_storage: bool | Storage
     """Whether to set a default storage used when saving (default: False)."""
-    json_encoder: JsonEncoder | None
-    """Basic JSON encoder used for serializing config from serializers and storages."""
-    json_decoder: JsonDecoder | None
-    """Basic JSON decoder used for deserializing config from serializers and storages."""
 
     _normalized_attributes: _RegistryInfo
     """Normalized attributes for the registry, used for merging."""
@@ -77,14 +68,6 @@ class Registry:
     def __init__(self, **kwargs: Unpack[RegistryKwargs]) -> None:
         validate_typed_dict(RegistryKwargs, kwargs)
         self._info = _kwargs_to_info(kwargs)
-
-    def encode_json(self, value: Any) -> str:
-        """Encode the given value to JSON using the registry's JSON encoder."""
-        return self._info["json_encoder"].encode(value)
-
-    def decode_json(self, value: str) -> Any:
-        """Decode the given JSON string using the registry's JSON decoder."""
-        return self._info["json_decoder"].decode(value)
 
     def get_default_storage(self) -> Storage:
         """Return the default storage for this registry."""
@@ -190,8 +173,6 @@ def _infer_from_type(mapping: Mapping[type, V], cls: type, description: str) -> 
 
 def _get_default_registry_attrs() -> _RegistryInfo:
     return {
-        "json_decoder": DEFAULT_JSON_DECODER,
-        "json_encoder": DEFAULT_JSON_ENCODER,
         "serializer_by_content_type": {},
         "serializer_by_name": {},
         "serializer_by_type": {},
@@ -281,8 +262,6 @@ def _info_from_explicit_kwargs(kwargs: RegistryKwargs) -> _RegistryInfo:
         "stream_serializer_by_type": stream_serializer_by_type,
         "unpacker_by_name": unpacker_by_name,
         "unpacker_by_type": unpacker_by_type,
-        "json_encoder": kwargs.get("json_encoder") or _get_default_registry_attrs()["json_encoder"],
-        "json_decoder": kwargs.get("json_decoder") or _get_default_registry_attrs()["json_decoder"],
     }
 
 
@@ -371,8 +350,6 @@ class _RegistryInfo(TypedDict):
     unpacker_by_type: Mapping[type[Any], Unpacker]
     serializer_by_content_type: Mapping[_ContentType, Serializer]
     stream_serializer_by_content_type: Mapping[_ContentType, StreamSerializer]
-    json_encoder: JsonEncoder
-    json_decoder: JsonDecoder
 
 
 def _iter_module_exports(modules: Iterable[ModuleType | str]) -> Iterator[Any]:
