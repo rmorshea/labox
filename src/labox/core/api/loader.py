@@ -44,8 +44,8 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 S = TypeVar("S", bound=Storable)
 
-_ContentRequest = tuple[TaskFuture, ManifestRecord, type[Any] | None]
-_StorableRequest = tuple[TaskFuture, ManifestRecord, type[Any] | None, Sequence[ContentRecord]]
+_ContentRequest = tuple[TaskFuture, ManifestRecord, type[Storable] | None]
+_StorableRequest = tuple[TaskFuture, ManifestRecord, type[Storable] | None, Sequence[ContentRecord]]
 
 
 async def load_one(
