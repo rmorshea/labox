@@ -140,7 +140,9 @@ Serializers may optionally return information about how they were configured in 
 [`config`][labox.core.serializer.SerializedData.config] key within the `SerializedData`.
 This is useful for persisting options that are necessary for deserializing the data
 correctly. For example, you might include the version of the serializer or name of a
-plugin that was used to encode the data. Ultimately the value under the `config`
+plugin that was used to encode the data. Ultimately this `config` is saved within the
+[`ContentRecord.serializer_config`][labox.core.database.ContentRecord.serializer_config]
+column in the database. You can overwrite how this config is serialized by
 
 ## Serializer Names
 
