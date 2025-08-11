@@ -24,6 +24,7 @@ from labox.core.serializer import StreamSerializer
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
+    from contextlib import AsyncExitStack
     from uuid import UUID
 
     from sqlalchemy.ext.asyncio import AsyncSession
@@ -56,9 +57,11 @@ async def load_one(
 async def new_loader(
     registry: Registry,
     session: AsyncSession,
+    context: AsyncExitStack | None = None,
 ) -> AsyncIterator[DataLoader]:
     """Create a context manager for saving data."""
     requests: list[_Requests] = []
+
     yield _DataLoader(requests)
 
     record_groups = await _load_manifest_contents(session, [m for m, _, _ in requests])
@@ -87,6 +90,7 @@ async def new_loader(
                 manifest,
                 contents,
                 registry=registry,
+                context=context,
             )
 
 
@@ -132,6 +136,7 @@ async def load_from_manifest_record(
     /,
     *,
     registry: Registry,
+    context: AsyncExitStack | None = None,
 ) -> Any:
     """Load an object from the given manifest record."""
     unpacker = registry.get_unpacker(manifest.unpacker_name)
@@ -145,6 +150,7 @@ async def load_from_manifest_record(
                 load_from_content_record,
                 c,
                 registry=registry,
+                context=context,
             )
 
     return unpacker.repack_object(
@@ -158,6 +164,7 @@ async def load_from_content_record(
     record: ContentRecord,
     *,
     registry: Registry,
+    context: AsyncExitStack | None = None,
 ) -> UnpackedValue | UnpackedValueStream:
     """Load the given content from the given record."""
     storage = registry.get_storage(record.storage_name)
@@ -179,10 +186,21 @@ async def load_from_content_record(
                 "storage": storage,
             }
         case SerializerTypeEnum.StreamSerializer:
+            if context is None:
+                msg = (
+                    "Attempted to load stream without a `context` argument - this gives the user "
+                    "responsibility and control over when underlying async generators are closed."
+                )
+                raise ValueError(msg)
             serializer = registry.get_stream_serializer(record.serializer_name)
             if not isinstance(serializer, StreamSerializer):
                 msg = f"Content {record.id} expects a stream serializer, got {serializer}."
                 raise TypeError(msg)
+
+            data_stream = storage.read_data_stream(storage_data)
+            # user needs to ensure the stream is closed when done
+            context.push_async_callback(data_stream.aclose)
+
             stream = serializer.deserialize_data_stream(
                 {
                     "config": serializer.deserialize_config(record.serializer_config),
@@ -191,6 +209,9 @@ async def load_from_content_record(
                     "data_stream": storage.read_data_stream(storage_data),
                 }
             )
+            # user needs to ensure the stream is closed when done
+            context.push_async_callback(stream.aclose)
+
             return {
                 "value_stream": stream,
                 "serializer": serializer,

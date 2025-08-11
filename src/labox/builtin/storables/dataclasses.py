@@ -209,7 +209,7 @@ def _dump_storable_dataclass(
     return _LaboxStorableDataclassDict(
         __labox__="storable_dataclass",
         class_id=obj.storable_config().class_id.hex,
-        class_name=full_class_name(obj),
+        class_name=full_class_name(type(obj)),
         fields=field_dict,
     )
 
