@@ -64,7 +64,6 @@ def simple_s3_router(
     Args:
         bucket: The S3 bucket to use for routing.
         prefix: An optional prefix to add to the S3 object key.
-        temp: If True, the router will create temporary paths for the data.
     """
 
     def router(digest: Digest, tags: TagMap, *, temp: bool) -> S3Pointer:  # noqa: ARG001

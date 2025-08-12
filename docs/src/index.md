@@ -20,8 +20,9 @@ pip install labox[all]
 pip install labox[pydantic,pandas,aws]
 ```
 
-There's a [complete list of extras](./integrations) in the Integrations section, but be
-sure to checkout how Labox works with [Pydantic](./integrations/3rd-party/pydantic.md).
+There's a [complete list of extras](./integrations/index.md) in the Integrations
+section, but be sure to checkout how Labox works with
+[Pydantic](./integrations/3rd-party/pydantic.md).
 
 ## Basic Setup
 
@@ -117,5 +118,6 @@ assert loaded_experiment == experiment
 
 ## Next Steps
 
-Check out more [usage examples](./usage), or dive into the [concepts](./concepts) and
-[integrations](./integrations) to learn more about how Labox works.
+Check out more [usage examples](./usage/index.md), or dive into the
+[concepts](./concepts/index.md) and [integrations](./integrations/index.md) to learn
+more about how Labox works.

@@ -79,7 +79,7 @@ allowing you to unpack some fields into memory while streaming others.
 ## Unpacked Streams
 
 In addition to unpacked values, you can also unpack the fields of a `Storable` class
-into [`UnpackedValueStream`](labox.core.unpacker.UnpackedValueStream)
+into [`UnpackedValueStream`][labox.core.unpacker.UnpackedValueStream]
 dicts. This is useful when you can't or don't want to load large amounts of data into
 memory at once. An `UnpackedValueStream` contains the following information:
 

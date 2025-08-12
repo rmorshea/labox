@@ -3,3 +3,5 @@
 !!! note
 
     Install with `pip install labox[pydantic]`
+
+## Content Specs

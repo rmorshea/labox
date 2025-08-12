@@ -137,8 +137,8 @@ reg4 = Registry(
 
 ## Type Inference
 
-The logic for matching a serializer to a value or an unpacker to a storable is based on
-the following psudo-code snippet:
+The logic for matching a serializer to a value is based on the following psudo-code
+snippet:
 
 ```python
 def get_serializer_by_type(cls: type, serializers: dict[type, Serializer]) -> Serializer:
@@ -146,18 +146,10 @@ def get_serializer_by_type(cls: type, serializers: dict[type, Serializer]) -> Se
         if base in serializers:
             return serializers[base]
     raise ValueError
-
-
-def get_unpacker_by_type(cls: type, unpackers: dict[type, Unpacker]) -> Unpacker:
-    for base in cls.__mro__:
-        if base in unpackers:
-            return unpackers[base]
-    raise ValueError
 ```
 
-The serializer and unpacker mappings are constructed from the
-[`types`][labox.core.serializer.Serializer.types] and
-[`types`][labox.core.unpacker.Unpacker.types] attributes respectively.
+The serializer mappings are constructed from the
+[`types`][labox.core.serializer.Serializer.types].
 
 ## Precedence
 

@@ -2,7 +2,7 @@
 
 ## Database Setup
 
-To use Labox, you'll need to have set up the Labox [database](./concepts/database.md)
+To use Labox, you'll need to have set up the Labox [database](../concepts/database.md)
 scheme as well as establish a
 [SQLAlchemy connection](https://docs.sqlalchemy.org/en/20/orm/session_basics.html) to
 it. The latter is typically done using an async SQLAlchemy engine and session maker.To
@@ -22,10 +22,10 @@ BaseRecord.create_all(engine).run()
 
 ## Registry Setup
 
-When saving and loading data, Labox makes use of [registry](./concepts/registry.md) to
-know what [storables](./concepts/storables.md), [unpackers](./concepts/unpackers.md),
-and [serializers](./concepts/serializers.md) and [storages](./concepts/storages.md) are
-available. A quick way to set up a registry is to
+When saving and loading data, Labox makes use of [registry](../concepts/registry.md) to
+know what [storables](../concepts/storables.md), [unpackers](../concepts/unpackers.md),
+and [serializers](../concepts/serializers.md) and [storages](../concepts/storages.md)
+are available. A quick way to set up a registry is to
 [construct it from the modules](../concepts/registry.md#constructing-from-modules) where
 these components are defined.
 
@@ -43,7 +43,7 @@ registry = Registry(
 
 ## Storable Setup
 
-There's two main ways to create a [storable](./concepts/storables.md).
+There's two main ways to create a [storable](../concepts/storables.md).
 
 With [Pydantic models](../integrations/3rd-party/pydantic.md).
 
@@ -99,7 +99,7 @@ class ExperimentData(StorableModel):
 If you have a single storable to save you can use the [`save_one`][labox.core.save_one]
 function. To call it you'll need a [SQLAlchemy session](#database-setup) and
 [Labox registry](#registry-setup). Once the object has been saved it will return a
-[record](./concepts/database.md#manifest-records) that can be used to
+[record](../concepts/database.md#manifest-records) that can be used to
 [load](#loading-one) the storable later.
 
 ```python
@@ -121,7 +121,7 @@ context manager. This will create a saver object that's able to save multiple st
 concurrently. As above, you'll need a [SQLAlchemy session](#database-setup) and
 [Labox registry](#registry-setup). The saver's `save_soon` method accepts a single
 storable and returns a future that will, once the context exits, resolve to a
-[record](./concepts/database.md#manifest-records) for that storable. The records can
+[record](../concepts/database.md#manifest-records) for that storable. The records can
 then be used to [load](#loading-in-bulk) the storables later.
 
 ```python
@@ -147,15 +147,43 @@ async with new_async_session() as session:
 
 ### Saving with Streams
 
-Storables may contain async streams of data. For example the storable below contains a
-stream of data that is generated on the fly:
+Storables may contain async streams of data:
+
+```python
+from collections.abc import AsyncIterable
+from typing import Annotated
+
+import pandas as pd
+
+from labox.extra.pandas import ParquetDataFrameStreamSerializer
+from labox.extra.pydantic import ContentSpec
+from labox.extra.pydantic import StorableModel
+
+# A custom Pydantic type with a Labox serializer (1)
+DataFrameStream = Annotated[
+    AsyncIterable[pd.DataFrame], ContentSpec(serializer=ParquetDataFrameStreamSerializer())
+]
+
+
+class ExperimentData(StorableModel):
+    description: str
+    parameters: dict[str, float]
+    results: DataFrameStream
+```
+
+1. Pydantic allows you to
+    [annotate types](https://docs.pydantic.dev/2.11/concepts/types/#using-the-annotated-pattern)
+    with additional metadata. In this case, a
+    [`ContentSpec`](../integrations/3rd-party/pydantic.md#content-specs) is used to
+    specify that the `DataFrameStream` must be serialized with a
+    [`ParquetDataFrameStreamSerializer`][labox.extra.pandas.ParquetDataFrameStreamSerializer].
 
 ## Loading Storables
 
 ### Loading One
 
 If you have a single record to load you can use the [`load_one`][labox.core.load_one]
-function. You'll need the [record](./concepts/database.md#manifest-records) returned
+function. You'll need the [record](../concepts/database.md#manifest-records) returned
 from saving, a [SQLAlchemy session](#database-setup) and
 [Labox registry](#registry-setup). The function will return the original storable
 object.
@@ -173,7 +201,7 @@ async with new_async_session() as session:
 To load many storables at once you can use the [`new_loader`][labox.core.new_loader]
 context manager. This will create a loader object that's able to load multiple storables
 concurrently. As above, you'll need the
-[records](./concepts/database.md#manifest-records) from saving, a
+[records](../concepts/database.md#manifest-records) from saving, a
 [SQLAlchemy session](#database-setup) and [Labox registry](#registry-setup). The
 loader's `load_soon` method accepts a record and storable type, returning a future that
 will, once the context exits, resolve to the original storable object.
@@ -195,7 +223,7 @@ If the
 ## Adding Tags
 
 You can add tags when saving storables. These tags are included in the
-[manifest record](./concepts/database.md#manifest-records) and passed to the underlying
+[manifest record](../concepts/database.md#manifest-records) and passed to the underlying
 storage when saving each piece of content. Tags are provided as a dictionary of string
 key-value pairs. This is useful for adding metadata to your records, such billing
 information, project names, or any other relevant information that can help you identify
