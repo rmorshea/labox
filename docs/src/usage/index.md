@@ -36,6 +36,7 @@ registry = Registry(
     modules=[
         "labox.builtin",
         "labox.extra.pydantic",
+        "labox.extra.pandas",
     ]
 )
 ```

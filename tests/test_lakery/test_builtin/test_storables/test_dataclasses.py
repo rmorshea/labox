@@ -33,6 +33,7 @@ LOCAL_STORAGE = REGISTRY.get_storage(FileStorage.name)
 test_dataclass_unpack_repack = make_storable_unpack_repack_test(
     [
         (
+            "simple-dataclass-with-and-without-specs",
             MyClass(
                 no_spec=SAMPLE,
                 spec_with_serializer=SAMPLE,

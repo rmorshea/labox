@@ -22,11 +22,15 @@ if TYPE_CHECKING:
 
 __all__ = [
     "ArrowDataFrameSerializer",
+    "ArrowDataFrameStreamSerializer",
     "ParquetDataFrameSerializer",
+    "ParquetDataFrameStreamSerializer",
     "ParquetReadOptions",
     "ParquetWriteOptions",
     "arrow_dataframe_serializer",
+    "arrow_dataframe_stream_serializer",
     "parquet_dataframe_serializer",
+    "parquet_dataframe_stream_serializer",
 ]
 
 
@@ -155,5 +159,11 @@ class ParquetDataFrameStreamSerializer(StreamSerializer[pd.DataFrame]):
 arrow_dataframe_serializer = ArrowDataFrameSerializer()
 """ArrowDataFrameSerializer with default settings."""
 
+arrow_dataframe_stream_serializer = ArrowDataFrameStreamSerializer()
+"""ArrowDataFrameStreamSerializer with default settings."""
+
 parquet_dataframe_serializer = ParquetDataFrameSerializer()
 """ParquetDataFrameSerializer with default settings."""
+
+parquet_dataframe_stream_serializer = ParquetDataFrameStreamSerializer()
+"""ParquetDataFrameStreamSerializer with default settings."""
