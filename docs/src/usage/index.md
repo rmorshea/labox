@@ -172,16 +172,17 @@ class ExperimentData(StorableModel):
 ```
 
 1. Pydantic allows you to
-   [annotate types](https://docs.pydantic.dev/2.11/concepts/types/#using-the-annotated-pattern)
-   with additional metadata. In this case, a
-   [`ContentSpec`](../integrations/3rd-party/pydantic.md#content-specs) is used to
-   specify that the `DataFrameStream` must be serialized with a
-   [`ParquetDataFrameStreamSerializer`][labox.extra.pandas.ParquetDataFrameStreamSerializer].
+    [annotate types](https://docs.pydantic.dev/2.11/concepts/types/#using-the-annotated-pattern)
+    with additional metadata. In this case, a
+    [`ContentSpec`](../integrations/3rd-party/pydantic.md#content-specs) is used to
+    specify that the `DataFrameStream` must be serialized with a
+    [`ParquetDataFrameStreamSerializer`][labox.extra.pandas.ParquetDataFrameStreamSerializer].
 
 Saving a storable with a stream looks identical to doing so for one without a stream.
 
 ```python
 from labox.core import save_one
+
 
 async def generate_dataframes() -> AsyncIterable[pd.DataFrame]:
     for i in range(10):
@@ -246,6 +247,7 @@ lifetime of any streams within the storable.
 
 ```python
 from contextlib import AsyncExitStack
+
 from labox.core import load_one
 
 async with AsyncExitStack() as context, new_async_session() as session:
