@@ -78,6 +78,8 @@ class ArrowDataFrameStreamSerializer(StreamSerializer[pd.DataFrame]):
         )
 
     def serialize_data_stream(self, stream: AsyncIterable[pd.DataFrame]) -> SerializedDataStream:
+        """Serialize the given DataFrame stream."""
+
         async def stream_record_batches() -> AsyncIterable[pa.RecordBatch]:
             async for df in stream:
                 yield pa.RecordBatch.from_pandas(df)
@@ -87,6 +89,8 @@ class ArrowDataFrameStreamSerializer(StreamSerializer[pd.DataFrame]):
     def deserialize_data_stream(
         self, content: SerializedDataStream
     ) -> AsyncGenerator[pd.DataFrame]:
+        """Deserialize the given DataFrame stream."""
+
         async def stream_dataframes() -> AsyncGenerator[pd.DataFrame]:
             async for record_batch in self._arrow_serializer.deserialize_data_stream(content):
                 yield record_batch.to_pandas()
@@ -140,6 +144,8 @@ class ParquetDataFrameStreamSerializer(StreamSerializer[pd.DataFrame]):
         )
 
     def serialize_data_stream(self, stream: AsyncIterable[pd.DataFrame]) -> SerializedDataStream:
+        """Serialize the given DataFrame stream."""
+
         async def stream_record_batches() -> AsyncIterable[pa.RecordBatch]:
             async for df in stream:
                 yield pa.RecordBatch.from_pandas(df)
@@ -149,6 +155,8 @@ class ParquetDataFrameStreamSerializer(StreamSerializer[pd.DataFrame]):
     def deserialize_data_stream(
         self, content: SerializedDataStream
     ) -> AsyncGenerator[pd.DataFrame]:
+        """Deserialize the given DataFrame stream."""
+
         async def stream_dataframes() -> AsyncGenerator[pd.DataFrame]:
             async for record_batch in self._parquet_serializer.deserialize_data_stream(content):
                 yield record_batch.to_pandas()
