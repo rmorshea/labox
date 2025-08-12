@@ -54,9 +54,10 @@ async def load_one(
     *,
     registry: Registry,
     session: AsyncSession,
+    context: AsyncExitStack | None = None,
 ) -> S:
     """Load a single object from the given manifest record."""
-    async with new_loader(registry, session) as loader:
+    async with new_loader(registry, session, context=context) as loader:
         future = loader.load_soon(manifest, cls)
     return future.value
 

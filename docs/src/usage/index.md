@@ -172,11 +172,31 @@ class ExperimentData(StorableModel):
 ```
 
 1. Pydantic allows you to
-    [annotate types](https://docs.pydantic.dev/2.11/concepts/types/#using-the-annotated-pattern)
-    with additional metadata. In this case, a
-    [`ContentSpec`](../integrations/3rd-party/pydantic.md#content-specs) is used to
-    specify that the `DataFrameStream` must be serialized with a
-    [`ParquetDataFrameStreamSerializer`][labox.extra.pandas.ParquetDataFrameStreamSerializer].
+   [annotate types](https://docs.pydantic.dev/2.11/concepts/types/#using-the-annotated-pattern)
+   with additional metadata. In this case, a
+   [`ContentSpec`](../integrations/3rd-party/pydantic.md#content-specs) is used to
+   specify that the `DataFrameStream` must be serialized with a
+   [`ParquetDataFrameStreamSerializer`][labox.extra.pandas.ParquetDataFrameStreamSerializer].
+
+Saving a storable with a stream looks identical to doing so for one without a stream.
+
+```python
+from labox.core import save_one
+
+async def generate_dataframes() -> AsyncIterable[pd.DataFrame]:
+    for i in range(10):
+        yield pd.DataFrame({"time": [i], "value": [i * 2]})
+
+
+experiment = ExperimentData(
+    description="Time Series Experiment",
+    parameters={"sampling_rate": 1.0},
+    results=generate_dataframes(),
+)
+
+async with new_async_session() as session:
+    record = save_one(experiment, session=session, registry=registry)
+```
 
 ## Loading Storables
 
@@ -218,7 +238,29 @@ async with new_async_session() as session:
 
 ### Loading with Streams
 
-If the
+In contrast to [saving with streams](#saving-with-streams), loading a storable with a
+stream requires a bit of extra work in order to ensure underlying resources held by
+streams are properly cleaned up. Specifically, you need to pass an
+[`AsyncExitStack`][contextlib.AsyncExitStack] to the loaderin order to define the
+lifetime of any streams within the storable.
+
+```python
+from contextlib import AsyncExitStack
+from labox.core import load_one
+
+async with AsyncExitStack() as context, new_async_session() as session:
+    loaded_obj = await load_one(
+        record,
+        ExperimentData,
+        session=session,
+        registry=registry,
+        context=context,
+    )
+    # Use the stream inside the context
+    stream = loaded_obj.results
+
+# After the context exits, the stream will have been closed.
+```
 
 ## Adding Tags
 
