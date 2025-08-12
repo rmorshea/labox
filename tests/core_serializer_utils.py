@@ -44,7 +44,7 @@ def make_value_serializer_test(
 def make_stream_serializer_test(
     serializer: StreamSerializer[T],
     *cases: Sequence[T],
-    assertion: AssertionFunc[T] = _assert_equal,
+    assertion: AssertionFunc[Sequence[T]] = _assert_equal,
 ) -> Callable:
     async def tester(checker, restream, case):
         await checker(restream, case)

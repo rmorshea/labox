@@ -8,7 +8,6 @@ nav:
   - Home: index.md
   - Usage:
       - Overview: usage/index.md
-      - Guides: usage/guides.md
       - Examples: usage/examples.md
   - Concepts:
       - Overview: concepts/index.md
@@ -55,19 +54,19 @@ theme:
     - navigation.sections
     - navigation.instant
   palette:
-    # Palette toggle for automatic mode
+        # Palette toggle for automatic mode
     - media: (prefers-color-scheme)
       toggle:
         icon: material/brightness-auto
         name: Switch to light mode
-    # Palette toggle for light mode
+        # Palette toggle for light mode
     - media: '(prefers-color-scheme: light)'
       scheme: default
       primary: black
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
-    # Palette toggle for dark mode
+        # Palette toggle for dark mode
     - media: '(prefers-color-scheme: dark)'
       scheme: slate
       primary: black

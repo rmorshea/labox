@@ -144,6 +144,11 @@ async with new_async_session() as session:
     records = [f.value for f in futures]
 ```
 
+### Saving with Streams
+
+Storables may contain async streams of data. For example the storable below contains a
+stream of data that is generated on the fly:
+
 ## Loading Storables
 
 ### Loading One
@@ -181,6 +186,10 @@ async with new_async_session() as session:
         futures = [ml.load_soon(r, ExperimentData) for r in records]
     loaded_objs = [f.value for f in futures]
 ```
+
+### Loading with Streams
+
+If the
 
 ## Adding Tags
 
