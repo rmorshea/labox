@@ -180,6 +180,7 @@ ban-relative-imports = "all"
     "INP001", # Implicit namespace package
     "D",      # Docstrings
     "B007",   # Variable not used within loop body
+    "F401",   # Unused import
 ]
 "doccmd_*.py" = [
     "ANN",      # Type annotations

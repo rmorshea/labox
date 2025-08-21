@@ -1,3 +1,4 @@
+from labox.builtin.serializers.csv import CsvOptions
 from labox.builtin.serializers.csv import CsvSerializer
 from labox.builtin.serializers.csv import csv_serializer
 from labox.builtin.serializers.datetime import Iso8601Serializer
@@ -8,6 +9,7 @@ from labox.builtin.serializers.json import json_serializer
 from labox.builtin.serializers.json import json_stream_serializer
 
 __all__ = (
+    "CsvOptions",
     "CsvSerializer",
     "Iso8601Serializer",
     "JsonSerializer",
