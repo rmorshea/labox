@@ -20,17 +20,18 @@ nav:
   - Integrations:
       - Overview: integrations/index.md
       - Builtin: integrations/builtin.md
-      - AWS: integrations/aws.md
-      - Azure: integrations/azure.md
-      - Google: integrations/google.md
-      - ImageIO: integrations/imageio.md
-      - MessagePack: integrations/msgpack.md
-      - NumPy: integrations/numpy.md
-      - Pandas: integrations/pandas.md
-      - Plotly: integrations/plotly.md
-      - Polars: integrations/polars.md
-      - PyArrow: integrations/pyarrow.md
-      - Pydantic: integrations/pydantic.md
+      - Third Party:
+          - AWS: integrations/aws.md
+          - Azure: integrations/azure.md
+          - Google: integrations/google.md
+          - ImageIO: integrations/imageio.md
+          - MessagePack: integrations/msgpack.md
+          - NumPy: integrations/numpy.md
+          - Pandas: integrations/pandas.md
+          - Plotly: integrations/plotly.md
+          - Polars: integrations/polars.md
+          - PyArrow: integrations/pyarrow.md
+          - Pydantic: integrations/pydantic.md
   - Reference: reference/
   - Changelog: changelog.md
   - Contributing:
@@ -55,14 +56,14 @@ theme:
       toggle:
         icon: material/brightness-auto
         name: Switch to light mode
-              # Palette toggle for light mode
+                  # Palette toggle for light mode
     - media: '(prefers-color-scheme: light)'
       scheme: default
       primary: black
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
-              # Palette toggle for dark mode
+                  # Palette toggle for dark mode
     - media: '(prefers-color-scheme: dark)'
       scheme: slate
       primary: black
