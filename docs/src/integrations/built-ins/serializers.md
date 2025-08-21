@@ -12,9 +12,9 @@ are available. Either can be configured with an optional
 ```python
 import json
 
-from labox.builtin.serializers import JsonSerializer
-from labox.builtin.serializers import json_serializer
-from labox.builtin.serializers import json_stream_serializer
+from labox.builtin import JsonSerializer
+from labox.builtin import json_serializer
+from labox.builtin import json_stream_serializer
 
 custom_json_serializer = JsonSerializer(
     encoder=json.JSONEncoder(indent=2),
@@ -34,8 +34,8 @@ name as a string. For custom dialects, you can first use
 then pass that name to the serializer.
 
 ```python
-from labox.builtin.serializers import CsvSerializer
-from labox.builtin.serializers import csv_serializer
+from labox.builtin import CsvSerializer
+from labox.builtin import csv_serializer
 
 unix_csv_serializer = CsvSerializer(dialect="unix")
 ```
@@ -47,5 +47,5 @@ Labox provides a basic
 datetime objects to ISO 8601 strings.
 
 ```python
-from labox.builtin.serializers import iso8601_serializer
+from labox.builtin import iso8601_serializer
 ```

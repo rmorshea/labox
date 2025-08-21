@@ -51,8 +51,8 @@ class StorableDataclassUnpacker(Unpacker["StorableDataclass"]):
         body = _dump_storable_dataclass(obj, registry=registry, external=external, path=("/ref",))
         return {
             "body": {
-                "serializer": obj.storable_dataclass_serializer(registry),
-                "storage": obj.storable_dataclass_storage(registry),
+                "serializer": obj.storable_body_serializer(registry),
+                "storage": obj.storable_body_storage(registry),
                 "value": body,
             },
             **external,
@@ -110,11 +110,11 @@ class StorableDataclass(Storable, _FakeBase, unpacker=StorableDataclassUnpacker(
         }
         super().__init_subclass__(**kwargs)
 
-    def storable_dataclass_serializer(self, registry: Registry) -> Serializer:
+    def storable_body_serializer(self, registry: Registry) -> Serializer:
         """Return the serializer for the body of this storable class."""
         return registry.get_serializer_by_content_type("application/json")
 
-    def storable_dataclass_storage(self, registry: Registry) -> Storage:
+    def storable_body_storage(self, registry: Registry) -> Storage:
         """Return the storage for the body of this storable class."""
         return registry.get_default_storage()
 
