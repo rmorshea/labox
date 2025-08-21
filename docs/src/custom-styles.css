@@ -1,3 +1,0 @@
-.md-typeset pre > code {
-    max-height: var(--md-codeblock-height, 35rem); /* 5rem will be used as a fallback value */
-}
