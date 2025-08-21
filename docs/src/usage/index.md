@@ -45,7 +45,7 @@ registry = Registry(
 
 There's two main ways to create a [storable](../concepts/storables.md).
 
-With [Pydantic models](../integrations/3rd-party/pydantic.md).
+With [Pydantic models](../integrations/pydantic.md).
 
 ```python
 from labox.extra.pydantic import StorableModel
@@ -57,7 +57,7 @@ class ExperimentData(StorableModel):
     results: dict[str, list[float]]
 ```
 
-Or with [dataclasses](../integrations/built-ins/storables.md#dataclasses).
+Or with [dataclasses](../integrations/builtin.md#dataclasses).
 
 ```python
 from dataclasses import dataclass
@@ -174,8 +174,8 @@ class ExperimentData(StorableModel):
 1. Pydantic allows you to
     [annotate types](https://docs.pydantic.dev/2.11/concepts/types/#using-the-annotated-pattern)
     with additional metadata. In this case, a
-    [`ContentSpec`](../integrations/3rd-party/pydantic.md#content-specs) is used to
-    specify that the `DataFrameStream` must be serialized with a
+    [`ContentSpec`](../integrations/pydantic.md#content-specs) is used to specify that
+    the `DataFrameStream` must be serialized with a
     [`ParquetDataFrameStreamSerializer`][labox.extra.pandas.ParquetDataFrameStreamSerializer].
 
 Saving a storable with a stream looks identical to doing so for one without a stream.
@@ -253,8 +253,7 @@ async with new_async_session() as session:
 However, since streams can hold onto resources (like file handles or network
 connections), you may optionall pass an [`AsyncExitStack`][contextlib.AsyncExitStack] to
 the loader which will define the lifetime of any streams within the storable.
-Specifically, the stack will ensure that the
-[`aclose`](https://peps.python.org/pep-0525/#finalization) method of any underlying
+Specifically, the stack will ensure that the `aclose` method of any underlying
 generators is called when the exit stack is closed.
 
 ```python
@@ -278,6 +277,10 @@ async with (
 
 # After the context exits, the stream will have been closed.
 ```
+
+If a stack is not provided the stream will be closed automatically after is has been
+garbage collected. See [PEP-525](https://peps.python.org/pep-0525/#finalization) for
+more information on async generator finalization.
 
 ## Adding Tags
 

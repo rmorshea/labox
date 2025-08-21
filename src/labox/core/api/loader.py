@@ -48,7 +48,7 @@ S = TypeVar("S", bound=Storable)
 _ContentRequest = tuple[TaskFuture, ManifestRecord, type[Storable] | None]
 _StorableRequest = tuple[TaskFuture, ManifestRecord, type[Storable] | None, Sequence[ContentRecord]]
 
-_log = getLogger(__name__)
+_LOG = getLogger(__name__)
 
 
 async def load_one(
@@ -168,7 +168,7 @@ async def load_content_record(
             if stack is not None:
                 stack.push_async_callback(data_stream.aclose)
             else:
-                _log.debug("No stack provided to close the stream later.")
+                _LOG.debug("No stack provided to close the stream later.")
 
             stream = serializer.deserialize_data_stream(
                 {

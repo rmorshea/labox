@@ -22,7 +22,7 @@ pip install labox[pydantic,pandas,aws]
 
 There's a [complete list of extras](./integrations/index.md) in the Integrations
 section, but be sure to checkout how Labox works with
-[Pydantic](./integrations/3rd-party/pydantic.md).
+[Pydantic](./integrations/pydantic.md).
 
 ## Basic Setup
 
@@ -76,7 +76,7 @@ experiment_data = {
 ```
 
 Put that data in a [storable](./concepts/storables.md), in this case a
-[Pydantic](./integrations/3rd-party/pydantic.md) model:
+[Pydantic](./integrations/pydantic.md) model:
 
 ```python
 import pandas as pd

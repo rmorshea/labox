@@ -19,22 +19,18 @@ nav:
       - Database: concepts/database.md
   - Integrations:
       - Overview: integrations/index.md
-      - Built-in:
-          - Serializers: integrations/built-ins/serializers.md
-          - Storables: integrations/built-ins/storables.md
-          - Storages: integrations/built-ins/storages.md
-      - Third Party:
-          - AWS: integrations/3rd-party/aws.md
-          - Azure: integrations/3rd-party/azure.md
-          - Google: integrations/3rd-party/google.md
-          - ImageIO: integrations/3rd-party/imageio.md
-          - MessagePack: integrations/3rd-party/msgpack.md
-          - NumPy: integrations/3rd-party/numpy.md
-          - Pandas: integrations/3rd-party/pandas.md
-          - Plotly: integrations/3rd-party/plotly.md
-          - Polars: integrations/3rd-party/polars.md
-          - PyArrow: integrations/3rd-party/pyarrow.md
-          - Pydantic: integrations/3rd-party/pydantic.md
+      - Builtin: integrations/builtin.md
+      - AWS: integrations/aws.md
+      - Azure: integrations/azure.md
+      - Google: integrations/google.md
+      - ImageIO: integrations/imageio.md
+      - MessagePack: integrations/msgpack.md
+      - NumPy: integrations/numpy.md
+      - Pandas: integrations/pandas.md
+      - Plotly: integrations/plotly.md
+      - Polars: integrations/polars.md
+      - PyArrow: integrations/pyarrow.md
+      - Pydantic: integrations/pydantic.md
   - Reference: reference/
   - Changelog: changelog.md
   - Contributing:
@@ -59,14 +55,14 @@ theme:
       toggle:
         icon: material/brightness-auto
         name: Switch to light mode
-        # Palette toggle for light mode
+              # Palette toggle for light mode
     - media: '(prefers-color-scheme: light)'
       scheme: default
       primary: black
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
-        # Palette toggle for dark mode
+              # Palette toggle for dark mode
     - media: '(prefers-color-scheme: dark)'
       scheme: slate
       primary: black
