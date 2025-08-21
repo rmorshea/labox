@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Sequence
 from contextlib import suppress
+from logging import getLogger
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import TypeAlias
@@ -46,6 +47,8 @@ S = TypeVar("S", bound=Storable)
 
 _ContentRequest = tuple[TaskFuture, ManifestRecord, type[Storable] | None]
 _StorableRequest = tuple[TaskFuture, ManifestRecord, type[Storable] | None, Sequence[ContentRecord]]
+
+_log = getLogger(__name__)
 
 
 async def load_one(
@@ -151,7 +154,7 @@ async def load_content_record(
         case SerializerTypeEnum.StreamSerializer:
             if stack is None:
                 msg = (
-                    "Attempted to load stream without a `context` argument - this gives the user "
+                    "Attempted to load stream without a `stack` argument - this gives the user "
                     "responsibility and control over when underlying async generators are closed."
                 )
                 raise ValueError(msg)
@@ -161,8 +164,11 @@ async def load_content_record(
                 raise TypeError(msg)
 
             data_stream = storage.read_data_stream(storage_data)
-            # user needs to ensure the stream is closed when done
-            stack.push_async_callback(data_stream.aclose)
+
+            if stack is not None:
+                stack.push_async_callback(data_stream.aclose)
+            else:
+                _log.debug("No stack provided to close the stream later.")
 
             stream = serializer.deserialize_data_stream(
                 {

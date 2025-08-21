@@ -239,18 +239,33 @@ async with new_async_session() as session:
 
 ### Loading with Streams
 
-In contrast to [saving with streams](#saving-with-streams), loading a storable with a
-stream requires a bit of extra work in order to ensure underlying resources held by
-streams are properly cleaned up. Specifically, you need to pass an
-[`AsyncExitStack`][contextlib.AsyncExitStack] to the loader in order to define the
-lifetime of any streams within the storable.
+You can load a storable with a stream just as you would load one without a stream:
+
+```python
+from labox.core import load_one
+
+async with new_async_session() as session:
+    loaded_obj = await load_one(record, ExperimentData, session=session, registry=registry)
+    async for df in loaded_obj.result_stream:
+        ...
+```
+
+However, since streams can hold onto resources (like file handles or network
+connections), you may optionall pass an [`AsyncExitStack`][contextlib.AsyncExitStack] to
+the loader which will define the lifetime of any streams within the storable.
+Specifically, the stack will ensure that the
+[`aclose`](https://peps.python.org/pep-0525/#finalization) method of any underlying
+generators is called when the exit stack is closed.
 
 ```python
 from contextlib import AsyncExitStack
 
 from labox.core import load_one
 
-async with AsyncExitStack() as stack, new_async_session() as session:
+async with (
+    AsyncExitStack() as stack,
+    new_async_session() as session,
+):
     loaded_obj = await load_one(
         record,
         ExperimentData,
