@@ -28,8 +28,8 @@ async def assert_save_load_equivalence(
     session: AsyncSession,
     assertion: Callable[[S, S], None] = _default_compare,
 ) -> None:
-    async with new_saver(session=session, registry=registry) as ms:
-        future_record = ms.save_soon(obj)
+    async with new_saver(session=session, registry=registry) as saver:
+        future_record = saver.save_soon(obj)
 
     record = await _get_realistic_manifest_record(session, future_record.value)
 
@@ -47,8 +47,8 @@ async def assert_save_load_stream_equivalence(
     assertion: Callable[[S, S], Awaitable[None] | None] = _default_compare,
 ) -> None:
     original_obj = make_storable()
-    async with new_saver(session=session, registry=registry) as ms:
-        future_record = ms.save_soon(original_obj)
+    async with new_saver(session=session, registry=registry) as saver:
+        future_record = saver.save_soon(original_obj)
 
     record = await _get_realistic_manifest_record(session, future_record.value)
 

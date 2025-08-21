@@ -140,8 +140,8 @@ objs = [
     ),
 ]
 async with new_async_session() as session:
-    async with new_saver(session=session, registry=registry) as ms:
-        futures = [ms.save_soon(s) for s in objs]
+    async with new_saver(session=session, registry=registry) as saver:
+        futures = [saver.save_soon(s) for s in objs]
     records = [f.value for f in futures]
 ```
 
@@ -172,11 +172,11 @@ class ExperimentData(StorableModel):
 ```
 
 1. Pydantic allows you to
-    [annotate types](https://docs.pydantic.dev/2.11/concepts/types/#using-the-annotated-pattern)
-    with additional metadata. In this case, a
-    [`ContentSpec`](../integrations/3rd-party/pydantic.md#content-specs) is used to
-    specify that the `DataFrameStream` must be serialized with a
-    [`ParquetDataFrameStreamSerializer`][labox.extra.pandas.ParquetDataFrameStreamSerializer].
+   [annotate types](https://docs.pydantic.dev/2.11/concepts/types/#using-the-annotated-pattern)
+   with additional metadata. In this case, a
+   [`ContentSpec`](../integrations/3rd-party/pydantic.md#content-specs) is used to
+   specify that the `DataFrameStream` must be serialized with a
+   [`ParquetDataFrameStreamSerializer`][labox.extra.pandas.ParquetDataFrameStreamSerializer].
 
 Saving a storable with a stream looks identical to doing so for one without a stream.
 
