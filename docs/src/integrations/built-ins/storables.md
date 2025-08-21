@@ -1,6 +1,7 @@
 # Storables
 
-Labox provides a handful of built-in storables. Most notably for dataclasses.
+Labox provides a handful of built-in [storables](../../concepts/storables.md). Most
+notably for dataclasses.
 
 ## Dataclasses
 

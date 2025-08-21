@@ -17,6 +17,7 @@ from google.cloud.storage.fileio import DEFAULT_CHUNK_SIZE
 from google.cloud.storage.fileio import BlobReader
 from google.cloud.storage.fileio import BlobWriter
 
+from labox._internal._logging import PrefixLogger
 from labox._internal._temp_path import make_path_from_digest
 from labox._internal._temp_path import make_temp_path
 from labox.common.exceptions import NoStorageData
@@ -89,6 +90,7 @@ class BlobStorage(Storage["BlobPointer"]):
         self._object_chunk_size = object_chunk_size
         self._writer_type = writer_type
         self._reader_type = reader_type
+        self._log = PrefixLogger(_LOG, self)
 
     async def write_data(
         self,
@@ -98,7 +100,7 @@ class BlobStorage(Storage["BlobPointer"]):
     ) -> BlobPointer:
         """Save the given data."""
         pointer = self._storage_router(digest, tags, temp=False)
-        _LOG.debug("Saving data to %s", pointer)
+        self._log.debug("saving data to %s", pointer)
         bucket = self._storage_client.bucket(
             pointer["bucket"],
             user_project=pointer.get("user_project"),
@@ -111,7 +113,7 @@ class BlobStorage(Storage["BlobPointer"]):
 
     async def read_data(self, pointer: BlobPointer) -> bytes:
         """Load data from the given location."""
-        _LOG.debug("Loading data from %s", pointer)
+        self._log.debug("loading data from %s", pointer)
         bucket = self._storage_client.bucket(
             pointer["bucket"], user_project=pointer.get("user_project")
         )
@@ -139,7 +141,7 @@ class BlobStorage(Storage["BlobPointer"]):
             user_project=temp_pointer.get("user_project"),
         )
         temp_blob = bucket.blob(temp_pointer["blob"], chunk_size=self._object_chunk_size)
-        _LOG.debug("Temporarily saving data to %s", temp_pointer)
+        self._log.debug("temporarily saving data to %s", temp_pointer)
         temp_blob.metadata = tags
         writer = self._writer_type(temp_blob, content_type=initial_digest["content_type"])
         try:
@@ -153,7 +155,7 @@ class BlobStorage(Storage["BlobPointer"]):
 
         try:
             final_pointer = self._storage_router(get_digest(), tags, temp=False)
-            _LOG.debug("Moving data to final location %s", final_pointer)
+            self._log.debug("moving data to final location %s", final_pointer)
 
             bucket = self._storage_client.bucket(
                 final_pointer["bucket"],
@@ -169,14 +171,14 @@ class BlobStorage(Storage["BlobPointer"]):
                 if_generation_match=0,
             )
         finally:
-            _LOG.debug("Deleting temporary data %s", temp_blob.name)
+            self._log.debug("deleting temporary data %s", temp_blob.name)
             await self._to_thread(temp_blob.delete)
 
         return final_pointer
 
     async def read_data_stream(self, pointer: BlobPointer) -> AsyncGenerator[bytes]:
         """Load a data stream from the given location."""
-        _LOG.debug("Loading data stream from %s", pointer)
+        self._log.debug("loading data stream from %s", pointer)
         bucket = self._storage_client.bucket(
             pointer["bucket"],
             user_project=pointer.get("user_project"),

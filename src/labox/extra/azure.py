@@ -10,6 +10,7 @@ from anyio import CapacityLimiter
 from azure.core.exceptions import ResourceNotFoundError
 from azure.storage.blob import ContentSettings
 
+from labox._internal._logging import PrefixLogger
 from labox._internal._temp_path import make_path_from_digest
 from labox._internal._temp_path import make_temp_path
 from labox.common.exceptions import NoStorageData
@@ -71,6 +72,7 @@ class BlobStorage(Storage["BlobPointer"]):
         self._blob_router = blob_router or _read_only(self)
         self._path_prefix = path_prefix
         self._limiter = CapacityLimiter(max_concurrency) if max_concurrency else None
+        self._log = PrefixLogger(_LOG, self)
 
     async def write_data(
         self,
@@ -80,7 +82,7 @@ class BlobStorage(Storage["BlobPointer"]):
     ) -> BlobPointer:
         """Save the given value data."""
         pointer = self._blob_router(digest, tags, temp=False)
-        _LOG.debug("Saving data to %s", pointer)
+        self._log.debug("saving data to %s", pointer)
         blob_client = self._service_client.get_blob_client(
             container=pointer["container"], blob=pointer["blob"]
         )
@@ -96,7 +98,7 @@ class BlobStorage(Storage["BlobPointer"]):
 
     async def read_data(self, pointer: BlobPointer) -> bytes:
         """Load data from the given location."""
-        _LOG.debug("Loading data from %s", pointer)
+        self._log.debug("loading data from %s", pointer)
         blob_client = self._service_client.get_blob_client(
             container=pointer["container"], blob=pointer["blob"]
         )
@@ -116,7 +118,7 @@ class BlobStorage(Storage["BlobPointer"]):
         """Save the given data stream."""
         initial_digest = get_digest(allow_incomplete=True)
         temp_pointer = self._blob_router(initial_digest, tags, temp=True)
-        _LOG.debug("Temporarily saving data to %s", temp_pointer)
+        self._log.debug("temporarily saving data to %s", temp_pointer)
 
         temp_blob_client = self._service_client.get_blob_client(
             container=temp_pointer["container"], blob=temp_pointer["blob"]
@@ -131,20 +133,20 @@ class BlobStorage(Storage["BlobPointer"]):
         )
         try:
             final_pointer = self._blob_router(get_digest(), tags, temp=False)
-            _LOG.debug("Moving data to final location %s", final_pointer)
+            self._log.debug("moving data to final location %s", final_pointer)
             final_blob_client = self._service_client.get_blob_client(
                 container=final_pointer["container"], blob=final_pointer["blob"]
             )
             await final_blob_client.start_copy_from_url(temp_blob_client.url, requires_sync=True)
         finally:
-            _LOG.debug("Deleting temporary data %s", temp_pointer)
+            self._log.debug("deleting temporary data %s", temp_pointer)
             await temp_blob_client.delete_blob()
 
         return final_pointer
 
     async def read_data_stream(self, pointer: BlobPointer) -> AsyncGenerator[bytes]:
         """Load a data stream from the given location."""
-        _LOG.debug("Loading data stream from %s", pointer)
+        self._log.debug("loading data stream from %s", pointer)
         blob_client = self._service_client.get_blob_client(
             container=pointer["container"], blob=pointer["blob"]
         )
