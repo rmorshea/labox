@@ -168,7 +168,7 @@ DataFrameStream = Annotated[
 class ExperimentData(StorableModel):
     description: str
     parameters: dict[str, float]
-    results: DataFrameStream
+    result_stream: DataFrameStream
 ```
 
 1. Pydantic allows you to
@@ -192,7 +192,7 @@ async def generate_dataframes() -> AsyncIterable[pd.DataFrame]:
 experiment = ExperimentData(
     description="Time Series Experiment",
     parameters={"sampling_rate": 1.0},
-    results=generate_dataframes(),
+    result_stream=generate_dataframes(),
 )
 
 async with new_async_session() as session:
@@ -242,7 +242,7 @@ async with new_async_session() as session:
 In contrast to [saving with streams](#saving-with-streams), loading a storable with a
 stream requires a bit of extra work in order to ensure underlying resources held by
 streams are properly cleaned up. Specifically, you need to pass an
-[`AsyncExitStack`][contextlib.AsyncExitStack] to the loaderin order to define the
+[`AsyncExitStack`][contextlib.AsyncExitStack] to the loader in order to define the
 lifetime of any streams within the storable.
 
 ```python
@@ -250,16 +250,16 @@ from contextlib import AsyncExitStack
 
 from labox.core import load_one
 
-async with AsyncExitStack() as context, new_async_session() as session:
+async with AsyncExitStack() as stack, new_async_session() as session:
     loaded_obj = await load_one(
         record,
         ExperimentData,
         session=session,
         registry=registry,
-        context=context,
+        stack=stack,
     )
     # Use the stream inside the context
-    stream = loaded_obj.results
+    stream = loaded_obj.result_stream
 
 # After the context exits, the stream will have been closed.
 ```

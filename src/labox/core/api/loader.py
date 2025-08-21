@@ -54,10 +54,10 @@ async def load_one(
     *,
     registry: Registry,
     session: AsyncSession,
-    context: AsyncExitStack | None = None,
+    stack: AsyncExitStack | None = None,
 ) -> S:
     """Load a single object from the given manifest record."""
-    async with new_loader(registry, session, context=context) as loader:
+    async with new_loader(registry, session, stack=stack) as loader:
         future = loader.load_soon(manifest, cls)
     return future.value
 
@@ -66,7 +66,7 @@ async def load_one(
 async def new_loader(
     registry: Registry,
     session: AsyncSession,
-    context: AsyncExitStack | None = None,
+    stack: AsyncExitStack | None = None,
 ) -> AsyncIterator[DataLoader]:
     """Create a context manager for saving data."""
     content_req_sender, content_req_receiver = create_memory_object_stream[_ContentRequest]()
@@ -83,7 +83,7 @@ async def new_loader(
                 _handle_storable_requests,
                 storable_req_receiver,
                 registry,
-                context,
+                stack,
             )
             async with create_task_group() as loader_tg:
                 yield _DataLoader(loader_tg, content_req_sender)
@@ -99,7 +99,7 @@ async def load_manifest_record(
     /,
     *,
     registry: Registry,
-    context: AsyncExitStack | None = None,
+    stack: AsyncExitStack | None = None,
 ) -> Storable:
     """Load an object from the given manifest record."""
     unpacker = registry.get_unpacker(manifest.unpacker_name)
@@ -113,7 +113,7 @@ async def load_manifest_record(
                 load_content_record,
                 c,
                 registry=registry,
-                context=context,
+                stack=stack,
             )
 
     return unpacker.repack_object(
@@ -127,7 +127,7 @@ async def load_content_record(
     record: ContentRecord,
     *,
     registry: Registry,
-    context: AsyncExitStack | None = None,
+    stack: AsyncExitStack | None = None,
 ) -> UnpackedValue | UnpackedValueStream:
     """Load the given content from the given record."""
     storage = registry.get_storage(record.storage_name)
@@ -149,7 +149,7 @@ async def load_content_record(
                 "storage": storage,
             }
         case SerializerTypeEnum.StreamSerializer:
-            if context is None:
+            if stack is None:
                 msg = (
                     "Attempted to load stream without a `context` argument - this gives the user "
                     "responsibility and control over when underlying async generators are closed."
@@ -162,7 +162,7 @@ async def load_content_record(
 
             data_stream = storage.read_data_stream(storage_data)
             # user needs to ensure the stream is closed when done
-            context.push_async_callback(data_stream.aclose)
+            stack.push_async_callback(data_stream.aclose)
 
             stream = serializer.deserialize_data_stream(
                 {
@@ -173,7 +173,7 @@ async def load_content_record(
                 }
             )
             # user needs to ensure the stream is closed when done
-            context.push_async_callback(stream.aclose)
+            stack.push_async_callback(stream.aclose)
 
             return {
                 "value_stream": stream,
@@ -237,7 +237,7 @@ async def _handle_content_requests(
 async def _handle_storable_requests(
     receive_stream: MemoryObjectReceiveStream[_StorableRequest],
     registry: Registry,
-    context: AsyncExitStack | None = None,
+    stack: AsyncExitStack | None = None,
 ) -> None:
     with receive_stream:
         async with create_task_group() as tg:
@@ -260,7 +260,7 @@ async def _handle_storable_requests(
                     manifest,
                     contents,
                     registry=registry,
-                    context=context,
+                    stack=stack,
                 )
 
 

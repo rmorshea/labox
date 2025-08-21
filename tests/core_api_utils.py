@@ -52,8 +52,8 @@ async def assert_save_load_stream_equivalence(
 
     record = await _get_realistic_manifest_record(session, future_record.value)
 
-    async with AsyncExitStack() as context:
-        async with new_loader(session=session, registry=registry, context=context) as ml:
+    async with AsyncExitStack() as stack:
+        async with new_loader(session=session, registry=registry, stack=stack) as ml:
             future_obj = ml.load_soon(record, type(original_obj))
         loaded_obj = future_obj.value
 
