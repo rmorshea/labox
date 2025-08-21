@@ -7,13 +7,16 @@ Labox.
 
 The database storage is a built-in storage that saves content under the JSON (JSONB for
 PostgreSQL) `storage_config` column of a
-[`ContentRecord`](../../concepts/database.md#content-records). This means that this
-storage is limited to saving JSON data. To enforce this the storage checks that the
-`content_type` is set to `application/json` or the same with an extension (e.g.
-`application/json+x-labox`). This storage also enforces a maximum size for the content
-is saves since direct storage in the database is not recommended for large artifacts. By
-default the max size is 100kb with a warning at 10kb. You can configure thismaximum size
-by passing a `warn_size` and/or `error_size` to the
+[`ContentRecord`](../../concepts/database.md#content-records). This storage is best used
+when the content is small and needs to be leveraged when querying the database.
+
+Because the content is held in a JSON (or JSONB) column, this storage is limited to
+saving JSON data. To enforce this the storage checks that the `content_type` is set to
+`application/json` or the same with an extension (e.g. `application/json+x-labox`). This
+storage also enforces a maximum size for the content it saves since direct storage in
+the database is not recommended for large artifacts. By default the max size is 100kb
+with a warning at 10kb. You can configure this maximum size by passing a `warn_size`
+and/or `error_size` to the
 [`DatabaseStorage`][labox.builtin.storages.database.DatabaseStorage] constructor.
 
 ```python

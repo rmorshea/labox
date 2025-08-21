@@ -1,6 +1,7 @@
 # Serializers
 
-Labox provides built-in serializers for various data types.
+Labox provides built-in [serializers](../../concepts/serializers.md) for various stdlib
+data types.
 
 ## JSON
 
