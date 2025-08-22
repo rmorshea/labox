@@ -26,11 +26,11 @@ BaseRecord.create_all(engine).run()
 
 ## Registry Setup
 
-When saving and loading data, Labox makes use of [registry](../concepts/registry.md) to
-know what [storables](../concepts/storables.md), [unpackers](../concepts/unpackers.md),
-and [serializers](../concepts/serializers.md) and [storages](../concepts/storages.md)
-are available. A quick way to set up a registry is to construct it from the modules
-where these components are defined.
+When saving and loading data, Labox makes use of a [registry](../concepts/registry.md)
+to know what [storables](../concepts/storables.md),
+[unpackers](../concepts/unpackers.md), and [serializers](../concepts/serializers.md) and
+[storages](../concepts/storages.md) are available. A quick way to set up a registry is
+to construct it from the modules where these components are defined.
 
 ```python
 from labox import Registry
