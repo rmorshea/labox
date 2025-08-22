@@ -19,10 +19,13 @@ A default instance of the serializer is available by importing
 
 ```python
 import numpy as np
-from labox.extra.imageio import Media, media_serializer
+
+from labox.extra.imageio import Media
+from labox.extra.imageio import media_serializer
 
 # Create media data - can be a single array or sequence of arrays
-image_data = np.random.randint(0, 255, (100, 100, 3), dtype=np.uint8)
+gen = np.random.Generator(np.random.PCG64())
+image_data = gen.integers(0, 255, (100, 100, 3), dtype=np.uint8)
 media = Media(data=image_data, extension=".png")
 
 media_serializer.serialize_data(media)
@@ -32,10 +35,11 @@ You can also create a custom instance with specific MIME type configuration:
 
 ```python
 from mimetypes import MimeTypes
+
 from labox.extra.imageio import MediaSerializer
 
 custom_mimetypes = MimeTypes()
-custom_mimetypes.add_type('image/webp', '.webp')
+custom_mimetypes.add_type("image/webp", ".webp")
 
 serializer = MediaSerializer(mimetypes=custom_mimetypes)
 ```
@@ -50,19 +54,19 @@ from labox.extra.imageio import Media
 # Single image
 image = Media(
     data=image_array,
-    extension=".jpg"  # Will determine content type automatically
+    extension=".jpg",  # Will determine content type automatically
 )
 
 # Video or image sequence
 video = Media(
     data=[frame1, frame2, frame3],  # Sequence of arrays
-    extension=".mp4"
+    extension=".mp4",
 )
 
 # Using specific plugin instead of extension
 media = Media(
     data=image_array,
-    plugin="PNG-PIL"  # Use specific ImageIO plugin
+    plugin="PNG-PIL",  # Use specific ImageIO plugin
 )
 ```
 
@@ -70,9 +74,9 @@ media = Media(
 
 The serializer supports any format that ImageIO can handle, including:
 
--   **Images**: PNG, JPEG, GIF, TIFF, BMP, WebP, and many others
--   **Videos**: MP4, AVI, MOV, WebM (when appropriate codecs are available)
--   **Scientific formats**: DICOM, FIT, and other specialized formats
+- **Images**: PNG, JPEG, GIF, TIFF, BMP, WebP, and many others
+- **Videos**: MP4, AVI, MOV, WebM (when appropriate codecs are available)
+- **Scientific formats**: DICOM, FIT, and other specialized formats
 
 Format selection can be controlled in two ways:
 
