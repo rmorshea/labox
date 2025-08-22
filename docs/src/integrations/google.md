@@ -8,11 +8,12 @@
 
 The [`BlobStorage`][labox.extra.google.BlobStorage] provides a
 [storage](../concepts/storages.md) implementation backed by
-[Google Cloud Storage](https://cloud.google.com/storage) using the [`google-cloud-storage`][google-cloud-storage] client.
+[Google Cloud Storage](https://cloud.google.com/storage) using the storage
+[`Client`][google.cloud.storage.client.Client].
 
-A minimal setup for the `BlobStorage` requires a storage client and a "router" function that
-tells the storage in what bucket and under what path each piece of content should be
-saved:
+A minimal setup for the `BlobStorage` requires a storage client and a "router" function
+that tells the storage in what bucket and under what path each piece of content should
+be saved:
 
 ```python
 from google.cloud.storage import Client
@@ -27,8 +28,8 @@ blob_storage = BlobStorage(
 ```
 
 The `simple_blob_router` requires a bucket name and an optional `prefix` that blobs
-should be added under. If no `storage_router` is provided the storage becomes read-only and
-attempts to write to it will produce a `NotImplementedError`.
+should be added under. If no `storage_router` is provided the storage becomes read-only
+and attempts to write to it will produce a `NotImplementedError`.
 
 ### Blob Router
 
@@ -64,12 +65,11 @@ Where `uuid` is a [`uuid4`][uuid.uuid4] hex string.
 
 When data is being streamed to a `BlobStorage`, the content is first uploaded to a
 temporary location within the bucket. Since the hash of the content is not known
-upfront, a temporary location is requested from the storage's
-[router](#blob-router) by passing it `temp=True`. When the upload is complete a final
-location is requested from the router without the `temp` flag. The data is then copied
-from the temporary location to the final location using Google Cloud Storage's server-side
-copy operation with generation preconditions to avoid race conditions, and the temporary
-blob is deleted.
+upfront, a temporary location is requested from the storage's [router](#blob-router) by
+passing it `temp=True`. When the upload is complete a final location is requested from
+the router without the `temp` flag. The data is then copied from the temporary location
+to the final location using Google Cloud Storage's server-side copy operation with
+generation preconditions to avoid race conditions, and the temporary blob is deleted.
 
 ### Cloud Storage Details
 
@@ -79,7 +79,7 @@ threads using [`anyio.to_thread.run_sync`][anyio.to_thread.run_sync]. To limit t
 number of threads spawned use the `max_readers` and `max_writers` parameters when
 constructing the `BlobStorage` instance.
 
-The storage supports customizable chunk sizes via the `object_chunk_size` parameter
-and allows overriding the default reader and writer types through the `reader_type`
-and `writer_type` parameters for advanced use cases. Metadata from storage tags is
+The storage supports customizable chunk sizes via the `object_chunk_size` parameter and
+allows overriding the default reader and writer types through the `reader_type` and
+`writer_type` parameters for advanced use cases. Metadata from storage tags is
 automatically applied to blobs for enhanced organization and retrieval.

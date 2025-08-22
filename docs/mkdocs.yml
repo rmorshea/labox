@@ -82,7 +82,6 @@ plugins:
             - https://docs.pydantic.dev/latest/objects.inv
             - https://docs.python.org/3/objects.inv
             - https://googleapis.dev/python/storage/latest/objects.inv
-            - https://googleapis.dev/python/storage/latest/objects.inv
             - https://imageio.readthedocs.io/en/stable/objects.inv
             - https://msgpack-python.readthedocs.io/en/latest/objects.inv
             - https://numpy.org/doc/stable/objects.inv
@@ -90,6 +89,7 @@ plugins:
             - https://plotly.com/python-api-reference/objects.inv
             - https://pola-rs.github.io/polars/py-polars/html/objects.inv
             - https://anyio.readthedocs.io/en/stable/objects.inv
+            - https://azuresdkdocs.z19.web.core.windows.net/python/azure-storage-blob/12.26.0/objects.inv
           paths: [src]
           options:
             docstring_options:

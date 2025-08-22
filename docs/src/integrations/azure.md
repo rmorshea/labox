@@ -9,7 +9,7 @@
 The [`BlobStorage`][labox.extra.azure.BlobStorage] provides a
 [storage](../concepts/storages.md) implementation backed by
 [Azure Blob Storage](https://azure.microsoft.com/en-us/products/storage/blobs/) using
-the [`azure-storage-blob`][azure-storage-blob] client.
+the [`BlobServiceClient`][azure.storage.blob.aio.BlobServiceClient] client.
 
 A minimal setup for the `BlobStorage` requires a blob service client and a "router"
 function that tells the storage in what container and under what path each piece of
@@ -23,8 +23,7 @@ from labox.extra.azure import simple_blob_router
 
 blob_storage = BlobStorage(
     service_client=BlobServiceClient(
-        account_url="https://myaccount.blob.core.windows.net",
-        credential="<your-credential>"
+        account_url="https://myaccount.blob.core.windows.net", credential="<your-credential>"
     ),
     blob_router=simple_blob_router("my-container"),
 )
@@ -39,9 +38,9 @@ attempts to write to it will produce a `NotImplementedError`.
 A [`BlobRouter`][labox.extra.azure.BlobRouter] is a function that returns a
 [`BlobPointer`][labox.extra.azure.BlobPointer] dict given:
 
--   a [digest](../concepts/storages.md#content-digest)
--   a [tag map](../concepts/storages.md#storage-tags)
--   and a `temp` flag indicating whether the content being written will be deleted after
+- a [digest](../concepts/storages.md#content-digest)
+- a [tag map](../concepts/storages.md#storage-tags)
+- and a `temp` flag indicating whether the content being written will be deleted after
     use (this happens for [streaming uploads](#blob-streamed-uploads)).
 
 The `simple_blob_router` creates paths of the form:
@@ -52,9 +51,9 @@ The `simple_blob_router` creates paths of the form:
 
 Where:
 
--   `prefix` is the optionally provided path prefix
--   `content_hash` comes from the `Digest` passed to the router function
--   `ext` is the file extension inferred from the `content_type` within the `Digest`
+- `prefix` is the optionally provided path prefix
+- `content_hash` comes from the `Digest` passed to the router function
+- `ext` is the file extension inferred from the `content_type` within the `Digest`
 
 In the case the `temp` flag is true `simple_blob_router` creates a path of the form:
 
