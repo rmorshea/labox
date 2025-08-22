@@ -6,7 +6,6 @@ from typing import Protocol
 from typing import TypedDict
 from weakref import ref
 
-from anyio import CapacityLimiter
 from azure.core.exceptions import ResourceNotFoundError
 from azure.storage.blob import ContentSettings
 
@@ -66,12 +65,10 @@ class BlobStorage(Storage["BlobPointer"]):
         service_client: BlobServiceClient,
         blob_router: BlobRouter | None,
         path_prefix: str = "",
-        max_concurrency: int | None = None,
     ):
         self._service_client = service_client
         self._blob_router = blob_router or _read_only(self)
         self._path_prefix = path_prefix
-        self._limiter = CapacityLimiter(max_concurrency) if max_concurrency else None
         self._log = PrefixLogger(_LOG, self)
 
     async def write_data(

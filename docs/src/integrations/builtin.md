@@ -2,17 +2,16 @@
 
 ## Storables
 
-Labox provides a handful of built-in [storables](../../concepts/storables.md). Most
-notably for dataclasses.
+Labox provides a handful of built-in [storables](../concepts/storables.md). Most notably
+for dataclasses.
 
 ### Dataclasses
 
 Labox provides a base
 [`StorableDataclass`][labox.builtin.storables.dataclasses.StorableDataclass] class that
-can be added to a dataclass to make it
-[storable](../../usage/index.md#saving-storables). After inheriting from this base class
-each field metadata can be used to specify an explicit serializer and storage for that
-field.
+can be added to a dataclass to make it [storable](../usage/index.md#saving-storables).
+After inheriting from this base class each field metadata can be used to specify an
+explicit serializer and storage for that field.
 
 ```python
 from dataclasses import dataclass
@@ -28,7 +27,7 @@ class MyDataClass(StorableDataclass):
 ```
 
 Ultimately a dataclass is stored under one or more
-[`ContentRecord`s](../../concepts/database.md#content-records). The majority of the
+[`ContentRecord`s](../concepts/database.md#content-records). The majority of the
 dataclass is stored in a "body" record, which is nominally a JSON serializable object.
 The serializer and storage for this body record can be customized by overriding the
 [`storable_body_serializer`][labox.builtin.storables.dataclasses.StorableDataclass.storable_body_serializer]
@@ -37,16 +36,15 @@ and/or
 methods in the dataclass itself.
 
 Fields within the dataclass are stored within this same body record unless they have a
-separate `storage` or
-[stream serializer](../../concepts/serializers.md#stream-serializers) specified in their
-metadata.
+separate `storage` or [stream serializer](../concepts/serializers.md#stream-serializers)
+specified in their metadata.
 
 ### Simple Values
 
 If all you need to do is store a single value you can do so using the
 [`StorableValue`][labox.builtin.storables.simple.StorableValue] class. In addition to
 the value you want to save you can manually specify its
-[serializer](../../concepts/serializers.md) and [storage](../../concepts/storages.md):
+[serializer](../concepts/serializers.md) and [storage](../concepts/storages.md):
 
 ```python
 from labox.builtin import JsonSerializer
@@ -72,7 +70,7 @@ storable = StorableStream(value="Hello, World!", serializer=JsonStreamSerializer
 
 ## Serializers
 
-Labox provides built-in [serializers](../../concepts/serializers.md) for various stdlib
+Labox provides built-in [serializers](../concepts/serializers.md) for various stdlib
 data types.
 
 ### JSON
@@ -125,14 +123,14 @@ from labox.builtin import iso8601_serializer
 
 ## Storages
 
-A few built-in [storage](../../concepts/storages.md) implementations are available in
+A few built-in [storage](../concepts/storages.md) implementations are available in
 Labox.
 
 ### Database Storage
 
 The database storage is a built-in storage that saves content under the JSON (JSONB for
 PostgreSQL) `storage_config` column of a
-[`ContentRecord`](../../concepts/database.md#content-records). This storage is best used
+[`ContentRecord`](../concepts/database.md#content-records). This storage is best used
 when the content is small and needs to be leveraged when querying the database.
 
 Because the content is held in a JSON (or JSONB) column, this storage is limited to

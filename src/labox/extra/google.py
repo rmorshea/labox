@@ -80,13 +80,15 @@ class BlobStorage(Storage["BlobPointer"]):
         storage_client: Client,
         storage_router: BlobRouter | None,
         object_chunk_size: int = DEFAULT_CHUNK_SIZE,
-        max_concurrency: int | None = None,
+        max_writers: int | None = None,
+        max_readers: int | None = None,
         writer_type: WriterType = BlobWriter,
         reader_type: ReaderType = BlobReader,
     ):
         self._storage_client = storage_client
         self._storage_router = storage_router or _read_only(self)
-        self._limiter = CapacityLimiter(max_concurrency) if max_concurrency else None
+        self._write_limiter = CapacityLimiter(max_writers) if max_writers else None
+        self._read_limiter = CapacityLimiter(max_readers) if max_readers else None
         self._object_chunk_size = object_chunk_size
         self._writer_type = writer_type
         self._reader_type = reader_type
@@ -108,7 +110,7 @@ class BlobStorage(Storage["BlobPointer"]):
         blob = bucket.blob(pointer["blob"], chunk_size=self._object_chunk_size)
         blob.metadata = tags
         writer = self._writer_type(blob, content_type=digest["content_type"])
-        await self._to_thread(writer.write, data)
+        await self._to_thread(self._write_limiter, writer.write, data)
         return pointer
 
     async def read_data(self, pointer: BlobPointer) -> bytes:
@@ -120,7 +122,7 @@ class BlobStorage(Storage["BlobPointer"]):
         reader = self._reader_type(bucket.blob(pointer["blob"], chunk_size=self._object_chunk_size))
         with closing(reader) as reader:
             try:
-                return await self._to_thread(reader.read)
+                return await self._to_thread(self._read_limiter, reader.read)
             except NotFound as error:
                 msg = f"Failed to load value from {pointer}"
                 raise NoStorageData(msg) from error
@@ -146,12 +148,12 @@ class BlobStorage(Storage["BlobPointer"]):
         writer = self._writer_type(temp_blob, content_type=initial_digest["content_type"])
         try:
             async for chunk in data_stream:
-                await self._to_thread(writer.write, chunk)
+                await self._to_thread(self._write_limiter, writer.write, chunk)
         except Exception:
-            await self._to_thread(temp_blob.delete)
+            await self._to_thread(self._write_limiter, temp_blob.delete)
             raise
         finally:
-            await self._to_thread(writer.close)
+            await self._to_thread(self._write_limiter, writer.close)
 
         try:
             final_pointer = self._storage_router(get_digest(), tags, temp=False)
@@ -162,6 +164,7 @@ class BlobStorage(Storage["BlobPointer"]):
                 user_project=final_pointer.get("user_project"),
             )
             await self._to_thread(
+                self._write_limiter,
                 bucket.copy_blob,
                 temp_blob,
                 bucket,
@@ -172,7 +175,7 @@ class BlobStorage(Storage["BlobPointer"]):
             )
         finally:
             self._log.debug("deleting temporary data %s", temp_blob.name)
-            await self._to_thread(temp_blob.delete)
+            await self._to_thread(self._write_limiter, temp_blob.delete)
 
         return final_pointer
 
@@ -186,7 +189,11 @@ class BlobStorage(Storage["BlobPointer"]):
         blob = bucket.blob(pointer["blob"], chunk_size=self._object_chunk_size)
         with closing(self._reader_type(blob)) as reader:
             try:
-                while chunk := await self._to_thread(reader.read, self._object_chunk_size):
+                while chunk := await self._to_thread(
+                    self._read_limiter,
+                    reader.read,
+                    self._object_chunk_size,
+                ):
                     yield chunk
             except NotFound as error:
                 msg = f"Failed to load stream from {pointer}"
@@ -194,11 +201,12 @@ class BlobStorage(Storage["BlobPointer"]):
 
     def _to_thread(
         self,
+        limiter: CapacityLimiter | None,
         func: Callable[P, R],
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> Coroutine[None, None, R]:
-        return run_sync(lambda: func(*args, **kwargs), limiter=self._limiter)
+        return run_sync(lambda: func(*args, **kwargs), limiter=limiter)
 
 
 class WriterType(Protocol):

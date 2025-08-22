@@ -78,7 +78,17 @@ def simple_s3_router(
 
 
 class S3Storage(Storage["S3Pointer"]):
-    """Storage for S3 data."""
+    """Storage for S3 data.
+
+    Args:
+        s3_client: The S3 client to use for storage operations.
+        s3_router: The S3 router to use for mapping digests to S3 pointers.
+        max_writers: The maximum number of concurrent writes to S3.
+        max_readers: The maximum number of concurrent reads from S3.
+        stream_writer_min_part_size: The minimum part size written to S3 while streaming.
+        stream_writer_buffer_type: The buffer type to use for streaming writes.
+        stream_reader_max_part_size: The maximum part size read from S3 while streaming.
+    """
 
     name = "labox.aws.s3@v1"
 
@@ -87,10 +97,11 @@ class S3Storage(Storage["S3Pointer"]):
         *,
         s3_client: S3Client,
         s3_router: S3Router | None,
-        max_concurrency: int | None = None,
+        max_writers: int | None = None,
+        max_readers: int | None = None,
         stream_writer_min_part_size: int = _5MB,
         stream_writer_buffer_type: StreamBufferType = lambda: SpooledTemporaryFile(max_size=_5MB),  # noqa: SIM115
-        stream_reader_part_size: int = _5MB,
+        stream_reader_max_part_size: int = _5MB,
     ):
         if not (_5MB <= stream_writer_min_part_size <= _5GB):
             msg = (
@@ -101,10 +112,11 @@ class S3Storage(Storage["S3Pointer"]):
             raise ValueError(msg)
         self._client = s3_client
         self._router = s3_router or _read_only(self)
-        self._limiter = CapacityLimiter(max_concurrency) if max_concurrency else None
+        self._write_limiter = CapacityLimiter(max_writers) if max_writers else None
+        self._read_limiter = CapacityLimiter(max_readers) if max_readers else None
         self._stream_writer_min_part_size = stream_writer_min_part_size
         self._stream_writer_buffer_type = stream_writer_buffer_type
-        self._stream_reader_part_size = stream_reader_part_size
+        self._stream_reader_max_part_size = stream_reader_max_part_size
 
     async def write_data(
         self,
@@ -123,7 +135,11 @@ class S3Storage(Storage["S3Pointer"]):
         }
         if digest["content_encoding"]:
             put_request["ContentEncoding"] = digest["content_encoding"]
-        await self._to_thread(self._client.put_object, **put_request)
+        await self._to_thread(
+            self._write_limiter,
+            self._client.put_object,
+            **put_request,
+        )
         # include the bucket name in the location so this storage can
         # read from any bucket that the client has access to
         return pointer
@@ -132,6 +148,7 @@ class S3Storage(Storage["S3Pointer"]):
         """Load the value from the given location."""
         try:
             result = await self._to_thread(
+                self._read_limiter,
                 self._client.get_object,
                 Bucket=pointer["bucket"],
                 Key=pointer["key"],
@@ -171,7 +188,11 @@ class S3Storage(Storage["S3Pointer"]):
         if initial_digest["content_encoding"]:
             create_multipart_upload["ContentEncoding"] = initial_digest["content_encoding"]
         upload_id = (
-            await self._to_thread(self._client.create_multipart_upload, **create_multipart_upload)
+            await self._to_thread(
+                self._write_limiter,
+                self._client.create_multipart_upload,
+                **create_multipart_upload,
+            )
         )["UploadId"]
 
         with self._stream_writer_buffer_type() as buffer:
@@ -185,6 +206,7 @@ class S3Storage(Storage["S3Pointer"]):
                     etags.append(
                         (
                             await self._to_thread(
+                                self._write_limiter,
                                 self._client.upload_part,
                                 Bucket=temp_pointer["bucket"],
                                 Key=temp_pointer["key"],
@@ -198,6 +220,7 @@ class S3Storage(Storage["S3Pointer"]):
                     buffer.truncate()
                     part_num += 1
                 await self._to_thread(
+                    self._write_limiter,
                     self._client.complete_multipart_upload,
                     Bucket=temp_pointer["bucket"],
                     Key=temp_pointer["key"],
@@ -208,6 +231,7 @@ class S3Storage(Storage["S3Pointer"]):
                 )
             except Exception:
                 await self._to_thread(
+                    self._write_limiter,
                     self._client.abort_multipart_upload,
                     Bucket=temp_pointer["bucket"],
                     Key=temp_pointer["key"],
@@ -218,6 +242,7 @@ class S3Storage(Storage["S3Pointer"]):
             try:
                 final_pointer = self._router(get_digest(), tags, temp=False)
                 await self._to_thread(
+                    self._write_limiter,
                     self._client.copy_object,
                     Bucket=final_pointer["bucket"],
                     CopySource={"Bucket": temp_pointer["bucket"], "Key": temp_pointer["key"]},
@@ -226,6 +251,7 @@ class S3Storage(Storage["S3Pointer"]):
                 )
             finally:
                 await self._to_thread(
+                    self._write_limiter,
                     self._client.delete_object,
                     Bucket=temp_pointer["bucket"],
                     Key=temp_pointer["key"],
@@ -237,6 +263,7 @@ class S3Storage(Storage["S3Pointer"]):
         """Load the stream from the given location."""
         try:
             result = await self._to_thread(
+                self._read_limiter,
                 self._client.get_object,
                 Bucket=pointer["bucket"],
                 Key=pointer["key"],
@@ -248,18 +275,19 @@ class S3Storage(Storage["S3Pointer"]):
         async with create_task_group() as tg:
             with as_async_iterator(
                 tg,
-                result["Body"].iter_chunks(self._stream_reader_part_size),
+                result["Body"].iter_chunks(self._stream_reader_max_part_size),
             ) as chunks:
                 async for c in chunks:
                     yield c
 
     def _to_thread(
         self,
+        limiter: CapacityLimiter | None,
         func: Callable[P, R],
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> Coroutine[None, None, R]:
-        return run_sync(lambda: func(*args, **kwargs), limiter=self._limiter)
+        return run_sync(lambda: func(*args, **kwargs), limiter=limiter)
 
 
 class S3Pointer(TypedDict):

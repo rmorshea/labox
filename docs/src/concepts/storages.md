@@ -9,11 +9,11 @@ streams of data when subclassing the [`Storage`][labox.core.storage.Storage] bas
 To define a storage you need to implement the [`Storage`][labox.core.storage.Storage]
 interface with the following:
 
-- `name` - a string that uniquely and permanently identifies the storage.
-- `write_data` - a method that saves a single blob of data to the storage.
-- `read_data` - a method that reads a single blob of data from the storage.
-- `write_data_stream` - a method that saves a stream of data to the storage.
-- `read_data_stream` - a method that reads a stream of data from the storage.
+-   `name` - a string that uniquely and permanently identifies the storage.
+-   `write_data` - a method that saves a single blob of data to the storage.
+-   `read_data` - a method that reads a single blob of data from the storage.
+-   `write_data_stream` - a method that saves a stream of data to the storage.
+-   `read_data_stream` - a method that reads a stream of data from the storage.
 
 The code snippets below show a storage that saves data to files. You can start by
 implementing the `write_data` and `read_data` methods:
@@ -79,6 +79,16 @@ class FileStorage(Storage):
             while chunk := f.read(self._read_chunk_size):
                 yield chunk
 ```
+
+## Content Digest
+
+The [`Digest`][labox.core.storage.Digest] for a piece of content passed to the `write_*`
+methods of a storage provides extra information about the content (e.g. its size, type,
+and hash). In the case of streamed data a function
+([`GetStreamDigest`][labox.core.storage.GetStreamDigest]) to retrieve the digest is
+passed as an argument instead. If the stream has not been fully consumed
+`allow_incomplete=True` must be passed when retrieving the digest to avoid a
+`ValueError`.
 
 ## Best Practices
 
