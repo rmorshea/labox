@@ -59,7 +59,7 @@ accessible while allowing you to create new data with the updated.
 ## Class IDs
 
 The `class_id` within the [config][labox.core.storable.Storable.storable_config] of a
-`Storable` class uniquely identify it when saving and loading data. This is important
+`Storable` class uniquely identifies it when saving and loading data. This is important
 because it's how Labox knows which class to use when reconstituting data. That means you
 should **never copy or change this value** once it's been used to save production data.
 On the other hand you are free to rename the class or move it to a different module

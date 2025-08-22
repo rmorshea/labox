@@ -20,9 +20,8 @@ pip install labox[all]
 pip install labox[pydantic,pandas,aws]
 ```
 
-There's a [complete list of extras](./integrations/index.md) in the Integrations
-section, but be sure to checkout how Labox works with
-[Pydantic](./integrations/pydantic.md).
+Be sure to checkout how Labox works with [Pydantic](./integrations/pydantic.md) as well
+as all the other [integrations](./integrations/index.md) Labox offers.
 
 ## Basic Setup
 
@@ -75,7 +74,7 @@ experiment_data = {
 }
 ```
 
-Put that data in a [storable](./concepts/storables.md), in this case a
+Put that data in a [storable](./concepts/storables.md). In this case, a
 [Pydantic](./integrations/pydantic.md) model:
 
 ```python
@@ -94,7 +93,7 @@ experiment = ExperimentData(**experiment_data)
 
 !!! note
 
-    See [here](./concepts/storables.md#class-ids) for info on the details of class IDs.
+    See [here](./concepts/storables.md#class-ids) for info on the details of `class_id`.
 
 Save the data and return a [record](./concepts/database.md#manifest-records):
 
