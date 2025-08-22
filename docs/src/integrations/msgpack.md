@@ -4,14 +4,12 @@
 
     Install with `pip install labox[msgpack]`
 
-## MessagePack Serializers
-
 Labox provides two [serializers](../concepts/serializers.md) for the efficient
 [MessagePack](https://msgpack.org/) binary format: one for individual values and another
 for streams of values. MessagePack is a compact binary serialization format that's
 faster and more space-efficient than JSON while supporting similar data types.
 
-### Value Serializer
+## MsgPackSerializer
 
 The [`MsgPackSerializer`][labox.extra.msgpack.MsgPackSerializer] handles individual
 MessagePack values:
@@ -29,7 +27,7 @@ data = {
 msgpack_serializer.serialize_data(data)
 ```
 
-### Stream Serializer
+## MsgPackStreamSerializer
 
 The [`MsgPackStreamSerializer`][labox.extra.msgpack.MsgPackStreamSerializer] handles
 streams of MessagePack values, serializing each value separately in the stream:
@@ -47,7 +45,7 @@ async def generate_data():
 # The stream serializer handles async iterables of MessagePack data
 ```
 
-### Supported Data Types
+## Supported Data Types
 
 MessagePack serializers work with the types defined in
 [`MSG_PACK_TYPES`][labox.extra.msgpack.MSG_PACK_TYPES]:
@@ -59,7 +57,7 @@ MessagePack serializers work with the types defined in
 The [`MsgPackType`][labox.extra.msgpack.MsgPackType] type alias provides a recursive
 type definition for MessagePack-compatible data structures.
 
-### Custom Configuration
+## Custom Configuration
 
 Both serializers can be customized with different packer and unpacker implementations:
 
