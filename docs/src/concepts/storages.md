@@ -9,11 +9,11 @@ streams of data when subclassing the [`Storage`][labox.core.storage.Storage] bas
 To define a storage you need to implement the [`Storage`][labox.core.storage.Storage]
 interface with the following:
 
--   `name` - a string that uniquely and permanently identifies the storage.
--   `write_data` - a method that saves a single blob of data to the storage.
--   `read_data` - a method that reads a single blob of data from the storage.
--   `write_data_stream` - a method that saves a stream of data to the storage.
--   `read_data_stream` - a method that reads a stream of data from the storage.
+- `name` - a string that uniquely and permanently identifies the storage.
+- `write_data` - a method that saves a single blob of data to the storage.
+- `read_data` - a method that reads a single blob of data from the storage.
+- `write_data_stream` - a method that saves a stream of data to the storage.
+- `read_data_stream` - a method that reads a stream of data from the storage.
 
 The code snippets below show a storage that saves data to files. You can start by
 implementing the `write_data` and `read_data` methods:

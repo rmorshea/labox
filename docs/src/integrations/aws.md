@@ -16,7 +16,9 @@ saved:
 
 ```python
 import boto3
-from labox.extra.aws import S3Storage, simple_s3_router
+
+from labox.extra.aws import S3Storage
+from labox.extra.aws import simple_s3_router
 
 s3_storage = S3Storage(
     s3_client=boto3.client("s3"),
@@ -33,9 +35,9 @@ attempts to write to it will produce a `NotImplementedError`.
 An [`S3Router`][labox.extra.aws.S3Router] is a function that returns an
 [`S3Pointer`][labox.extra.aws.S3Pointer] dict given:
 
--   a [digest](../concepts/storages.md#content-digest)
--   a [tag map](../concepts/storages.md#storage-tags)
--   and a `temp` flag indicating whether the content being written will be deleted after
+- a [digest](../concepts/storages.md#content-digest)
+- a [tag map](../concepts/storages.md#storage-tags)
+- and a `temp` flag indicating whether the content being written will be deleted after
     use (this happens for [multipart uploads](#s3-multipart-uploads)).
 
 The `simple_s3_router` creates paths of the form:
@@ -46,9 +48,9 @@ The `simple_s3_router` creates paths of the form:
 
 Where:
 
--   `prefix` is the optionally provided path prefix
--   `content_hash` comes from the `Digest` passed to the router function
--   `ext` is the file extension inferred from the `content_type` within the `Digest`
+- `prefix` is the optionally provided path prefix
+- `content_hash` comes from the `Digest` passed to the router function
+- `ext` is the file extension inferred from the `content_type` within the `Digest`
 
 In the case the `temp` flag is true `simple_s3_router` creates a path of the form:
 

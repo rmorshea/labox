@@ -5,133 +5,131 @@ site_name: Labox
 docs_dir: src
 repo_url: https://github.com/rmorshea/labox
 nav:
-    - Home: index.md
-    - Usage:
-          - Overview: usage/index.md
-          - Examples: usage/examples.md
-    - Concepts:
-          - Overview: concepts/index.md
-          - Storables: concepts/storables.md
-          - Unpackers: concepts/unpackers.md
-          - Serializers: concepts/serializers.md
-          - Storages: concepts/storages.md
-          - Registry: concepts/registry.md
-          - Database: concepts/database.md
-    - Integrations:
-          - Overview: integrations/index.md
-          - Builtin: integrations/builtin.md
-          - Third Party:
-                - AWS: integrations/aws.md
-                - Azure: integrations/azure.md
-                - Google: integrations/google.md
-                - ImageIO: integrations/imageio.md
-                - MessagePack: integrations/msgpack.md
-                - NumPy: integrations/numpy.md
-                - Pandas: integrations/pandas.md
-                - Plotly: integrations/plotly.md
-                - Polars: integrations/polars.md
-                - PyArrow: integrations/pyarrow.md
-                - Pydantic: integrations/pydantic.md
-    - Reference: reference/
-    - Changelog: changelog.md
-    - Contributing:
-          - Overview: contributing/index.md
-          - Code of Conduct: contributing/code-of-conduct.md
+  - Home: index.md
+  - Usage:
+      - Overview: usage/index.md
+      - Examples: usage/examples.md
+  - Concepts:
+      - Overview: concepts/index.md
+      - Storables: concepts/storables.md
+      - Unpackers: concepts/unpackers.md
+      - Serializers: concepts/serializers.md
+      - Storages: concepts/storages.md
+      - Registry: concepts/registry.md
+      - Database: concepts/database.md
+  - Integrations:
+      - Overview: integrations/index.md
+      - Builtin: integrations/builtin.md
+      - Third Party:
+          - AWS: integrations/aws.md
+          - Azure: integrations/azure.md
+          - Google: integrations/google.md
+          - ImageIO: integrations/imageio.md
+          - MessagePack: integrations/msgpack.md
+          - NumPy: integrations/numpy.md
+          - Pandas: integrations/pandas.md
+          - Plotly: integrations/plotly.md
+          - Polars: integrations/polars.md
+          - PyArrow: integrations/pyarrow.md
+          - Pydantic: integrations/pydantic.md
+  - Reference: reference/
+  - Changelog: changelog.md
+  - Contributing:
+      - Overview: contributing/index.md
+      - Code of Conduct: contributing/code-of-conduct.md
 theme:
-    name: material
-    icon:
-        repo: fontawesome/brands/git-alt
-    logo: logo.svg
-    favicon: logo.svg
-    features:
-        - content.code.copy
-        - toc.integrate
-        - content.code.annotate
-        - navigation.tabs
-        - navigation.sections
-        - navigation.instant
-    palette:
+  name: material
+  icon:
+    repo: fontawesome/brands/git-alt
+  logo: logo.svg
+  favicon: logo.svg
+  features:
+    - content.code.copy
+    - toc.integrate
+    - content.code.annotate
+    - navigation.tabs
+    - navigation.sections
+    - navigation.instant
+  palette:
         # Palette toggle for automatic mode
-        - media: (prefers-color-scheme)
-          toggle:
-              icon: material/brightness-auto
-              name:
-                  Switch to light mode
+    - media: (prefers-color-scheme)
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
                   # Palette toggle for light mode
-        - media: "(prefers-color-scheme: light)"
-          scheme: default
-          primary: black
-          toggle:
-              icon: material/brightness-7
-              name:
-                  Switch to dark mode
+    - media: '(prefers-color-scheme: light)'
+      scheme: default
+      primary: black
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
                   # Palette toggle for dark mode
-        - media: "(prefers-color-scheme: dark)"
-          scheme: slate
-          primary: black
-          toggle:
-              icon: material/brightness-4
-              name: Switch to system preference
+    - media: '(prefers-color-scheme: dark)'
+      scheme: slate
+      primary: black
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
 plugins:
-    - search
-    - open-in-new-tab
-    - mkdocstrings:
-          handlers:
-              python:
-                  inventories:
+  - search
+  - open-in-new-tab
+  - mkdocstrings:
+      handlers:
+        python:
+          inventories:
                       # azure objects.inv is not available: https://github.com/Azure/azure-sdk-for-python/issues/39316
-                      - https://arrow.apache.org/docs/objects.inv
-                      - https://boto3.amazonaws.com/v1/documentation/api/latest/objects.inv
-                      - https://docs.pydantic.dev/latest/objects.inv
-                      - https://docs.python.org/3/objects.inv
-                      - https://googleapis.dev/python/storage/latest/objects.inv
-                      - https://googleapis.dev/python/storage/latest/objects.inv
-                      - https://imageio.readthedocs.io/en/stable/objects.inv
-                      - https://msgpack-python.readthedocs.io/en/latest/objects.inv
-                      - https://numpy.org/doc/stable/objects.inv
-                      - https://pandas.pydata.org/pandas-docs/stable/objects.inv
-                      - https://plotly.com/python-api-reference/objects.inv
-                      - https://pola-rs.github.io/polars/py-polars/html/objects.inv
-                      - https://anyio.readthedocs.io/en/stable/objects.inv
-                  paths: [src]
-                  options:
-                      docstring_options:
-                          ignore_init_summary: true
-                      docstring_section_style: list
-                      filters: ["!^_"]
-                      heading_level: 1
-                      inherited_members: true
-                      merge_init_into_class: true
-                      parameter_headings: true
-                      separate_signature: true
-                      show_root_heading: true
-                      show_root_full_path: false
-                      show_signature_annotations: true
-                      show_source: false
-                      show_symbol_type_heading: true
-                      show_symbol_type_toc: true
-                      signature_crossrefs: true
-                      summary: true
-    - literate-nav:
-          nav_file: SUMMARY.md
-    - gen-files:
-          scripts: [gen_reference.py]
+            - https://arrow.apache.org/docs/objects.inv
+            - https://boto3.amazonaws.com/v1/documentation/api/latest/objects.inv
+            - https://docs.pydantic.dev/latest/objects.inv
+            - https://docs.python.org/3/objects.inv
+            - https://googleapis.dev/python/storage/latest/objects.inv
+            - https://googleapis.dev/python/storage/latest/objects.inv
+            - https://imageio.readthedocs.io/en/stable/objects.inv
+            - https://msgpack-python.readthedocs.io/en/latest/objects.inv
+            - https://numpy.org/doc/stable/objects.inv
+            - https://pandas.pydata.org/pandas-docs/stable/objects.inv
+            - https://plotly.com/python-api-reference/objects.inv
+            - https://pola-rs.github.io/polars/py-polars/html/objects.inv
+            - https://anyio.readthedocs.io/en/stable/objects.inv
+          paths: [src]
+          options:
+            docstring_options:
+              ignore_init_summary: true
+            docstring_section_style: list
+            filters: ['!^_']
+            heading_level: 1
+            inherited_members: true
+            merge_init_into_class: true
+            parameter_headings: true
+            separate_signature: true
+            show_root_heading: true
+            show_root_full_path: false
+            show_signature_annotations: true
+            show_source: false
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            signature_crossrefs: true
+            summary: true
+  - literate-nav:
+      nav_file: SUMMARY.md
+  - gen-files:
+      scripts: [gen_reference.py]
 markdown_extensions:
-    - def_list
-    - pymdownx.highlight:
-          anchor_linenums: true
-          line_spans: __span
-          pygments_lang_class: true
-    - pymdownx.inlinehilite
-    - pymdownx.snippets:
-          check_paths: true
-    - pymdownx.superfences
-    - admonition
-    - pymdownx.details
-    - pymdownx.emoji:
-          emoji_index: !!python/name:material.extensions.emoji.twemoji
-          emoji_generator: !!python/name:material.extensions.emoji.to_svg
-    - pymdownx.saneheaders
-    - pymdownx.extra
+  - def_list
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets:
+      check_paths: true
+  - pymdownx.superfences
+  - admonition
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.saneheaders
+  - pymdownx.extra
 watch: [gen_reference.py, ../src, ../CHANGELOG.md]
 extra_css: [custom-styles.css]
