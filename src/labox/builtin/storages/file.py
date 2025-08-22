@@ -111,7 +111,7 @@ def _iter_file_chunks(file: Path, chunk_size: int) -> Iterator[bytes]:
             yield chunk
 
 
-file_storage = FileStorage(LABOX_USER_PROC_CACHE_DIR / "file_storage")
+file_storage = FileStorage(LABOX_USER_PROC_CACHE_DIR / __name__, mkdir=True)
 """Default instance of FileStorage whose directory is deleted when the process exits."""
 
 

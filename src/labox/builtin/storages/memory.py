@@ -24,7 +24,7 @@ _LOG = logging.getLogger(__name__)
 class MemoryStorage(Storage[str]):
     """A storage backend for testing that saves data to local files."""
 
-    name = "labox.file@v1"
+    name = "labox.memory@v1"
     version = 1
 
     def __init__(

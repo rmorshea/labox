@@ -53,7 +53,7 @@ serializer = ArrowDataFrameSerializer(
 
 The [`ParquetDataFrameSerializer`][labox.extra.pandas.ParquetDataFrameSerializer] uses
 the Parquet columnar format. For details about Parquet format benefits and options, see
-the [PyArrow Parquet documentation](pyarrow.md#parquet-table-serializer):
+the [PyArrow Parquet documentation](pyarrow.md#parquettableserializer):
 
 ```python
 from labox.extra.pandas import parquet_dataframe_serializer

@@ -62,21 +62,21 @@ test_dataclass_unpack_repack = make_storable_unpack_repack_test(
                             },
                             "spec_with_serializer_and_storage": {
                                 "__labox__": "ref",
-                                "ref": "/ref/spec_with_serializer_and_storage",
+                                "ref": "ref/spec_with_serializer_and_storage",
                             },
                             "spec_with_storage": {
                                 "__labox__": "ref",
-                                "ref": "/ref/spec_with_storage",
+                                "ref": "ref/spec_with_storage",
                             },
                         },
                     },
                 },
-                "/ref/spec_with_storage": {
+                "ref/spec_with_storage": {
                     "serializer": None,
                     "storage": LOCAL_STORAGE,
                     "value": {"answer": 42, "hello": "world"},
                 },
-                "/ref/spec_with_serializer_and_storage": {
+                "ref/spec_with_serializer_and_storage": {
                     "serializer": MSG_PACK_SERIALIZER,
                     "storage": LOCAL_STORAGE,
                     "value": {"answer": 42, "hello": "world"},

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from collections.abc import Mapping
+from collections.abc import Sequence
 from dataclasses import KW_ONLY
 from dataclasses import fields
 from dataclasses import is_dataclass
@@ -48,7 +49,7 @@ class StorableDataclassUnpacker(Unpacker["StorableDataclass"]):
             raise TypeError(msg)
 
         external: dict[str, AnyUnpackedValue] = {}
-        body = _dump_storable_dataclass(obj, registry=registry, external=external, path=("/ref",))
+        body = _dump_storable_dataclass(obj, registry=registry, external=external, path=("ref",))
         return {
             "body": {
                 "serializer": obj.storable_body_serializer(registry),
@@ -207,7 +208,7 @@ def _dump_storable_dataclass(
                 path=(*path, f_name),
             )
     return _LaboxStorableDataclassDict(
-        __labox__="storable_dataclass",
+        __labox__="dataclass",
         class_id=obj.storable_config().class_id.hex,
         class_name=full_class_name(type(obj)),
         fields=field_dict,
@@ -224,12 +225,12 @@ def _dump_any(
     match value:
         case int() | str() | float() | bool() | None:
             return value
-        case dict():
+        case Mapping():
             return {
                 k: _dump_any(v, registry=registry, external=external, path=(*path, k))
                 for k, v in value.items()
             }
-        case list() | tuple():
+        case Sequence():
             return [
                 _dump_any(v, registry=registry, external=external, path=(*path, str(i)))
                 for i, v in enumerate(value)
@@ -258,7 +259,7 @@ def _dump_any(
 class _LaboxStorableDataclassDict(TypedDict):
     """A dictionary representation of a storable dataclass."""
 
-    __labox__: Literal["storable_dataclass"]
+    __labox__: Literal["dataclass"]
     class_id: str
     class_name: str
     fields: dict[str, Any]
@@ -311,7 +312,7 @@ def _load_any(
             return _load_ref_from_external(value["ref"], external)
         case {"__labox__": "content"}:
             return load_content_dict(value, registry)
-        case {"__labox__": "storable_dataclass"}:
+        case {"__labox__": "dataclass"}:
             return _load_storable_dataclass(value, registry, external)
         case dict():
             return {k: _load_any(v, registry=registry, external=external) for k, v in value.items()}

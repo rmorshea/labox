@@ -62,8 +62,9 @@ The name is unique amongst all the content records for a given
 ## Unpacked Values
 
 When you unpack a `Storable` class, the values are returned as
-[`UnpackedValue`][labox.core.unpacker.UnpackedValue] dicts. These values contain the
-following information:
+[`UnpackedValue`][labox.core.unpacker.UnpackedValue] dicts. Each `UnpackedValue`
+corresponds to a [`ContentRecord`](./database.md#content-records) in the database. These
+values contain the following information:
 
 - `value`: The actual value of the field.
 - `serializer` (optional): The serializer to use when saving the value.
@@ -79,16 +80,18 @@ allowing you to unpack some fields into memory while streaming others.
 ## Unpacked Streams
 
 In addition to unpacked values, you can also unpack the fields of a `Storable` class
-into [`UnpackedValueStream`][labox.core.unpacker.UnpackedValueStream] dicts. This is
-useful when you can't or don't want to load large amounts of data into memory at once.
-An `UnpackedValueStream` contains the following information:
+into [`UnpackedValueStream`][labox.core.unpacker.UnpackedValueStream] dicts. Each
+`UnpackedValueStream` corresponds to a [`ContentRecord`](./database.md#content-records)
+in the database. An stream is useful when you can't or don't want to load large amounts
+of data into memory at once. An `UnpackedValueStream` contains the following
+information:
 
 - `value_stream`: An async iterable that yields the values of the fields.
 - `serializer` (recommended): The serializer to use when saving the values.
 - `storage` (optional): The storage to use when saving the values.
 
-In this case providing an explicit serializer is recommended because attempting to infer
-the appropriate serializer will raise a late error since the first value from the stream
+Providing an explicit serializer is recommended because attempting to infer the
+appropriate serializer will raise a late error since the first value from the stream
 must be inspected. As before, if you do not specify a storage, the default storage in
 the [registry](./registry.md) will be used.
 

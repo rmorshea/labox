@@ -199,6 +199,7 @@ ban-relative-imports = "all"
     "TCH002",   # Move third-party import into a type-checking block
     "ASYNC230", # Async function should not open file
     "PD901",    # Avoid generating variable name
+    "T203",     # Remove print
 ]
 
 [tool.yamlfix]

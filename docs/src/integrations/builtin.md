@@ -10,34 +10,115 @@ for dataclasses.
 Labox provides a base
 [`StorableDataclass`][labox.builtin.storables.dataclasses.StorableDataclass] class that
 can be added to a dataclass to make it [storable](../usage/index.md#saving-storables).
-After inheriting from this base class each field metadata can be used to specify an
-explicit serializer and storage for that field.
+After inheriting from this base class the `metadata` of each field can be used to
+specify an explicit serializer and/or storage.
 
 ```python
 from dataclasses import dataclass
 from dataclasses import field
+from datetime import datetime
 
 from labox.builtin import CsvSerializer
+from labox.builtin import FileStorage
 from labox.builtin import StorableDataclass
 
 
 @dataclass
-class MyDataClass(StorableDataclass):
-    data: list[list[int]] = field(metadata={"serializer": CsvSerializer})
+class ExperimentData(StorableDataclass, class_id="..."):
+    description: str
+    # automatic serializer
+    started_at: datetime
+    # explicit serializer and storage
+    results: list[list[int]] = field(
+        metadata={
+            "serializer": CsvSerializer,
+            "storage": FileStorage,
+        }
+    )
 ```
 
-Ultimately a dataclass is stored under one or more
+#### Dataclass Unpacker
+
+A `StorableDataclass` is saved under one or more
 [`ContentRecord`s](../concepts/database.md#content-records). The majority of the
 dataclass is stored in a "body" record, which is nominally a JSON serializable object.
 The serializer and storage for this body record can be customized by overriding the
 [`storable_body_serializer`][labox.builtin.storables.dataclasses.StorableDataclass.storable_body_serializer]
 and/or
 [`storable_body_storage`][labox.builtin.storables.dataclasses.StorableDataclass.storable_body_storage]
-methods in the dataclass itself.
+methods in the dataclass itself. Fields within the dataclass are stored within this same
+body record unless the field declares a `storage` or `serializer` that is a
+[`StreamSerializer`](../concepts/serializers.md#stream-serializers). In either case
+those fields are captured in separate `ContentRecord`s.
 
-Fields within the dataclass are stored within this same body record unless they have a
-separate `storage` or [stream serializer](../concepts/serializers.md#stream-serializers)
-specified in their metadata.
+To understand how this works in practice, here's what the dataclass'
+[unpacker][labox.builtin.storables.dataclasses.StorableDataclassUnpacker] would output
+for the class above:
+
+```python
+from datetime import UTC
+from pprint import pprint
+
+from labox.core import Registry
+
+exp_data = ExperimentData(
+    description="My experiment",
+    started_at=datetime.now(UTC),
+    results=[[1, 2, 3], [4, 5, 6]],
+)
+
+unpacker = ExperimentData.storable_config().unpacker
+
+registry = Registry(modules=["labox.builtin"], default_storage=True)
+unpacked_obj = unpacker.unpack_object(exp_data, registry)
+pprint(unpacked_obj)
+```
+
+```python
+{
+    "body": {
+        "serializer": JsonSerializer("labox.json.value@v1"),
+        "storage": MemoryStorage("labox.memory@v1"),
+        "value": {
+            "__labox__": "dataclass",
+            "class_id": "...",
+            "class_name": "__main__.ExperimentData",
+            "fields": {
+                "description": "My experiment",
+                "results": {"__labox__": "ref", "ref": "ref/results"},
+                "started_at": {
+                    "__labox__": "content",
+                    "content_base64": "MjAyNS0wOC0yMlQxNTowNzo1Ni4zODA3ODIrMDA6MDA=",
+                    "content_encoding": "utf-8",
+                    "content_type": "application/text",
+                    "serializer_name": "labox.datetime.iso8601@v1",
+                },
+            },
+        },
+    },
+    "ref/results": {
+        "serializer": CsvSerializer("labox.csv@v1"),
+        "storage": FileStorage("labox.file@v1"),
+        "value": [[1, 2, 3], [4, 5, 6]],
+    },
+}
+```
+
+Each item in the resulting dict is an
+[`UnpackedValue`](../concepts/unpackers.md#unpacked-values) that would correspond to a
+[`ContentRecord`](../concepts/database.md#content-records) in the database. As indicated
+earlier the fact that the `results` field of the dataclass had a dedicated storage
+declared caused it to be stored separately from the main `body` record.
+
+Within the `body` record the dataclass has been dumped into a JSON-serializable
+dictionary containing information about the class as well as its fields. Special
+`__labox__` keys within this dictionary are used to store metadata about how each object
+and/or fields was dumped. Notably the body contains a reference to the `ref/results`
+field, which got unpacked separately.
+
+Serialized fields are embedded within the main `body` record to avoid sending a large
+number of smaller chunks of data to storage backends. For cloud storage backends having
+a smaller number of larger requests tends to be more efficient.
 
 ### Simple Values
 

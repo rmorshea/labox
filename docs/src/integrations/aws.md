@@ -38,7 +38,7 @@ An [`S3Router`][labox.extra.aws.S3Router] is a function that returns an
 - a [digest](../concepts/storages.md#content-digest)
 - a [tag map](../concepts/storages.md#storage-tags)
 - and a `temp` flag indicating whether the content being written will be deleted after
-    use (this happens for [multipart uploads](#s3-multipart-uploads)).
+    use (this happens for [multipart uploads](#s3-streamed-uploads)).
 
 The `simple_s3_router` creates paths of the form:
 
