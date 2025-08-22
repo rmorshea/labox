@@ -5,7 +5,7 @@
 To use Labox, you'll need to have set up the Labox [database](../concepts/database.md)
 scheme as well as establish a
 [SQLAlchemy connection](https://docs.sqlalchemy.org/en/20/orm/session_basics.html) to
-it. The latter is typically done using an async SQLAlchemy engine and session maker.To
+it. The latter is typically done using an async SQLAlchemy engine and session maker. To
 setup the schema SQLAlchemy recommends managing migrations with a tool like
 [alembic](https://alembic.sqlalchemy.org/en/latest/). But for the sake of simplicity,
 you can create the tables directly using the `create_all` method of Labox's `BaseRecord`
@@ -20,14 +20,17 @@ new_async_session = async_sessionmaker(engine, expire_on_commit=True)
 BaseRecord.create_all(engine).run()
 ```
 
+!!! note
+
+    This example assumes the [`aiosqlite`](https://pypi.org/project/aiosqlite) package is installed.
+
 ## Registry Setup
 
 When saving and loading data, Labox makes use of [registry](../concepts/registry.md) to
 know what [storables](../concepts/storables.md), [unpackers](../concepts/unpackers.md),
 and [serializers](../concepts/serializers.md) and [storages](../concepts/storages.md)
-are available. A quick way to set up a registry is to
-[construct it from the modules](../concepts/registry.md#constructing-from-modules) where
-these components are defined.
+are available. A quick way to set up a registry is to construct it from the modules
+where these components are defined.
 
 ```python
 from labox import Registry
@@ -40,6 +43,8 @@ registry = Registry(
     ]
 )
 ```
+
+See [here](../concepts/registry.md) for more info on registries.
 
 ## Storable Setup
 
@@ -287,7 +292,7 @@ more information on async generator finalization.
 You can add tags when saving storables. These tags are included in the
 [manifest record](../concepts/database.md#manifest-records) and passed to the underlying
 storage when saving each piece of content. Tags are provided as a dictionary of string
-key-value pairs. This is useful for adding metadata to your records, such billing
+key-value pairs. This is useful for adding metadata to your records, such as billing
 information, project names, or any other relevant information that can help you identify
 and manage your saved data.
 
