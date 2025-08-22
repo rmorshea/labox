@@ -21,9 +21,13 @@ class FigureDumpArgs(TypedDict, total=False):
     """Arguments for dumping a Plotly figure."""
 
     engine: str | None
+    """JSON encoder to use. Options include "json", "orjson", or "auto". Default is None."""
     pretty: bool
+    """Whether to pretty print the JSON representation (default False)."""
     remove_uids: bool
+    """Whether to remove trace UIDs from the JSON representation (default True)."""
     validate: bool
+    """Whether to validate the figure before serialization (default True)."""
 
 
 class FigureLoadArgs(TypedDict, total=False):
@@ -34,7 +38,12 @@ class FigureLoadArgs(TypedDict, total=False):
 
 
 class FigureSerializer(Serializer[go.Figure]):
-    """Serializer for Plotly figures."""
+    """Serializer for Plotly figures.
+
+    Args:
+        dump_args: Arguments for dumping a Plotly figure.
+        load_args: Arguments for loading a Plotly figure.
+    """
 
     name = "labox.plotly.value@v1"
     types = (go.Figure,)
