@@ -24,7 +24,7 @@ data = {
     "success": True,
 }
 
-msgpack_serializer.serialize_data(data)
+serialized_data = msgpack_serializer.serialize_data(data)
 ```
 
 ## MsgPackStreamSerializer

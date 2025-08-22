@@ -96,7 +96,7 @@ class ArrowRecordBatchStreamSerializer(_ArrowTableBase, StreamSerializer[pa.Reco
 
 
 class ParquetWriteOptions(TypedDict, total=False):
-    """See https://arrow.apache.org/docs/python/generated/pyarrow.parquet.ParquetWriter.html."""
+    """Constructor arguments for [ParquetWriter][pyarrow.parquet.ParquetWriter]."""
 
     version: str
     use_dictionary: bool | list
@@ -123,7 +123,7 @@ class ParquetWriteOptions(TypedDict, total=False):
 
 
 class ParquetReadOptions(TypedDict, total=False):
-    """See https://arrow.apache.org/docs/python/generated/pyarrow.parquet.ParquetFile.html."""
+    """Constructor arguments for [ParquetFile][pyarrow.parquet.ParquetFile]."""
 
     metadata: pq.FileMetaData
     common_metadata: pq.FileMetaData

@@ -21,8 +21,9 @@ import numpy as np
 
 from labox.extra.numpy import npy_serializer
 
-# The serializer will be automatically selected for numpy arrays
 arr = np.array([[1, 2, 3], [4, 5, 6]])
+
+serialized_data = npy_serializer.serialize_data(arr)
 ```
 
 You can also create a custom instance:

@@ -23,12 +23,11 @@ import numpy as np
 from labox.extra.imageio import Media
 from labox.extra.imageio import media_serializer
 
-# Create media data - can be a single array or sequence of arrays
 gen = np.random.Generator(np.random.PCG64())
 image_data = gen.integers(0, 255, (100, 100, 3), dtype=np.uint8)
 media = Media(data=image_data, extension=".png")
 
-media_serializer.serialize_data(media)
+serialized_data = media_serializer.serialize_data(media)
 ```
 
 You can also create a custom instance with specific MIME type configuration:
