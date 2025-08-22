@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import functools
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from dataclasses import field
 from typing import TYPE_CHECKING
 from typing import Any
+from typing import Literal
 from typing import NotRequired
 from typing import TypedDict
 from typing import TypeGuard
@@ -134,12 +136,12 @@ class Registry:
 
     def infer_unpacker(self, cls: type[S]) -> Unpacker[S]:
         """Get the first unpacker that can handle the given type or its parent classes."""
-        unpacker = _infer_from_type(self._info["unpacker_by_type"], cls, "unpacker")
+        unpacker = _infer_from_type(self, "unpacker_by_type", cls, "unpacker")
         return cast("Unpacker[S]", unpacker)
 
     def get_serializer_by_type(self, cls: type[T]) -> Serializer[T]:
         """Get a serializer that can handle the given type or its parent classes."""
-        return _infer_from_type(self._info["serializer_by_type"], cls, "serializer")
+        return _infer_from_type(self, "serializer_by_type", cls, "serializer")
 
     def get_serializer_by_content_type(self, content_type: str) -> Serializer:
         """Get a serializer that can handle the given content type."""
@@ -151,7 +153,7 @@ class Registry:
 
     def get_stream_serializer_by_type(self, cls: type[T]) -> StreamSerializer[T]:
         """Get a stream serializer that can handle the given type or its base classes."""
-        return _infer_from_type(self._info["stream_serializer_by_type"], cls, "stream serializer")
+        return _infer_from_type(self, "stream_serializer_by_type", cls, "stream serializer")
 
     def get_stream_serializer_by_content_type(self, content_type: str) -> StreamSerializer:
         """Get a stream serializer that can handle the given content type."""
@@ -162,8 +164,15 @@ class Registry:
         raise NotRegistered(msg)
 
 
-def _infer_from_type(mapping: Mapping[type, V], cls: type, description: str) -> V:
+@functools.lru_cache
+def _infer_from_type(
+    registry: Registry,
+    kind: Literal["serializer_by_type", "unpacker_by_type", "stream_serializer_by_type"],
+    cls: type,
+    description: str,
+) -> Any:
     """Get the first value from the mapping that can handle the given type or its parent classes."""
+    mapping = registry._info[kind]  # noqa: SLF001
     for base in cls.mro():
         if item := mapping.get(base):
             return item

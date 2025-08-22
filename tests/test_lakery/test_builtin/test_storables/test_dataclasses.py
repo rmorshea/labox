@@ -45,7 +45,7 @@ test_dataclass_unpack_repack = make_storable_unpack_repack_test(
                     "serializer": JSON_SERIALIZER,
                     "storage": LOCAL_STORAGE,
                     "value": {
-                        "__labox__": "storable_dataclass",
+                        "__labox__": "dataclass",
                         "class_id": "bed9897b000000000000000000000000",
                         "class_name": full_class_name(MyClass),
                         "fields": {

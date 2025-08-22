@@ -77,25 +77,8 @@ class ExperimentData(StorableDataclass):
     results: dict[str, list[float]]
 ```
 
-Both look similar, but Pydantic models allow for more complex serialization and storage
-options. For example, you cannot nest non-JSON compatible types inside the value of a
-field. In this case, if you swapped out `dict[str, list[float]]` for
-`dict[str, np.ndarray]` the dataclass only knows how to serialize the outer-most
-structure (the `dict`), but not the inner structure (the `np.ndarray`). Pydantic models
-do not have this limitation, so you can use `dict[str, np.ndarray]` directly without any
-issues:
-
-```python
-import numpy as np
-
-from labox.extra.pydantic import StorableModel
-
-
-class ExperimentData(StorableModel):
-    description: str
-    parameters: dict[str, float]
-    results: dict[str, np.ndarray]
-```
+Both look similar, but Pydantic models are more performant and configurable. See
+[here](../integrations/pydantic.md) for more information.
 
 ## Saving Storables
 
