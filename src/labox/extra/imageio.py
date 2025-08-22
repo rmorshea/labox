@@ -44,7 +44,11 @@ _DEFAULT_MIMETYPES = MimeTypes()
 
 
 class MediaSerializer(Serializer[Media, "_MediaSerializerConfig"]):
-    """Serializer for ImageIO Arrays."""
+    """Serializer for ImageIO Arrays.
+
+    Args:
+        mimetypes: The MIME types to use for guessing the content type and encoding.
+    """
 
     name = "labox.imageio@v1"
     types = (Media,)
