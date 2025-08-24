@@ -11,9 +11,10 @@ from typing import Any
 from typing import ClassVar
 from typing import Literal
 from typing import TypedDict
-from typing import TypeVar
 from typing import Unpack
 from uuid import UUID
+
+from typing_extensions import TypeVar
 
 from labox._internal._simplify import LaboxRefDict
 from labox._internal._simplify import dump_content_dict
