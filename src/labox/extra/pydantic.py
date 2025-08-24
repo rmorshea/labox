@@ -40,8 +40,8 @@ if TYPE_CHECKING:
 
 
 __all__ = (
-    "StorableSpec",
     "StorableModel",
+    "StorableSpec",
 )
 
 _LOG = getLogger(__name__)
@@ -68,7 +68,7 @@ class StorableModelUnpacker(Unpacker["StorableModel"]):
             return next_external_id
 
         data = obj.model_dump(
-            mode="python",
+            mode="json",
             context=_make_serialization_context(
                 _LaboxSerializationContext(
                     external=external,
@@ -82,8 +82,8 @@ class StorableModelUnpacker(Unpacker["StorableModel"]):
         return {
             "body": {
                 "value": data,
-                "serializer": obj.storable_model_serializer(registry),
-                "storage": obj.storable_model_storage(registry),
+                "serializer": obj.storable_body_serializer(registry),
+                "storage": obj.storable_body_storage(registry),
             },
             **external,
         }
@@ -147,14 +147,14 @@ class StorableModel(
             # we're defining the schema for a subclass
             return _adapt_third_party_types(handler(source), handler)
 
-    def storable_model_storage(self, registry: Registry) -> Storage:
+    def storable_body_storage(self, registry: Registry) -> Storage:
         """Return the storage for the "body" of this model.
 
         "Body" refers to the data within the model that does not have an explicit storage.
         """
         return registry.get_default_storage()
 
-    def storable_model_serializer(self, registry: Registry) -> Serializer:
+    def storable_body_serializer(self, registry: Registry) -> Serializer:
         """Return a JSON serializer for the "body" of this model.
 
         "Body" refers to the data within the model that does not have an explicit storage.

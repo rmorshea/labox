@@ -14,6 +14,7 @@ __all__ = (
     "FigureDumpArgs",
     "FigureLoadArgs",
     "FigureSerializer",
+    "figure_serializer",
 )
 
 
