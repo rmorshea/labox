@@ -7,7 +7,8 @@ from dataclasses import field
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Generic
-from typing import TypeVar
+
+from typing_extensions import TypeVar
 
 from labox.core.registry import Registry
 from labox.core.storable import Storable

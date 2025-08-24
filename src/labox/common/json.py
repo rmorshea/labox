@@ -3,7 +3,8 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import TypeVar
+
+from typing_extensions import TypeVar
 
 if TYPE_CHECKING:
     from labox.common.types import JsonType

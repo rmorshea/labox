@@ -6,9 +6,9 @@ from typing import Any
 from typing import Generic
 from typing import NotRequired
 from typing import TypedDict
-from typing import TypeVar
 
 from typing_extensions import AsyncGenerator
+from typing_extensions import TypeVar
 
 from labox._internal._component import Component
 from labox._internal._utils import not_implemented
