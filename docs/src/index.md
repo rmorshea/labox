@@ -1,5 +1,9 @@
 # <img src="./logo.svg" alt="Labox Logo" style="height:2em;position:relative;top:0.4em"> Labox
 
+!!! warning
+
+    Long-term support is not guaranteed.
+
 A storage framework for heterogeneous data in Python.
 
 ## Installation
