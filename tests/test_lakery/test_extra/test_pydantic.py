@@ -8,7 +8,7 @@ from labox.builtin.serializers.json import JsonSerializer
 from labox.builtin.storages import FileStorage
 from labox.core.registry import Registry
 from labox.extra.msgpack import MsgPackSerializer
-from labox.extra.pydantic import ContentSpec
+from labox.extra.pydantic import StorableSpec
 from labox.extra.pydantic import StorableModel
 from tests.core_api_utils import assert_save_load_equivalence
 from tests.core_registry_utils import basic_registry
@@ -17,10 +17,10 @@ from tests.core_storable_utils import make_storable_unpack_repack_test
 
 class BasicModel(StorableModel, class_id="1e76a004"):
     no_spec: Any
-    spec_with_serializer: Annotated[Any, ContentSpec(serializer=MsgPackSerializer)]
-    spec_with_storage: Annotated[Any, ContentSpec(storage=FileStorage)]
+    spec_with_serializer: Annotated[Any, StorableSpec(serializer=MsgPackSerializer)]
+    spec_with_storage: Annotated[Any, StorableSpec(storage=FileStorage)]
     spec_with_serializer_and_storage: Annotated[
-        Any, ContentSpec(serializer=MsgPackSerializer, storage=FileStorage)
+        Any, StorableSpec(serializer=MsgPackSerializer, storage=FileStorage)
     ]
 
 

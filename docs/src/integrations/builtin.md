@@ -10,8 +10,28 @@ for dataclasses.
 Labox provides a base
 [`StorableDataclass`][labox.builtin.storables.dataclasses.StorableDataclass] class that
 can be added to a dataclass to make it [storable](../usage/index.md#saving-storables).
-After inheriting from this base class the `metadata` of each field can be used to
-specify an explicit serializer and/or storage.
+
+#### Dataclass Usage
+
+Start by inheriting from the `StorableDataclass` class and declaring a
+[`class_id`](../concepts/storables.md#class-ids). Then define your dataclass as normal:
+
+```python
+from dataclasses import dataclass
+from dataclasses import field
+from datetime import datetime
+
+from labox.builtin import StorableDataclass
+
+
+@dataclass
+class ExperimentData(StorableDataclass, class_id="..."):
+    description: str
+    started_at: datetime
+    results: list[list[int]]
+```
+
+Each field's `metadata` can be used to specify an explicit serializer and/or storage.
 
 ```python
 from dataclasses import dataclass
