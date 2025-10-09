@@ -87,7 +87,7 @@ import pandas as pd
 from labox.extra.pydantic import StorableModel
 
 
-class ExperimentData(StorableModel, class_id="..."):
+class ExperimentData(StorableModel, class_id="..."): # (1)!
     name: str
     results: pd.DataFrame
 
@@ -95,9 +95,10 @@ class ExperimentData(StorableModel, class_id="..."):
 experiment = ExperimentData(**experiment_data)
 ```
 
-!!! note
-
-    See [here](./concepts/storables.md#class-ids) for info on the details of `class_id`.
+1. A `class_id` is a string that identifies a storable class when saving and loading
+   data. You can use a placeholder like `"..."` until you
+   [generate a unique ID](./concepts/storables.md#generating-ids). Once you've saved
+   data with a specific `class_id`, it should never be changed or reused.
 
 Save the data and return a [record](./concepts/database.md#manifest-records):
 
