@@ -1,4 +1,4 @@
-# ruff: noqa: S607,S603,S404,FBT001,D401,D103
+# ruff: noqa: S603, S404, FBT001, D401, D103
 
 import os
 import subprocess
@@ -87,7 +87,6 @@ def lint(
             run(
                 [
                     "mdformat",
-                    "--ignore-missing-references",
                     "--check",
                     "README.md",
                     "docs",
@@ -96,7 +95,7 @@ def lint(
             doc_cmd(["ruff", "format", "--check"], no_pad=True)
             doc_cmd(["ruff", "check"], no_pad=True)
         else:
-            run(["mdformat", "--ignore-missing-references", "README.md", "docs"])
+            run(["mdformat", "README.md", "docs"])
             doc_cmd(["ruff", "format"], no_pad=True)
             doc_cmd(["ruff", "check", "--fix"], no_pad=True)
     if not no_yml_style:

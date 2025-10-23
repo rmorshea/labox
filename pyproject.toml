@@ -60,11 +60,9 @@ Source = "https://github.com/rmorshea/labox"
 lint = [
     { include-group = "test" },
     "doccmd==2025.04.08",
-    "mdformat-admon @ git+https://github.com/rmorshea/mdformat-admon.git@0e513d7a2c265faf74441938ccbd1010660609f4",
     "mdformat-mkdocs==4.1.0",
-    "mdformat-pyproject==0.0.1",
-    "mdformat-tables==1.0.0",
-    "mdformat==0.7.22",
+    "mdformat-gfm==1.0.0",
+    "mdformat==1.0.0",
     "pyright==1.1.391",
     "ruff==0.9.2",
     "types-boto3-s3==1.35.76",
