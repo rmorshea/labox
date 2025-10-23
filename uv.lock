@@ -1097,10 +1097,8 @@ dev = [
     { name = "ipykernel" },
     { name = "labox", extra = ["all"] },
     { name = "mdformat" },
-    { name = "mdformat-admon" },
+    { name = "mdformat-gfm" },
     { name = "mdformat-mkdocs" },
-    { name = "mdformat-pyproject" },
-    { name = "mdformat-tables" },
     { name = "mkdocs" },
     { name = "mkdocs-gen-files" },
     { name = "mkdocs-literate-nav" },
@@ -1150,10 +1148,8 @@ lint = [
     { name = "doccmd" },
     { name = "ipykernel" },
     { name = "mdformat" },
-    { name = "mdformat-admon" },
+    { name = "mdformat-gfm" },
     { name = "mdformat-mkdocs" },
-    { name = "mdformat-pyproject" },
-    { name = "mdformat-tables" },
     { name = "moto" },
     { name = "pycobertura" },
     { name = "pyright" },
@@ -1234,11 +1230,9 @@ dev = [
     { name = "doccmd", specifier = "==2025.4.8" },
     { name = "ipykernel", specifier = "==6.29.5" },
     { name = "labox", extras = ["all"] },
-    { name = "mdformat", specifier = "==0.7.22" },
-    { name = "mdformat-admon", git = "https://github.com/rmorshea/mdformat-admon.git?rev=0e513d7a2c265faf74441938ccbd1010660609f4" },
-    { name = "mdformat-mkdocs", specifier = "==4.1.0" },
-    { name = "mdformat-pyproject", specifier = "==0.0.1" },
-    { name = "mdformat-tables", specifier = "==1.0.0" },
+    { name = "mdformat", specifier = "==1.0.0" },
+    { name = "mdformat-gfm", specifier = "==1.0.0" },
+    { name = "mdformat-mkdocs", specifier = "==4.4.1" },
     { name = "mkdocs", specifier = "==1.6.1" },
     { name = "mkdocs-gen-files", specifier = "==0.5.0" },
     { name = "mkdocs-literate-nav", specifier = "==0.6.1" },
@@ -1287,11 +1281,9 @@ lint = [
     { name = "diff-cover", specifier = "==9.2.0" },
     { name = "doccmd", specifier = "==2025.4.8" },
     { name = "ipykernel", specifier = "==6.29.5" },
-    { name = "mdformat", specifier = "==0.7.22" },
-    { name = "mdformat-admon", git = "https://github.com/rmorshea/mdformat-admon.git?rev=0e513d7a2c265faf74441938ccbd1010660609f4" },
-    { name = "mdformat-mkdocs", specifier = "==4.1.0" },
-    { name = "mdformat-pyproject", specifier = "==0.0.1" },
-    { name = "mdformat-tables", specifier = "==1.0.0" },
+    { name = "mdformat", specifier = "==1.0.0" },
+    { name = "mdformat-gfm", specifier = "==1.0.0" },
+    { name = "mdformat-mkdocs", specifier = "==4.4.1" },
     { name = "moto", specifier = ">=5.0.22" },
     { name = "pycobertura", specifier = "==3.3.2" },
     { name = "pyright", specifier = "==1.1.391" },
@@ -1322,18 +1314,6 @@ util = [
     { name = "click", specifier = "==8.1.7" },
     { name = "copier", specifier = "==9.4.1" },
     { name = "ipykernel", specifier = "==6.29.5" },
-]
-
-[[package]]
-name = "linkify-it-py"
-version = "2.0.3"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "uc-micro-py" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/2a/ae/bb56c6828e4797ba5a4821eec7c43b8bf40f69cda4d4f5f8c8a2810ec96a/linkify-it-py-2.0.3.tar.gz", hash = "sha256:68cda27e162e9215c17d786649d1da0021a451bdc436ef9e0fa0ba5234b9b048", size = 27946, upload-time = "2024-02-04T14:48:04.179Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/04/1e/b832de447dee8b582cac175871d2f6c3d5077cc56d5575cadba1fd1cccfa/linkify_it_py-2.0.3-py3-none-any.whl", hash = "sha256:6bcbc417b0ac14323382aef5c5192c0075bf8a9d6b41820a2b66371eac6b6d79", size = 19820, upload-time = "2024-02-04T14:48:02.496Z" },
 ]
 
 [[package]]
@@ -1429,11 +1409,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/42/d7/1ec15b46af6af88f19b8e5ffea08fa375d433c998b8a7639e76935c14f1f/markdown_it_py-3.0.0-py3-none-any.whl", hash = "sha256:355216845c60bd96232cd8d8c40e8f9765cc86f46880e43a8fd22dc1a1a8cab1", size = 87528, upload-time = "2023-06-03T06:41:11.019Z" },
 ]
 
-[package.optional-dependencies]
-linkify = [
-    { name = "linkify-it-py" },
-]
-
 [[package]]
 name = "markupsafe"
 version = "3.0.2"
@@ -1496,43 +1471,34 @@ wheels = [
 
 [[package]]
 name = "mdformat"
-version = "0.7.22"
+version = "1.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "markdown-it-py" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/fc/eb/b5cbf2484411af039a3d4aeb53a5160fae25dd8c84af6a4243bc2f3fedb3/mdformat-0.7.22.tar.gz", hash = "sha256:eef84fa8f233d3162734683c2a8a6222227a229b9206872e6139658d99acb1ea", size = 34610, upload-time = "2025-01-30T18:00:51.418Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/3f/05/32b5e14b192b0a8a309f32232c580aefedd9d06017cb8fe8fce34bec654c/mdformat-1.0.0.tar.gz", hash = "sha256:4954045fcae797c29f86d4ad879e43bb151fa55dbaf74ac6eaeacf1d45bb3928", size = 56953, upload-time = "2025-10-16T12:05:03.695Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f2/6f/94a7344f6d634fe3563bea8b33bccedee37f2726f7807e9a58440dc91627/mdformat-0.7.22-py3-none-any.whl", hash = "sha256:61122637c9e1d9be1329054f3fa216559f0d1f722b7919b060a8c2a4ae1850e5", size = 34447, upload-time = "2025-01-30T18:00:48.708Z" },
-]
-
-[[package]]
-name = "mdformat-admon"
-version = "2.0.6"
-source = { git = "https://github.com/rmorshea/mdformat-admon.git?rev=0e513d7a2c265faf74441938ccbd1010660609f4#0e513d7a2c265faf74441938ccbd1010660609f4" }
-dependencies = [
-    { name = "mdformat" },
-    { name = "mdit-py-plugins" },
+    { url = "https://files.pythonhosted.org/packages/54/9a/8fe71b95985ca7a4001effbcc58e5a07a1f2a2884203f74dcf48a3b08315/mdformat-1.0.0-py3-none-any.whl", hash = "sha256:bca015d65a1d063a02e885a91daee303057bc7829c2cd37b2075a50dbb65944b", size = 53288, upload-time = "2025-10-16T12:05:02.607Z" },
 ]
 
 [[package]]
 name = "mdformat-gfm"
-version = "0.3.7"
+version = "1.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "markdown-it-py", extra = ["linkify"] },
+    { name = "markdown-it-py" },
     { name = "mdformat" },
-    { name = "mdformat-tables" },
     { name = "mdit-py-plugins" },
+    { name = "wcwidth" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/1e/66/904b98f2a66d3ffa73eb81bcd0c36f3d13a74372231c46819f2337f0d8d1/mdformat_gfm-0.3.7.tar.gz", hash = "sha256:7deb2cd1d5334541af5454e52e116639796fc441ddc08e4415f967955950fe10", size = 4706, upload-time = "2024-10-27T13:39:14.302Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/56/6f/a626ebb142a290474401b67e2d61e73ce096bf7798ee22dfe6270f924b3f/mdformat_gfm-1.0.0.tar.gz", hash = "sha256:d1d49a409a6acb774ce7635c72d69178df7dce1dc8cdd10e19f78e8e57b72623", size = 10112, upload-time = "2025-10-16T09:12:22.402Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/52/c6/da0801497839bdb71fb4744b47b546675fba1fcd9a9762cca4a8f19ab032/mdformat_gfm-0.3.7-py3-none-any.whl", hash = "sha256:c40966ef26e334226961ab77908dc9697ed63668f6383a18c80cca1cb4bb5c10", size = 4914, upload-time = "2024-10-27T13:39:13.07Z" },
+    { url = "https://files.pythonhosted.org/packages/e6/18/6bc2189b744dd383cad03764f41f30352b1278d2205096f77a29c0b327ad/mdformat_gfm-1.0.0-py3-none-any.whl", hash = "sha256:7305a50efd2a140d7c83505b58e3ac5df2b09e293f9bbe72f6c7bee8c678b005", size = 10970, upload-time = "2025-10-16T09:12:21.276Z" },
 ]
 
 [[package]]
 name = "mdformat-mkdocs"
-version = "4.1.0"
+version = "4.4.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "mdformat" },
@@ -1540,46 +1506,21 @@ dependencies = [
     { name = "mdit-py-plugins" },
     { name = "more-itertools" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/92/96/8fd8d1e1bf5e6d94fa9c13d6e3f8fb19c606d5082caa8b984ed85132d6b4/mdformat_mkdocs-4.1.0.tar.gz", hash = "sha256:7515e115ac6322f9edbe01fc7a0dbe2adf9dce6c3d8e5ee965d666264155c527", size = 26076, upload-time = "2024-12-17T01:54:33.794Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2f/76/771b113b220bea59d4aae7160a999adfb29ae6ab874e21adee91566064b1/mdformat_mkdocs-4.4.1.tar.gz", hash = "sha256:10de57f7ac70ffe623022cafe6e3a182238d2c1f95de2504e095104366897240", size = 29315, upload-time = "2025-08-20T03:17:12.283Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e7/53/95cb29a187d91438739ead6d0e00c90bbe3d2a63d9aec10af32958a9acc1/mdformat_mkdocs-4.1.0-py3-none-any.whl", hash = "sha256:0e3e26155b49eb8f9979e20fd67cc4341790309bf11e8cdeac432adb991aef91", size = 28011, upload-time = "2024-12-17T01:54:31.408Z" },
-]
-
-[[package]]
-name = "mdformat-pyproject"
-version = "0.0.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "mdformat" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/1f/56/1b75e565906412087940e065106a9e5953419c7db81bb534dd76d6db6324/mdformat_pyproject-0.0.1.tar.gz", hash = "sha256:a2a03b8f77ec43a60060ab5da4402f613c7d83eca51ff9f19373d590ecdba3aa", size = 5502, upload-time = "2023-01-03T22:19:48.645Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/ff/12/9a6531cf77bfa4f734372ab3948400d839c2ff64039a8b3ec19e2d694537/mdformat_pyproject-0.0.1-py3-none-any.whl", hash = "sha256:35fe74984ca86c3c5219280be7ea8a161fdc0d0a27bd0a788dcec5d9e322a871", size = 4696, upload-time = "2023-01-03T22:19:47.195Z" },
-]
-
-[[package]]
-name = "mdformat-tables"
-version = "1.0.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "mdformat" },
-    { name = "wcwidth" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/64/fc/995ba209096bdebdeb8893d507c7b32b7e07d9a9f2cdc2ec07529947794b/mdformat_tables-1.0.0.tar.gz", hash = "sha256:a57db1ac17c4a125da794ef45539904bb8a9592e80557d525e1f169c96daa2c8", size = 6106, upload-time = "2024-08-23T23:41:33.413Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/2a/37/d78e37d14323da3f607cd1af7daf262cb87fe614a245c15ad03bb03a2706/mdformat_tables-1.0.0-py3-none-any.whl", hash = "sha256:94cd86126141b2adc3b04c08d1441eb1272b36c39146bab078249a41c7240a9a", size = 5104, upload-time = "2024-08-23T23:41:31.863Z" },
+    { url = "https://files.pythonhosted.org/packages/77/4e/445e129795578405878d5ddbda84467418747b38bb756f5a53428f5353d7/mdformat_mkdocs-4.4.1-py3-none-any.whl", hash = "sha256:3d94fd1c497dff80fca02114be1fc735d9a1cb906067d1e18b6d2668692d3589", size = 33175, upload-time = "2025-08-20T03:17:10.917Z" },
 ]
 
 [[package]]
 name = "mdit-py-plugins"
-version = "0.4.2"
+version = "0.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "markdown-it-py" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/19/03/a2ecab526543b152300717cf232bb4bb8605b6edb946c845016fa9c9c9fd/mdit_py_plugins-0.4.2.tar.gz", hash = "sha256:5f2cd1fdb606ddf152d37ec30e46101a60512bc0e5fa1a7002c36647b09e26b5", size = 43542, upload-time = "2024-09-09T20:27:49.564Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b2/fd/a756d36c0bfba5f6e39a1cdbdbfdd448dc02692467d83816dff4592a1ebc/mdit_py_plugins-0.5.0.tar.gz", hash = "sha256:f4918cb50119f50446560513a8e311d574ff6aaed72606ddae6d35716fe809c6", size = 44655, upload-time = "2025-08-11T07:25:49.083Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a7/f7/7782a043553ee469c1ff49cfa1cdace2d6bf99a1f333cf38676b3ddf30da/mdit_py_plugins-0.4.2-py3-none-any.whl", hash = "sha256:0c673c3f889399a33b95e88d2f0d111b4447bdfea7f237dab2d488f459835636", size = 55316, upload-time = "2024-09-09T20:27:48.397Z" },
+    { url = "https://files.pythonhosted.org/packages/fb/86/dd6e5db36df29e76c7a7699123569a4a18c1623ce68d826ed96c62643cae/mdit_py_plugins-0.5.0-py3-none-any.whl", hash = "sha256:07a08422fc1936a5d26d146759e9155ea466e842f5ab2f7d2266dd084c8dab1f", size = 57205, upload-time = "2025-08-11T07:25:47.597Z" },
 ]
 
 [[package]]
@@ -1752,11 +1693,11 @@ wheels = [
 
 [[package]]
 name = "more-itertools"
-version = "10.5.0"
+version = "10.8.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/51/78/65922308c4248e0eb08ebcbe67c95d48615cc6f27854b6f2e57143e9178f/more-itertools-10.5.0.tar.gz", hash = "sha256:5482bfef7849c25dc3c6dd53a6173ae4795da2a41a80faea6700d9f5846c5da6", size = 121020, upload-time = "2024-09-05T15:28:22.081Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ea/5d/38b681d3fce7a266dd9ab73c66959406d565b3e85f21d5e66e1181d93721/more_itertools-10.8.0.tar.gz", hash = "sha256:f638ddf8a1a0d134181275fb5d58b086ead7c6a72429ad725c67503f13ba30bd", size = 137431, upload-time = "2025-09-02T15:23:11.018Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/48/7e/3a64597054a70f7c86eb0a7d4fc315b8c1ab932f64883a297bdffeb5f967/more_itertools-10.5.0-py3-none-any.whl", hash = "sha256:037b0d3203ce90cca8ab1defbbdac29d5f993fc20131f3664dc8d6acfa872aef", size = 60952, upload-time = "2024-09-05T15:28:20.141Z" },
+    { url = "https://files.pythonhosted.org/packages/a4/8e/469e5a4a2f5855992e425f3cb33804cc07bf18d48f2db061aec61ce50270/more_itertools-10.8.0-py3-none-any.whl", hash = "sha256:52d4362373dcf7c52546bc4af9a86ee7c4579df9a8dc268be0a2f949d376cc9b", size = 69667, upload-time = "2025-09-02T15:23:09.635Z" },
 ]
 
 [[package]]
@@ -3105,15 +3046,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/e1/34/943888654477a574a86a98e9896bae89c7aa15078ec29f490fef2f1e5384/tzdata-2024.2.tar.gz", hash = "sha256:7d85cc416e9382e69095b7bdf4afd9e3880418a2413feec7069d533d6b4e31cc", size = 193282, upload-time = "2024-09-23T18:56:46.89Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a6/ab/7e5f53c3b9d14972843a647d8d7a853969a58aecc7559cb3267302c94774/tzdata-2024.2-py2.py3-none-any.whl", hash = "sha256:a48093786cdcde33cad18c2555e8532f34422074448fbc874186f0abd79565cd", size = 346586, upload-time = "2024-09-23T18:56:45.478Z" },
-]
-
-[[package]]
-name = "uc-micro-py"
-version = "1.0.3"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/91/7a/146a99696aee0609e3712f2b44c6274566bc368dfe8375191278045186b8/uc-micro-py-1.0.3.tar.gz", hash = "sha256:d321b92cff673ec58027c04015fcaa8bb1e005478643ff4a500882eaab88c48a", size = 6043, upload-time = "2024-02-09T16:52:01.654Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/37/87/1f677586e8ac487e29672e4b17455758fce261de06a0d086167bb760361a/uc_micro_py-1.0.3-py3-none-any.whl", hash = "sha256:db1dffff340817673d7b466ec86114a9dc0e9d4d9b5ba229d9d60e5c12600cd5", size = 6229, upload-time = "2024-02-09T16:52:00.371Z" },
 ]
 
 [[package]]

@@ -50,19 +50,19 @@ theme:
     - navigation.sections
     - navigation.instant
   palette:
-        # Palette toggle for automatic mode
+    # Palette toggle for automatic mode
     - media: (prefers-color-scheme)
       toggle:
         icon: material/brightness-auto
         name: Switch to light mode
-                  # Palette toggle for light mode
+          # Palette toggle for light mode
     - media: '(prefers-color-scheme: light)'
       scheme: default
       primary: black
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
-                  # Palette toggle for dark mode
+          # Palette toggle for dark mode
     - media: '(prefers-color-scheme: dark)'
       scheme: slate
       primary: black
@@ -76,7 +76,7 @@ plugins:
       handlers:
         python:
           inventories:
-                      # azure objects.inv is not available: https://github.com/Azure/azure-sdk-for-python/issues/39316
+            # azure objects.inv is not available: https://github.com/Azure/azure-sdk-for-python/issues/39316
             - https://arrow.apache.org/docs/objects.inv
             - https://boto3.amazonaws.com/v1/documentation/api/latest/objects.inv
             - https://docs.pydantic.dev/latest/objects.inv

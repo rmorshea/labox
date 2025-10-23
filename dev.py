@@ -1,4 +1,4 @@
-# ruff: noqa: S607,S603,S404,FBT001,D401,D103
+# ruff: noqa: S603, S404, FBT001, D401, D103
 
 import os
 import subprocess
