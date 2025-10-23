@@ -1232,7 +1232,7 @@ dev = [
     { name = "labox", extras = ["all"] },
     { name = "mdformat", specifier = "==1.0.0" },
     { name = "mdformat-gfm", specifier = "==1.0.0" },
-    { name = "mdformat-mkdocs", specifier = "==4.1.0" },
+    { name = "mdformat-mkdocs", specifier = "==4.4.1" },
     { name = "mkdocs", specifier = "==1.6.1" },
     { name = "mkdocs-gen-files", specifier = "==0.5.0" },
     { name = "mkdocs-literate-nav", specifier = "==0.6.1" },
@@ -1283,7 +1283,7 @@ lint = [
     { name = "ipykernel", specifier = "==6.29.5" },
     { name = "mdformat", specifier = "==1.0.0" },
     { name = "mdformat-gfm", specifier = "==1.0.0" },
-    { name = "mdformat-mkdocs", specifier = "==4.1.0" },
+    { name = "mdformat-mkdocs", specifier = "==4.4.1" },
     { name = "moto", specifier = ">=5.0.22" },
     { name = "pycobertura", specifier = "==3.3.2" },
     { name = "pyright", specifier = "==1.1.391" },
@@ -1498,7 +1498,7 @@ wheels = [
 
 [[package]]
 name = "mdformat-mkdocs"
-version = "4.1.0"
+version = "4.4.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "mdformat" },
@@ -1506,9 +1506,9 @@ dependencies = [
     { name = "mdit-py-plugins" },
     { name = "more-itertools" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/92/96/8fd8d1e1bf5e6d94fa9c13d6e3f8fb19c606d5082caa8b984ed85132d6b4/mdformat_mkdocs-4.1.0.tar.gz", hash = "sha256:7515e115ac6322f9edbe01fc7a0dbe2adf9dce6c3d8e5ee965d666264155c527", size = 26076, upload-time = "2024-12-17T01:54:33.794Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2f/76/771b113b220bea59d4aae7160a999adfb29ae6ab874e21adee91566064b1/mdformat_mkdocs-4.4.1.tar.gz", hash = "sha256:10de57f7ac70ffe623022cafe6e3a182238d2c1f95de2504e095104366897240", size = 29315, upload-time = "2025-08-20T03:17:12.283Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e7/53/95cb29a187d91438739ead6d0e00c90bbe3d2a63d9aec10af32958a9acc1/mdformat_mkdocs-4.1.0-py3-none-any.whl", hash = "sha256:0e3e26155b49eb8f9979e20fd67cc4341790309bf11e8cdeac432adb991aef91", size = 28011, upload-time = "2024-12-17T01:54:31.408Z" },
+    { url = "https://files.pythonhosted.org/packages/77/4e/445e129795578405878d5ddbda84467418747b38bb756f5a53428f5353d7/mdformat_mkdocs-4.4.1-py3-none-any.whl", hash = "sha256:3d94fd1c497dff80fca02114be1fc735d9a1cb906067d1e18b6d2668692d3589", size = 33175, upload-time = "2025-08-20T03:17:10.917Z" },
 ]
 
 [[package]]
