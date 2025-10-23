@@ -64,9 +64,9 @@ A storage registry is used to map storage names to storage instances. This allow
 to know which storage to use when saving or loading data.
 
 ```python
+from labox.builtin import FileStorage
 from labox.core import StorageRegistry
 from labox.extra.aws import S3Storage
-from labox.extra.os import FileStorage
 
 file_storage = FileStorage("mydir", mkdir=True)
 s3_storage = S3Storage(
@@ -86,9 +86,9 @@ a storage has not otherwise been specified.
 ```python
 import boto3
 
+from labox.builtin import FileStorage
 from labox.core import StorageRegistry
 from labox.extra.aws import S3Storage
-from labox.extra.os import FileStorage
 
 file_storage = FileStorage("mydir", mkdir=True)
 s3_storage = S3Storage(

@@ -54,8 +54,8 @@ Establish a [registry](./concepts/registry.md) with the
 [storages](./concepts/storages.md) you plan to use.
 
 ```python
+from labox.builtin import FileStorage
 from labox.core import Registry
-from labox.extra.os import FileStorage
 
 registry = Registry(
     modules=["labox.builtin", "labox.extra.pandas", "labox.extra.pydantic"],
