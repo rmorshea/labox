@@ -69,7 +69,7 @@ class Storage(Generic[C], Component):
 
     @abc.abstractmethod
     @not_implemented
-    def read_data_stream(self, info: C, /) -> AsyncGenerator[bytes]:
+    def read_data_stream(self, config: C, /) -> AsyncGenerator[bytes]:
         """Load a stream of data using the given information."""
         ...
 
