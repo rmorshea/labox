@@ -43,9 +43,7 @@ async def list_contents(
     offset: Annotated[int, Parameter(ge=0)] = 0,
 ) -> list[ContentRecord]:
     """List all content records with pagination and optional filtering."""
-    query = (
-        select(ContentRecord).offset(offset).limit(limit).order_by(ContentRecord.created_at.desc())
-    )
+    query = select(ContentRecord).offset(offset).limit(limit)
 
     if manifest_id is not None:
         query = query.where(ContentRecord.manifest_id == manifest_id)
