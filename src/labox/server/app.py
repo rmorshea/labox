@@ -10,16 +10,19 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from labox.core.registry import Registry
 from labox.server.routes import get_content
+from labox.server.routes import get_content_data
 from labox.server.routes import get_manifest
 from labox.server.routes import list_contents
 
 
-def create_app(sqlalchemy_engine: AsyncEngine) -> ls.Litestar:
+def create_app(sqlalchemy_engine: AsyncEngine, registry: Registry) -> ls.Litestar:
     """Return the ASGI application for Labox.
 
     Args:
         sqlalchemy_engine: An async SQLAlchemy engine to use for database operations.
+        registry: The registry containing storage, serializer, and unpacker configurations.
 
     Returns:
         A configured Litestar application.
@@ -29,11 +32,16 @@ def create_app(sqlalchemy_engine: AsyncEngine) -> ls.Litestar:
             get_manifest,
             list_contents,
             get_content,
+            get_content_data,
         ],
-        dependencies={"session": Provide(provide_transaction)},
+        dependencies={
+            "session": Provide(provide_transaction),
+            "registry": Provide(provide_registry, sync_to_thread=False),
+        },
         lifespan=[db_connection],
     )
     app.state.engine = sqlalchemy_engine
+    app.state.registry = registry
     return app
 
 
@@ -58,3 +66,8 @@ async def provide_transaction(state: State) -> AsyncGenerator[AsyncSession, None
                 status_code=HTTP_409_CONFLICT,
                 detail=str(exc),
             ) from exc
+
+
+def provide_registry(state: State) -> Registry:
+    """Provide the registry from app state."""
+    return state.registry
