@@ -38,7 +38,6 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 engine = create_async_engine("sqlite+aiosqlite:///temp.db")
 new_async_session = async_sessionmaker(engine, expire_on_commit=True)
-BaseRecord.create_all(engine).run()
 ```
 
 Then use the engine to create Labox's tables:
@@ -106,7 +105,7 @@ Save the data and return a [record](./concepts/database.md#manifest-records):
 from labox.core import save_one
 
 async with new_async_session() as session:
-    record = save_one(experiment, session=session, registry=registry)
+    record = await save_one(experiment, session=session, registry=registry)
 ```
 
 Now, you can load the data back from the record:
@@ -115,7 +114,7 @@ Now, you can load the data back from the record:
 from labox.core import load_one
 
 async with new_async_session() as session:
-    loaded_experiment = load_one(record, session=session, registry=registry)
+    loaded_experiment = await load_one(record, session=session, registry=registry)
 
 assert loaded_experiment == experiment
 ```
