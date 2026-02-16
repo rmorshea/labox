@@ -11,11 +11,6 @@ source-exclude = [
     "*_test.py",
 ]
 
-[tool.hatch.build.targets.sdist]
-include = ["src/labox", "docs"]
-[tool.hatch.build.targets.wheel]
-packages = ["src/labox"]
-
 [project]
 name = "labox"
 version = "0.1.0"
@@ -217,7 +212,7 @@ source_pkgs = ["labox", "tests"]
 branch = true
 omit = []
 [tool.coverage.paths]
-labox = ["src"]
+labox = ["labox"]
 tests = ["tests"]
 [tool.coverage.report]
 exclude_lines = [
