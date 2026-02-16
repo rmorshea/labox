@@ -114,7 +114,7 @@ pydantic = ["pydantic-walk-core-schema>=1.0.0"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
-python_files = ["*_test.py", "test/*.py"]
+python_files = ["*_test.py", "test/*.py", "test.py"]
 filterwarnings = ["error", "ignore:datetime.datetime.utcnow:DeprecationWarning"]
 
 [tool.ruff]
@@ -173,7 +173,7 @@ force-single-line = true
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = [
+"{*_test.py,conftest.py,**/test/*.py}" = [
     "ARG001",  # Unused argument (pytest fixtures)
     "PLC2701", # Private imports
     "RUF029",  # Async functions without await
