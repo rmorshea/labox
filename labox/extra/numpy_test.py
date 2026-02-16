@@ -1,7 +1,7 @@
 import numpy as np
 
 from labox.extra.numpy import NpySerializer
-from tests.core_serializer_utils import make_value_serializer_test
+from labox.test.core_serializer_utils import make_value_serializer_test
 
 
 def _assert_equal(a: np.ndarray, b: np.ndarray):

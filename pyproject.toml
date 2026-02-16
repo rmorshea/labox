@@ -1,6 +1,15 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["uv_build>=0.10.3,<0.11.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "labox"
+module-root = ""
+source-exclude = [
+    "test",
+    "conftest.py",
+    "*_test.py",
+]
 
 [tool.hatch.build.targets.sdist]
 include = ["src/labox", "docs"]
@@ -105,7 +114,7 @@ pydantic = ["pydantic-walk-core-schema>=1.0.0"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
-python_files = ["test_*.py", "*_utils.py"]
+python_files = ["*_test.py", "test/*.py"]
 filterwarnings = ["error", "ignore:datetime.datetime.utcnow:DeprecationWarning"]
 
 [tool.ruff]

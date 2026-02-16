@@ -8,7 +8,7 @@ import pytest
 
 from labox.extra.aws import S3Storage
 from labox.extra.aws import simple_s3_router
-from tests.core_storage_utils import parametrize_storage_assertions
+from labox.test.core_storage_utils import parametrize_storage_assertions
 
 if TYPE_CHECKING:
     from types_boto3_s3 import S3Client

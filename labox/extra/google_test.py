@@ -9,7 +9,7 @@ from google.cloud.exceptions import NotFound
 
 from labox.extra.google import BlobStorage
 from labox.extra.google import simple_blob_router
-from tests.core_storage_utils import parametrize_storage_assertions
+from labox.test.core_storage_utils import parametrize_storage_assertions
 
 if TYPE_CHECKING:
     from google.cloud.storage import Blob

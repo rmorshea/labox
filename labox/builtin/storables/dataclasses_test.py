@@ -8,8 +8,8 @@ from labox.builtin.storables.dataclasses import StorableDataclass
 from labox.builtin.storages.file import FileStorage
 from labox.core.registry import Registry
 from labox.extra.msgpack import MsgPackSerializer
-from tests.core_registry_utils import basic_registry
-from tests.core_storable_utils import make_storable_unpack_repack_test
+from labox.test.core_registry_utils import basic_registry
+from labox.test.core_storable_utils import make_storable_unpack_repack_test
 
 
 @dataclass

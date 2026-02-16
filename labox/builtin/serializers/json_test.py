@@ -1,7 +1,7 @@
 from labox.builtin.serializers import JsonSerializer
 from labox.builtin.serializers import JsonStreamSerializer
-from tests.core_serializer_utils import make_stream_serializer_test
-from tests.core_serializer_utils import make_value_serializer_test
+from labox.test.core_serializer_utils import make_stream_serializer_test
+from labox.test.core_serializer_utils import make_value_serializer_test
 
 test_json_stream_serializer = make_stream_serializer_test(
     JsonStreamSerializer(),

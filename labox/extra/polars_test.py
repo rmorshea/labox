@@ -1,7 +1,7 @@
 import polars as pl
 
 from labox.extra.polars import ParquetDataFrameSerializer
-from tests.core_serializer_utils import make_value_serializer_test
+from labox.test.core_serializer_utils import make_value_serializer_test
 
 
 def _assert_equal(a: pl.DataFrame, b: pl.DataFrame):

@@ -10,9 +10,9 @@ from labox.core.registry import Registry
 from labox.extra.msgpack import MsgPackSerializer
 from labox.extra.pydantic import StorableModel
 from labox.extra.pydantic import StorableSpec
-from tests.core_api_utils import assert_save_load_equivalence
-from tests.core_registry_utils import basic_registry
-from tests.core_storable_utils import make_storable_unpack_repack_test
+from labox.test.core_api_utils import assert_save_load_equivalence
+from labox.test.core_registry_utils import basic_registry
+from labox.test.core_storable_utils import make_storable_unpack_repack_test
 
 
 class BasicModel(StorableModel, class_id="1e76a004"):
