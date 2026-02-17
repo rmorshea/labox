@@ -4,8 +4,8 @@ from labox.extra.pyarrow import ArrowRecordBatchStreamSerializer
 from labox.extra.pyarrow import ArrowTableSerializer
 from labox.extra.pyarrow import ParquetRecordBatchStreamSerializer
 from labox.extra.pyarrow import ParquetTableSerializer
-from tests.core_serializer_utils import make_stream_serializer_test
-from tests.core_serializer_utils import make_value_serializer_test
+from labox.test.core_serializer_utils import make_stream_serializer_test
+from labox.test.core_serializer_utils import make_value_serializer_test
 
 TABLES = [
     pa.table({"a": [1, 2, 3], "b": [4, 5, 6]}),

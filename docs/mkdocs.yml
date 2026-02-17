@@ -90,7 +90,7 @@ plugins:
             - https://pola-rs.github.io/polars/py-polars/html/objects.inv
             - https://anyio.readthedocs.io/en/stable/objects.inv
             - https://azuresdkdocs.z19.web.core.windows.net/python/azure-storage-blob/12.26.0/objects.inv
-          paths: [src]
+          paths: [labox]
           options:
             docstring_options:
               ignore_init_summary: true
@@ -130,5 +130,5 @@ markdown_extensions:
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - pymdownx.saneheaders
   - pymdownx.extra
-watch: [gen_reference.py, ../src, ../CHANGELOG.md]
+watch: [gen_reference.py, ../labox, ../CHANGELOG.md]
 extra_css: [custom-styles.css]

@@ -4,9 +4,9 @@ from labox.builtin.storables import StorableStream
 from labox.builtin.storables import StorableValue
 from labox.core import load_one
 from labox.core import save_one
-from tests.core_api_utils import assert_save_load_equivalence
-from tests.core_api_utils import assert_save_load_stream_equivalence
-from tests.core_registry_utils import basic_registry
+from labox.test.core_api_utils import assert_save_load_equivalence
+from labox.test.core_api_utils import assert_save_load_stream_equivalence
+from labox.test.core_registry_utils import basic_registry
 
 SAMPLE_DATA = [{"message": "Hello, Alice!"}, {"message": "Goodbye, Alice!"}]
 

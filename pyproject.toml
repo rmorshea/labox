@@ -1,11 +1,15 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["uv_build>=0.10.3,<0.11.0"]
+build-backend = "uv_build"
 
-[tool.hatch.build.targets.sdist]
-include = ["src/labox", "docs"]
-[tool.hatch.build.targets.wheel]
-packages = ["src/labox"]
+[tool.uv.build-backend]
+module-name = "labox"
+module-root = ""
+source-exclude = [
+    "test",
+    "conftest.py",
+    "*_test.py",
+]
 
 [project]
 name = "labox"
@@ -105,7 +109,7 @@ pydantic = ["pydantic-walk-core-schema>=1.0.0"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
-python_files = ["test_*.py", "*_utils.py"]
+python_files = ["*_test.py", "test/*.py", "test.py"]
 filterwarnings = ["error", "ignore:datetime.datetime.utcnow:DeprecationWarning"]
 
 [tool.ruff]
@@ -164,7 +168,7 @@ force-single-line = true
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = [
+"{*_test.py,conftest.py,**/test/*.py}" = [
     "ARG001",  # Unused argument (pytest fixtures)
     "PLC2701", # Private imports
     "RUF029",  # Async functions without await
@@ -208,7 +212,7 @@ source_pkgs = ["labox", "tests"]
 branch = true
 omit = []
 [tool.coverage.paths]
-labox = ["src"]
+labox = ["labox"]
 tests = ["tests"]
 [tool.coverage.report]
 exclude_lines = [

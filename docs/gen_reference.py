@@ -12,16 +12,20 @@ nav = Nav()
 mod_symbol = '<code class="doc-symbol doc-symbol-nav doc-symbol-module"></code>'
 
 root = Path(__file__).parent.parent
-src = root / "src"
+proj = root / "labox"
 
-for path in sorted(src.rglob("*.py")):
-    module_path = path.relative_to(src).with_suffix("")
-    doc_path = path.relative_to(src / "labox").with_suffix(".md")
+for path in sorted(proj.rglob("*.py")):
+    module_path = path.relative_to(root).with_suffix("")
+    doc_path = path.relative_to(proj).with_suffix(".md")
     full_doc_path = Path("reference", doc_path)
 
     parts = tuple(module_path.parts)
 
     if parts[-1] == "__init__" or parts[-1].startswith("_"):
+        continue
+
+    # Skip test files, conftest, and files in test directories
+    if parts[-1].endswith("_test") or parts[-1] == "conftest" or "test" in parts:
         continue
 
     nav_parts = [f"{mod_symbol} {part}" for part in parts]
