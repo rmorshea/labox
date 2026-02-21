@@ -52,18 +52,6 @@ imageio = ["imageio>=2,<3"]
 Source = "https://github.com/rmorshea/labox"
 
 [dependency-groups]
-lint = [
-    { include-group = "test" },
-    "doccmd==2025.04.08",
-    "mdformat-mkdocs==4.4.1",
-    "mdformat-gfm==1.0.0",
-    "mdformat==1.0.0",
-    "pyright==1.1.391",
-    "ruff==0.9.2",
-    "types-boto3-s3==1.35.76",
-    "types-boto3==1.35.76",
-    "yamlfix==1.17.0",
-]
 dev = [
     { include-group = "util" },
     { include-group = "docs" },
