@@ -83,6 +83,8 @@ lint = [
     "yamlfix==1.17.0",
     "doccmd==2024.11.14",
     "deptry==0.24.0",
+    "types-boto3-s3==1.35.76",
+    "types-boto3==1.35.76",
 ]
 test = [
     { include-group = "util" },
