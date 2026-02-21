@@ -130,5 +130,5 @@ markdown_extensions:
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - pymdownx.saneheaders
   - pymdownx.extra
-watch: [gen_reference.py, ../labox, ../CHANGELOG.md]
+watch: [gen_reference.py, ../python, ../CHANGELOG.md]
 extra_css: [custom-styles.css]
