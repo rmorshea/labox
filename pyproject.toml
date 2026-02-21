@@ -104,6 +104,9 @@ asyncio_default_fixture_loop_scope = "function"
 python_files = ["test_*.py", "*_test.py", "test/*.py", "tests/**/*.py", "test.py"]
 filterwarnings = ["error", "ignore:datetime.datetime.utcnow:DeprecationWarning"]
 
+[tool.pyright]
+reportWildcardImportFromLibrary = "none"
+
 [tool.ruff]
 line-length = 100
 [tool.ruff.format]
