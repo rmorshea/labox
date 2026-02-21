@@ -120,7 +120,6 @@ ignore = [
     "ARG005", # Unused lambda argument
     "B027",   # Allow non-abstract empty methods in abstract base classes
     "B039",   # Mutable default for contextvars
-    "B903",   # Class could be dataclass
     "C901",   # Ignore complexity
     "COM812", # Trailing comma
     "CPY001", # Copyright at top of file

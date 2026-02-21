@@ -67,7 +67,7 @@ jobs:
         with:
           version: 2026.2.4
       - name: Check lint
-        run:  mise run lint:python --check
+        run: mise run lint:python --check
   py-build:
     runs-on: ubuntu-latest
     steps:
