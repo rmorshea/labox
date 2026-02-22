@@ -47,14 +47,15 @@ describe('fetchContentRecord', () => {
 });
 
 describe('fetchContentData', () => {
-    it('calls the correct URL and returns an ArrayBuffer', async () => {
+    it('calls the correct URL and returns a ReadableStream', async () => {
         const bytes = new Uint8Array([1, 2, 3, 4]);
         const spy = spyOn(globalThis, 'fetch').mockResolvedValue(
             new Response(bytes, { status: 200 }),
         );
         const result = await fetchContentData(CONTENT_ID, BASE_URL);
-        expect(result).toBeInstanceOf(ArrayBuffer);
-        expect(new Uint8Array(result)).toEqual(bytes);
+        expect(result).toBeInstanceOf(ReadableStream);
+        const buffer = await new Response(result).arrayBuffer();
+        expect(new Uint8Array(buffer)).toEqual(bytes);
         expect(spy).toHaveBeenCalledWith(`${BASE_URL}/contents/${CONTENT_ID}/data`);
     });
 

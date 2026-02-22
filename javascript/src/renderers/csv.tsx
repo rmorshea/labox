@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'preact/hooks';
+import { readAll } from './utils';
 import type { Renderer } from './types';
 import type { ContentRecord } from '../types';
 
-function CsvTable({ data }: { data: ArrayBuffer }) {
+function CsvTable({ data }: { data: ReadableStream<Uint8Array> }) {
     const [rows, setRows] = useState<string[][] | null>(null);
 
     useEffect(() => {
-        import('papaparse').then(({ default: Papa }) => {
-            const text = new TextDecoder().decode(data);
+        Promise.all([import('papaparse'), readAll(data)]).then(([{ default: Papa }, buffer]) => {
+            const text = new TextDecoder().decode(buffer);
             const { data: parsed } = Papa.parse<string[]>(text, { skipEmptyLines: true });
             setRows(parsed);
         });
@@ -52,7 +53,7 @@ function CsvTable({ data }: { data: ArrayBuffer }) {
 export const csvRenderer: Renderer = {
     types: ['text/csv'],
 
-    render(data: ArrayBuffer, _record: ContentRecord) {
+    render(data: ReadableStream<Uint8Array>, _record: ContentRecord) {
         return <CsvTable data={data} />;
     },
 };

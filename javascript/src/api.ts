@@ -18,7 +18,10 @@ export async function fetchContentRecord(
 }
 
 /**
- * Fetch the raw data bytes for a content record.
+ * Fetch the raw data stream for a content record.
+ *
+ * Returns the response body as a {@link ReadableStream} so that renderers
+ * can either buffer the whole payload or consume it progressively.
  *
  * @param contentId - UUID of the content record.
  * @param baseUrl - Base URL of the labox server (no trailing slash).
@@ -26,10 +29,13 @@ export async function fetchContentRecord(
 export async function fetchContentData(
     contentId: string,
     baseUrl: string,
-): Promise<ArrayBuffer> {
+): Promise<ReadableStream<Uint8Array>> {
     const res = await fetch(`${baseUrl}/contents/${contentId}/data`);
     if (!res.ok) {
         throw new Error(`Failed to fetch content data: ${res.status} ${res.statusText}`);
     }
-    return res.arrayBuffer();
+    if (!res.body) {
+        throw new Error('Response body is null');
+    }
+    return res.body;
 }

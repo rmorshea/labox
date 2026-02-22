@@ -20,8 +20,12 @@ export interface Renderer {
     /**
      * Produce a Preact virtual-DOM tree for the given raw data.
      *
-     * @param data - Raw bytes of the content.
+     * The stream is fresh for every call and may be consumed at any pace —
+     * read it in full with {@link readAll} or process it chunk-by-chunk for
+     * progressive rendering.
+     *
+     * @param data - Readable byte stream of the content body.
      * @param record - The associated {@link ContentRecord}.
      */
-    render(data: ArrayBuffer, record: ContentRecord): JSX.Element;
+    render(data: ReadableStream<Uint8Array>, record: ContentRecord): JSX.Element;
 }

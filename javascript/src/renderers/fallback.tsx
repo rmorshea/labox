@@ -4,7 +4,7 @@ import type { ContentRecord } from '../types';
 export const fallbackRenderer: Renderer = {
     types: [],
 
-    render(_data: ArrayBuffer, record: ContentRecord) {
+    render(_data: ReadableStream<Uint8Array>, record: ContentRecord) {
         return (
             <div class="labox-content--fallback">
                 <dl class="labox-fallback">

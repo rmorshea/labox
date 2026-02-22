@@ -2,9 +2,7 @@ import { describe, it, expect } from 'bun:test';
 import {
     buildRendererMap,
     findRenderer,
-    fallbackRenderer,
-    RENDERERS,
-    DEFAULT_RENDERER_MAP,
+    fallbackRenderer
 } from './index';
 import { jsonRenderer } from './json';
 import { csvRenderer } from './csv';

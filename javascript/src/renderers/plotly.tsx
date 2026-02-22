@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type * as PlotlyTypes from 'plotly.js';
+import { readAll } from './utils';
 import type { Renderer } from './types';
 import type { ContentRecord } from '../types';
 
@@ -9,26 +10,25 @@ interface PlotlyFigure {
     config?: Partial<PlotlyTypes.Config>;
 }
 
-function PlotlyView({ data, record }: { data: ArrayBuffer; record: ContentRecord }) {
+function PlotlyView({ data, record }: { data: ReadableStream<Uint8Array>; record: ContentRecord }) {
     const divRef = useRef<HTMLDivElement>(null);
     const [ready, setReady] = useState(false);
 
     useEffect(() => {
-        const text = new TextDecoder().decode(data);
-        let fig: PlotlyFigure;
-        try {
-            fig = JSON.parse(text) as PlotlyFigure;
-        } catch {
-            return;
-        }
-
         const el = divRef.current;
         if (!el) return;
 
         let cancelled = false;
 
-        import('plotly.js').then(({ default: Plotly }) => {
+        Promise.all([import('plotly.js'), readAll(data)]).then(([{ default: Plotly }, buffer]) => {
             if (cancelled || !divRef.current) return;
+            const text = new TextDecoder().decode(buffer);
+            let fig: PlotlyFigure;
+            try {
+                fig = JSON.parse(text) as PlotlyFigure;
+            } catch {
+                return;
+            }
             Plotly.newPlot(el, fig.data ?? [], fig.layout ?? {}, {
                 responsive: true,
                 ...fig.config,
