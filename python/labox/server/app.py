@@ -48,11 +48,8 @@ async def _provide_transaction(state: State) -> AsyncGenerator[AsyncSession, Non
         try:
             async with session.begin():
                 yield session
-        except IntegrityError as exc:
-            raise ClientException(
-                status_code=HTTP_409_CONFLICT,
-                detail=str(exc),
-            ) from exc
+        except IntegrityError as exc:  # nocov
+            raise ClientException(status_code=HTTP_409_CONFLICT, detail=str(exc)) from exc
 
 
 def _provide_registry(state: State) -> Registry:
