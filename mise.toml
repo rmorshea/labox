@@ -188,14 +188,17 @@ sources = [
 run = [
   "bun install --cwd javascript",
   "bun --cwd javascript build",
-  "mkdir -p python/labox/server/static",
-  "cp -r javascript/dist python/labox/server/static/js"
 ]
 
 [tasks."build:python"]
 description = "Build the Python package"
 depends = ["build:javascript"]
-run = "uv build"
+run = [
+  "mkdir -p python/labox/server/static",
+  "rm -rf python/labox/server/static/js",
+  "cp -r javascript/dist python/labox/server/static/js",
+  "uv build"
+]
 
 [tasks."release:python"]
 description = "Release the Python package"

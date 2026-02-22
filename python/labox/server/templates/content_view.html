@@ -5,11 +5,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Content {{ content_id }}</title>
-    <link rel="stylesheet" href="/static/js/style.css" />
 </head>
 
 <body>
-    <div id="container"></div>
+    <div id="container-{{ content_id }}"></div>
     <script type="module">
         import { renderContent } from '/static/js/index.js';
 
@@ -19,7 +18,7 @@
         // mounted under a sub-path of a larger application.
         const segments = window.location.pathname.split('/');
         const baseUrl = segments.slice(0, -3).join('/');
-        const container = document.getElementById('container');
+        const container = document.getElementById(`container-${contentId}`);
 
         renderContent(contentId, baseUrl, container);
     </script>

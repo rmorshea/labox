@@ -6,7 +6,7 @@ import { fallbackRenderer } from './fallback';
 import type { Renderer } from './types';
 
 export type { Renderer };
-export { fallbackRenderer };
+export { fallbackRenderer, plotlyRenderer };
 
 /**
  * Default set of renderers used to build the content-type lookup map.
