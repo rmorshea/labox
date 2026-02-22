@@ -178,8 +178,15 @@ git diff --name-only "origin/${TARGET_BRANCH}..HEAD" -- CHANGELOG.md || true
 
 [tasks."build:javascript"]
 description = "Build the Javascript library"
-sources = ["javascript"]
+sources = [
+  "javascript/node_modules",
+  "javascript/package.json",
+  "javascript/src/**",
+  "javascript/tsconfig.json",
+  "javascript/vite.config.ts",
+]
 run = [
+  "bun install --cwd javascript",
   "bun --cwd javascript build",
   "mkdir -p python/labox/server/static",
   "cp -r javascript/dist python/labox/server/static/js"

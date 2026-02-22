@@ -3,6 +3,14 @@ import { resolve } from 'path';
 import dts from 'vite-plugin-dts';
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      // plotly.js (source) references Node.js built-ins (e.g. `buffer/`) which
+      // leak as unresolvable bare specifiers when bundled in library mode.
+      // Point to the pre-built browser bundle instead.
+      'plotly.js': 'plotly.js-dist-min',
+    },
+  },
   esbuild: {
     jsx: 'automatic',
     jsxImportSource: 'preact',

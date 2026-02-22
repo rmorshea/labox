@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "papaparse": "^5.5.3",
-    "plotly.js": "^2.35.3",
+    "plotly.js-dist-min": "^2.35.3",
     "preact": "^10.26.2"
   },
   "devDependencies": {
