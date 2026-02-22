@@ -19,6 +19,7 @@ run = [
 [tasks."test:python"]
 description = "Run the Python test suite"
 usage = 'arg "[args]" default="." help="Arguments to pass to pytest" var=#true'
+depends = ["build:javascript"]
 run = 'uv run pytest -v ${usage_args?}'
 
 [tasks.cov]
@@ -28,6 +29,8 @@ run = [
 ]
 
 [tasks."cov:python"]
+description = "Run the Python coverage reporting"
+depends = ["build:javascript"]
 usage = '''
 flag "--no-test" help="Skip running tests and just report coverage"
 flag "--old-coverage-xml <file>" help="Path to target coverage.xml"
@@ -176,7 +179,6 @@ git diff --name-only "origin/${TARGET_BRANCH}..HEAD" -- CHANGELOG.md || true
 [tasks."build:javascript"]
 description = "Build the Javascript library"
 sources = ["javascript"]
-outputs = ["python/labox/server/static"]
 run = [
   "bun --cwd javascript build",
   "mkdir -p python/labox/server/static",
