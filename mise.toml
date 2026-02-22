@@ -12,7 +12,7 @@ run = [
 [tasks."test:javascript"]
 description = "Run the JavaScript/TypeScript test suite"
 run = [
-  "bun --cwd javascript install",
+  "bun install --cwd javascript",
   "bun --cwd javascript test",
 ]
 
@@ -79,7 +79,7 @@ run = """
 #!/usr/bin/env bash
 set -euo pipefail
 
-bun --cwd javascript install
+bun install --cwd javascript
 
 NO_JS_TYPES="${usage_no_js_types:-false}"
 
