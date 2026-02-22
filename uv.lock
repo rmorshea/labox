@@ -1107,7 +1107,6 @@ dependencies = [
     { name = "anysync" },
     { name = "litestar" },
     { name = "platformdirs" },
-    { name = "pybooster" },
     { name = "sqlalchemy", extra = ["asyncio"] },
     { name = "tenacity" },
     { name = "typing-extensions" },
@@ -1297,7 +1296,6 @@ requires-dist = [
     { name = "plotly", marker = "extra == 'plotly'", specifier = ">=5,<6" },
     { name = "polars", marker = "extra == 'polars'", specifier = ">=1.18.0" },
     { name = "pyarrow", marker = "extra == 'pyarrow'", specifier = ">=18,<19" },
-    { name = "pybooster", specifier = ">=0.0.10" },
     { name = "pydantic", marker = "extra == 'pydantic'", specifier = ">=2,<3" },
     { name = "pydantic-walk-core-schema", marker = "extra == 'pydantic'", specifier = ">=1.0.0" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.36,<3" },
@@ -2167,15 +2165,6 @@ wheels = [
 ]
 
 [[package]]
-name = "paramorator"
-version = "1.0.2"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/7a/04/77c18d2d2c68d5b3af85f1d4952ca4d8f8ecded9c27fe203418f848dc76a/paramorator-1.0.2.tar.gz", hash = "sha256:2e034ef97edb2debbe7f155b9204195864dc141682c3f01fa59ef89c3b79d24e", size = 4481, upload-time = "2024-10-06T23:35:42.772Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/39/a2/0bab6d3108121a7356e1c4c2843e956fde39466d65959bc9c1476c77d930/paramorator-1.0.2-py2.py3-none-any.whl", hash = "sha256:ceb908ccb993bcfad153fec69502052cf678d11af0b7a8d122b942233a612652", size = 3428, upload-time = "2024-10-06T23:35:41.135Z" },
-]
-
-[[package]]
 name = "parso"
 version = "0.8.4"
 source = { registry = "https://pypi.org/simple" }
@@ -2506,20 +2495,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/1d/67/6afbf0d507f73c32d21084a79946bfcfca5fbc62a72057e9c23797a737c9/pyasn1_modules-0.4.1.tar.gz", hash = "sha256:c28e2dbf9c06ad61c71a075c7e0f9fd0f1b0bb2d2ad4377f240d33ac2ab60a7c", size = 310028, upload-time = "2024-09-10T22:42:08.349Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/77/89/bc88a6711935ba795a679ea6ebee07e128050d6382eaa35a0a47c8032bdc/pyasn1_modules-0.4.1-py3-none-any.whl", hash = "sha256:49bfa96b45a292b711e986f222502c1c9a5e1f4e568fc30e2574a6c7d07838fd", size = 181537, upload-time = "2024-09-11T16:02:10.336Z" },
-]
-
-[[package]]
-name = "pybooster"
-version = "0.0.10"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "paramorator" },
-    { name = "rustworkx" },
-    { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/01/0b/b325d019ddb2f78db2d0e9c3aab173b7ba71f0d65174fadb8ebd5939decd/pybooster-0.0.10.tar.gz", hash = "sha256:4213d00519f358b677f1677d3789a6f73c5eb1760f78e395ea7b74b910b7a56a", size = 36065, upload-time = "2025-10-01T00:16:53.57Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/3d/f4/bd1d350ff123d44770f912ae4a9846a07016ad18e73a06258047274a24c8/pybooster-0.0.10-py3-none-any.whl", hash = "sha256:d26927e37de312382cfe50cca6025a4555ef6401857f5bdffd9b4952c17c47c4", size = 21713, upload-time = "2025-10-01T00:16:52.295Z" },
 ]
 
 [[package]]
@@ -3071,28 +3046,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/b0/5c/efdb4777686683a8edce94ffd812783bddcd3d2454d38c5ac193fef7c500/ruff-0.7.3-py3-none-win32.whl", hash = "sha256:4ba81a5f0c5478aa61674c5a2194de8b02652f17addf8dfc40c8937e6e7d79fc", size = 8611095, upload-time = "2024-11-08T11:22:39.099Z" },
     { url = "https://files.pythonhosted.org/packages/bb/b8/28fbc6a4efa50178f973972d1c84b2d0a33cdc731588522ab751ac3da2f5/ruff-0.7.3-py3-none-win_amd64.whl", hash = "sha256:588a9ff2fecf01025ed065fe28809cd5a53b43505f48b69a1ac7707b1b7e4088", size = 9418283, upload-time = "2024-11-08T11:22:41.933Z" },
     { url = "https://files.pythonhosted.org/packages/3f/77/b587cba6febd5e2003374f37eb89633f79f161e71084f94057c8653b7fb3/ruff-0.7.3-py3-none-win_arm64.whl", hash = "sha256:1713e2c5545863cdbfe2cbce21f69ffaf37b813bfd1fb3b90dc9a6f1963f5a8c", size = 8725228, upload-time = "2024-11-08T11:22:44.247Z" },
-]
-
-[[package]]
-name = "rustworkx"
-version = "0.15.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "numpy" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/5e/07/1af3ead27f1da113a60dc6735c761da6fc2e2db4cfc414bbcd03a989ccee/rustworkx-0.15.1.tar.gz", hash = "sha256:0e0cc86599f979285b2ab9c357276f3272f3fcb3b2df5651a6bf9704c570d4c1", size = 342216, upload-time = "2024-06-28T15:33:22.694Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/37/06/adeed1d166c55920a6a83085e8c8c8b24c8d7708de99f7a814458a3c4529/rustworkx-0.15.1-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:6cd4496d3298cd3205c03545e48cc37d21e0455d57752af801d3fb250452d590", size = 1880966, upload-time = "2024-06-28T15:32:36.156Z" },
-    { url = "https://files.pythonhosted.org/packages/03/11/95350c7eeade2e61a736f1ca956ee04acb920b7b080ff0c058c40cc7bbf3/rustworkx-0.15.1-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:cb518f5649e62d753e29ca1e57290c8f58adbebcd154dc3159f4a36ebfa1e2b7", size = 1707452, upload-time = "2024-06-28T15:32:37.935Z" },
-    { url = "https://files.pythonhosted.org/packages/2f/2b/494982ecc4618796aacb8069bc176d895cec4bf1ac8dd0b1d69657d920c4/rustworkx-0.15.1-cp38-abi3-manylinux_2_12_i686.manylinux2010_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:6ac68ae2515ece22ba3ef56f3d16ad6bf707955f650d623190b2e7d706c6dc92", size = 2009359, upload-time = "2024-06-28T15:32:39.72Z" },
-    { url = "https://files.pythonhosted.org/packages/7f/3c/23304cf86c4af6014884bde046073105ace6250b6a0914c1090f2643d03c/rustworkx-0.15.1-cp38-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:8b903edec1d803704b499959f9d6f6119cdda63b9b64194a4b4307e506b112f0", size = 1862943, upload-time = "2024-06-28T15:45:49.687Z" },
-    { url = "https://files.pythonhosted.org/packages/b3/2a/03e6ff45cb772d249d4bf2d433a2acd2ec857615b3c1d44f0fa49e13aa63/rustworkx-0.15.1-cp38-abi3-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:a2c97a56ff8a0f6c273a83e26e627c72207442b4252aa550acad0bff42caac40", size = 2029096, upload-time = "2024-06-28T18:31:04.049Z" },
-    { url = "https://files.pythonhosted.org/packages/15/88/a3710209f647d89358c81b5974aee48b1ab361fd016dcae81824e29ee645/rustworkx-0.15.1-cp38-abi3-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:241c502532e348ba89200823326dba30de4df4b886cb2fd5a140b359ff124bb3", size = 3611892, upload-time = "2024-06-28T15:43:11.578Z" },
-    { url = "https://files.pythonhosted.org/packages/cb/a0/af448af28514e82f36e7431bc88e933ad043e5a95a7985bd9458a05877c6/rustworkx-0.15.1-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:7e5f4156f46fa03177c9b0580450eab87786063495d48b457762a5bdd20c55e2", size = 1950466, upload-time = "2024-06-28T15:32:41.118Z" },
-    { url = "https://files.pythonhosted.org/packages/c6/fe/1e9a8a29c21080155b7422011a3c472aa45dbb3b8bb6f610958eb906a713/rustworkx-0.15.1-cp38-abi3-musllinux_1_1_aarch64.whl", hash = "sha256:7834ab34748db6214ec3b3836b996b23882dc83184234e6d346d6bb85fd58ae5", size = 1888003, upload-time = "2024-06-28T15:28:04.96Z" },
-    { url = "https://files.pythonhosted.org/packages/65/66/daf6fffadb749574f78cd70919e598371d40484993ed005ed5efbef28b4e/rustworkx-0.15.1-cp38-abi3-musllinux_1_1_x86_64.whl", hash = "sha256:ce53f173fed16e1d51d9df9f23475a16c981b03bf1a412d991c75a70db6b1dc1", size = 1976312, upload-time = "2024-06-28T15:32:42.894Z" },
-    { url = "https://files.pythonhosted.org/packages/d5/ea/9cbf42b4d9a2b6ad18736bc2149d2b2439075b70094232ba3494fd14845b/rustworkx-0.15.1-cp38-abi3-win32.whl", hash = "sha256:308bc76a01bcae9af4602d8b9ed58021df37dd0bb5a7b2e3831ae53c5e234ff0", size = 1683889, upload-time = "2024-06-28T15:32:44.665Z" },
-    { url = "https://files.pythonhosted.org/packages/9c/c6/50f5736f5dac1709c6c8b6ac3470f466fd793dd25c081923942caf13051f/rustworkx-0.15.1-cp38-abi3-win_amd64.whl", hash = "sha256:89077382633e918d2392772f53b9d6d30eee51eb536f8d38ee195c212b2f0427", size = 1840525, upload-time = "2024-06-28T15:32:46.443Z" },
 ]
 
 [[package]]
