@@ -1,5 +1,4 @@
-import { useEffect, useRef } from 'preact/hooks';
-import Plotly from 'plotly.js';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import type * as PlotlyTypes from 'plotly.js';
 import type { Renderer } from './types';
 import type { ContentRecord } from '../types';
@@ -12,6 +11,7 @@ interface PlotlyFigure {
 
 function PlotlyView({ data, record }: { data: ArrayBuffer; record: ContentRecord }) {
     const divRef = useRef<HTMLDivElement>(null);
+    const [ready, setReady] = useState(false);
 
     useEffect(() => {
         const text = new TextDecoder().decode(data);
@@ -25,18 +25,26 @@ function PlotlyView({ data, record }: { data: ArrayBuffer; record: ContentRecord
         const el = divRef.current;
         if (!el) return;
 
-        Plotly.newPlot(el, fig.data ?? [], fig.layout ?? {}, {
-            responsive: true,
-            ...fig.config,
+        let cancelled = false;
+
+        import('plotly.js').then(({ default: Plotly }) => {
+            if (cancelled || !divRef.current) return;
+            Plotly.newPlot(el, fig.data ?? [], fig.layout ?? {}, {
+                responsive: true,
+                ...fig.config,
+            });
+            setReady(true);
         });
 
         return () => {
-            Plotly.purge(el);
+            cancelled = true;
+            import('plotly.js').then(({ default: Plotly }) => Plotly.purge(el));
         };
     }, [data, record.content_key]);
 
     return (
         <div class="labox-content--plotly">
+            {!ready && <div class="labox-loading" />}
             <div class="labox-plotly" ref={divRef} />
         </div>
     );
