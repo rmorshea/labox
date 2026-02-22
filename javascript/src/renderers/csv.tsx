@@ -1,19 +1,13 @@
+import Papa from 'papaparse';
 import type { Renderer } from './types';
 import type { ContentRecord } from '../types';
-
-function parseCSV(text: string): string[][] {
-    return text
-        .split(/\r?\n/)
-        .filter((line) => line.length > 0)
-        .map((line) => line.split(','));
-}
 
 export const csvRenderer: Renderer = {
     types: ['text/csv'],
 
     render(data: ArrayBuffer, _record: ContentRecord) {
         const text = new TextDecoder().decode(data);
-        const rows = parseCSV(text);
+        const { data: rows } = Papa.parse<string[]>(text, { skipEmptyLines: true });
         const [header, ...body] = rows;
 
         return (

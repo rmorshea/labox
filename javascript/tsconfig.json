@@ -16,6 +16,9 @@
     "resolveJsonModule": true,
     "declaration": true,
     "declarationMap": true,
+    "types": [
+      "bun-types"
+    ],
     "outDir": "./dist",
     "rootDir": "./src"
   },

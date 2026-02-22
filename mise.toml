@@ -5,8 +5,13 @@ bun = "1.3.9"
 [tasks.test]
 description = "Run the test suite"
 run = [
-  "mise run test:python"
+  "mise run test:python",
+  "mise run test:javascript",
 ]
+
+[tasks."test:javascript"]
+description = "Run the JavaScript/TypeScript test suite"
+run = "bun --cwd javascript test"
 
 [tasks."test:python"]
 description = "Run the Python test suite"
