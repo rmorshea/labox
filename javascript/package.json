@@ -21,8 +21,13 @@
     "preview": "vite preview",
     "type-check": "tsc --noEmit"
   },
+  "dependencies": {
+    "plotly.js": "^2.35.3",
+    "preact": "^10.26.2"
+  },
   "devDependencies": {
     "@types/node": "^20.11.0",
+    "@types/plotly.js": "^2.35.4",
     "typescript": "^5.3.3",
     "vite": "^5.0.11",
     "vite-plugin-dts": "^3.7.0"

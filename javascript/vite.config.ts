@@ -3,6 +3,10 @@ import { resolve } from 'path';
 import dts from 'vite-plugin-dts';
 
 export default defineConfig({
+  esbuild: {
+    jsx: 'automatic',
+    jsxImportSource: 'preact',
+  },
   plugins: [
     dts({
       include: ['src/**/*'],
@@ -18,6 +22,7 @@ export default defineConfig({
       fileName: (format) => `index.js`,
     },
     rollupOptions: {
+      external: [],
       output: {
         preserveModules: false,
       },

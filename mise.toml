@@ -58,7 +58,23 @@ flag "--check" help="Check for linting issues without fixing"
 '''
 run = [
   "mise run lint:python",
+  "mise run lint:js",
 ]
+
+[tasks."lint:js"]
+description = "Run JavaScript/TypeScript linting checks"
+usage = '''
+flag "--check" help="Check for linting issues without fixing"
+flag "--no-js-types" help="Skip type check TypeScript files"
+'''
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+
+NO_JS_TYPES="${usage_no_js_types:-false}"
+
+[[ "$NO_JS_TYPES" != "true" ]] && bun --cwd javascript run type-check
+"""
 
 [tasks."lint:python"]
 description = "Run Pyton linting checks and fixes"
