@@ -16,11 +16,11 @@ from labox.server.routes import get_manifest
 from labox.server.routes import list_contents
 
 
-def create_app(sqlalchemy_engine: AsyncEngine, registry: Registry) -> ls.Litestar:
+def create_app(engine: AsyncEngine, registry: Registry) -> ls.Litestar:
     """Return the ASGI application for Labox.
 
     Args:
-        sqlalchemy_engine: An async SQLAlchemy engine to use for database operations.
+        engine: An async SQLAlchemy engine to use for database operations.
         registry: The registry containing storage, serializer, and unpacker configurations.
 
     Returns:
@@ -38,7 +38,7 @@ def create_app(sqlalchemy_engine: AsyncEngine, registry: Registry) -> ls.Litesta
             "registry": Provide(_provide_registry, sync_to_thread=False),
         },
     )
-    app.state.engine = sqlalchemy_engine
+    app.state.engine = engine
     app.state.registry = registry
     return app
 
