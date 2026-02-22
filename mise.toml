@@ -11,7 +11,10 @@ run = [
 
 [tasks."test:javascript"]
 description = "Run the JavaScript/TypeScript test suite"
-run = "bun --cwd javascript test"
+run = [
+  "bun --cwd javascript install",
+  "bun --cwd javascript test",
+]
 
 [tasks."test:python"]
 description = "Run the Python test suite"
@@ -75,6 +78,8 @@ flag "--no-js-types" help="Skip type check TypeScript files"
 run = """
 #!/usr/bin/env bash
 set -euo pipefail
+
+bun --cwd javascript install
 
 NO_JS_TYPES="${usage_no_js_types:-false}"
 
