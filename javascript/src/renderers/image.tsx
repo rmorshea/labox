@@ -14,7 +14,7 @@ function ImageView({ data, record }: { data: ArrayBuffer; record: ContentRecord 
     }, [data, record.content_type]);
 
     return (
-        <div class="labox-content labox-content--image">
+        <div class="labox-content--image">
             <img class="labox-image" ref={imgRef} alt={record.content_key} />
         </div>
     );

@@ -11,7 +11,7 @@ export const csvRenderer: Renderer = {
         const [header, ...body] = rows;
 
         return (
-            <div class="labox-content labox-content--csv">
+            <div class="labox-content--csv">
                 <table class="labox-csv-table">
                     {header && (
                         <thead class="labox-csv-thead">

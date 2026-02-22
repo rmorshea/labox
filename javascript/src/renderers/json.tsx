@@ -13,7 +13,7 @@ export const jsonRenderer: Renderer = {
             formatted = text;
         }
         return (
-            <div class="labox-content labox-content--json">
+            <div class="labox-content--json">
                 <pre class="labox-json">
                     <code>{formatted}</code>
                 </pre>

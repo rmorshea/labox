@@ -8,7 +8,7 @@
 </head>
 
 <body>
-    <div id="container-{{ content_id }}"></div>
+    <div id="labox-content-{{ content_id }}" class="labox-content"></div>
     <script type="module">
         import { renderContent } from '/static/js/index.js';
 
@@ -18,7 +18,7 @@
         // mounted under a sub-path of a larger application.
         const segments = window.location.pathname.split('/');
         const baseUrl = segments.slice(0, -3).join('/');
-        const container = document.getElementById(`container-${contentId}`);
+        const container = document.getElementById(`labox-content-${contentId}`);
 
         renderContent(contentId, baseUrl, container);
     </script>

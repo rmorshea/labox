@@ -6,7 +6,7 @@ export const fallbackRenderer: Renderer = {
 
     render(_data: ArrayBuffer, record: ContentRecord) {
         return (
-            <div class="labox-content labox-content--fallback">
+            <div class="labox-content--fallback">
                 <dl class="labox-fallback">
                     <dt>Content type</dt>
                     <dd>{record.content_type}</dd>

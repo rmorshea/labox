@@ -36,7 +36,7 @@ function PlotlyView({ data, record }: { data: ArrayBuffer; record: ContentRecord
     }, [data, record.content_key]);
 
     return (
-        <div class="labox-content labox-content--plotly">
+        <div class="labox-content--plotly">
             <div class="labox-plotly" ref={divRef} />
         </div>
     );
