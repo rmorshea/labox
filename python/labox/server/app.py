@@ -1,9 +1,11 @@
 from collections.abc import AsyncGenerator
+from pathlib import Path
 
 import litestar as ls
 from litestar.datastructures import State
 from litestar.di import Provide
 from litestar.exceptions import ClientException
+from litestar.static_files import create_static_files_router
 from litestar.status_codes import HTTP_409_CONFLICT
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -14,6 +16,9 @@ from labox.server.routes import get_content
 from labox.server.routes import get_content_data
 from labox.server.routes import get_manifest
 from labox.server.routes import list_contents
+
+_HERE = Path(__file__).parent
+_STATIC_DIR = _HERE / "static"
 
 
 def create_app(engine: AsyncEngine, registry: Registry) -> ls.Litestar:
@@ -32,6 +37,7 @@ def create_app(engine: AsyncEngine, registry: Registry) -> ls.Litestar:
             list_contents,
             get_content,
             get_content_data,
+            create_static_files_router(path="/static", directories=[_STATIC_DIR]),
         ],
         dependencies={
             "session": Provide(_provide_transaction),
