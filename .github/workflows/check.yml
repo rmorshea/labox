@@ -78,6 +78,26 @@ jobs:
           version: 2026.2.4
       - name: Check lint
         run: mise exec -- uv build
+  js-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install mise
+        uses: jdx/mise-action@v3
+        with:
+          version: 2026.2.4
+      - name: Check lint
+        run: mise run lint:javascript --check
+  js-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install mise
+        uses: jdx/mise-action@v3
+        with:
+          version: 2026.2.4
+      - name: Run tests
+        run: mise run test:javascript
   docs-build:
     runs-on: ubuntu-latest
     steps:
