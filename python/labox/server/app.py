@@ -2,11 +2,13 @@ from collections.abc import AsyncGenerator
 from pathlib import Path
 
 import litestar as ls
+from litestar.contrib.jinja import JinjaTemplateEngine
 from litestar.datastructures import State
 from litestar.di import Provide
 from litestar.exceptions import ClientException
 from litestar.static_files import create_static_files_router
 from litestar.status_codes import HTTP_409_CONFLICT
+from litestar.template import TemplateConfig
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,11 +16,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from labox.core.registry import Registry
 from labox.server.routes import get_content
 from labox.server.routes import get_content_data
+from labox.server.routes import get_content_view
 from labox.server.routes import get_manifest
 from labox.server.routes import list_contents
 
 _HERE = Path(__file__).parent
 _STATIC_DIR = _HERE / "static"
+_TEMPLATES_DIR = _HERE / "templates"
 
 
 def create_app(engine: AsyncEngine, registry: Registry) -> ls.Litestar:
@@ -37,8 +41,10 @@ def create_app(engine: AsyncEngine, registry: Registry) -> ls.Litestar:
             list_contents,
             get_content,
             get_content_data,
+            get_content_view,
             create_static_files_router(path="/static", directories=[_STATIC_DIR]),
         ],
+        template_config=TemplateConfig(directory=_TEMPLATES_DIR, engine=JinjaTemplateEngine),
         dependencies={
             "session": Provide(_provide_transaction),
             "registry": Provide(_provide_registry, sync_to_thread=False),

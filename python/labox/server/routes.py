@@ -7,6 +7,7 @@ from litestar.dto import DTOConfig
 from litestar.exceptions import NotFoundException
 from litestar.params import Parameter
 from litestar.response import Stream
+from litestar.response import Template
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,10 +23,7 @@ class ManifestReadDTO(DataclassDTO[ManifestRecord]):
 
 
 @get("/manifests/{manifest_id:uuid}", return_dto=ManifestReadDTO)
-async def get_manifest(
-    session: AsyncSession,
-    manifest_id: UUID,
-) -> ManifestRecord:
+async def get_manifest(session: AsyncSession, manifest_id: UUID) -> ManifestRecord:
     """Get a specific manifest by ID."""
     query = select(ManifestRecord).where(ManifestRecord.id == manifest_id)
     result = await session.execute(query)
@@ -55,10 +53,7 @@ async def list_contents(
 
 
 @get("/contents/{content_id:uuid}")
-async def get_content(
-    session: AsyncSession,
-    content_id: UUID,
-) -> ContentRecord:
+async def get_content(session: AsyncSession, content_id: UUID) -> ContentRecord:
     """Get a specific content record by ID."""
     query = select(ContentRecord).where(ContentRecord.id == content_id)
     result = await session.execute(query)
@@ -71,11 +66,7 @@ async def get_content(
 
 
 @get("/contents/{content_id:uuid}/data")
-async def get_content_data(
-    session: AsyncSession,
-    registry: Registry,
-    content_id: UUID,
-) -> Stream:
+async def get_content_data(session: AsyncSession, registry: Registry, content_id: UUID) -> Stream:
     """Stream the actual data for a specific content record."""
     # Get the content record
     query = select(ContentRecord).where(ContentRecord.id == content_id)
@@ -89,3 +80,9 @@ async def get_content_data(
     storage_config = storage.deserialize_config(content.storage_config)
 
     return Stream(storage.read_data_stream(storage_config))
+
+
+@get("/contents/{content_id:uuid}/view", sync_to_thread=False)
+def get_content_view(content_id: UUID) -> Template:
+    """Render an HTML view for a specific content record."""
+    return Template("content_view.html", context={"content_id": str(content_id)})
