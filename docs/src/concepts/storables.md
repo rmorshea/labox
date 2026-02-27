@@ -26,8 +26,8 @@ class MyStorableBase(Storable, unpacker=my_unpacker):
 
 Users can then create "concrete" subclasses with particular [class IDs](#class-ids).
 Instances of these concrete classes with a class ID can be
-[saved](../usage/index.md#saving-storables) and
-[loaded](../usage/index.md#loading-storables).
+[saved](../usage/framework.md#saving-storables) and
+[loaded](../usage/framework.md#loading-storables).
 
 ```python
 class MyStorable(MyStorableBase, class_id="..."):

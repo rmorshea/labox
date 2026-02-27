@@ -9,7 +9,7 @@ for dataclasses.
 
 Labox provides a base
 [`StorableDataclass`][labox.builtin.storables.dataclasses.StorableDataclass] class that
-can be added to a dataclass to make it [storable](../usage/index.md#saving-storables).
+can be added to a dataclass to make it [storable](../usage/framework.md#saving-storables).
 
 #### Dataclass Usage
 

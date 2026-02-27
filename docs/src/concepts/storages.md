@@ -113,7 +113,7 @@ allowing it to save data in a location that can be reconstructed later.
 
 In the example above, the `write_data` and `write_data_stream` methods accept a`tags`
 argument. This is a dictionary of tags that were provided when
-[saving](../usage/index.md#adding-tags) the data.
+[saving](../usage/framework.md#adding-tags) the data.
 
 ## Storage Config
 

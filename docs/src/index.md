@@ -121,6 +121,6 @@ assert loaded_experiment == experiment
 
 ## Next Steps
 
-Check out more [usage examples](./usage/index.md), or dive into the
+Check out more [usage examples](./usage/framework.md), or dive into the
 [concepts](./concepts/index.md) and [integrations](./integrations/index.md) to learn
 more about how Labox works.
