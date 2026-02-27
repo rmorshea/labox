@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "lib": [
+      "ES2020",
+      "DOM"
+    ],
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "types": [
+      "bun-types"
+    ],
+    "outDir": "./dist",
+    "rootDir": "./src"
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}

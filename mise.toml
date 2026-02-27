@@ -1,15 +1,25 @@
 [tools]
 uv = "0.10.0"
+bun = "1.3.9"
 
 [tasks.test]
 description = "Run the test suite"
 run = [
-  "mise run test:python"
+  "mise run test:python",
+  "mise run test:javascript",
+]
+
+[tasks."test:javascript"]
+description = "Run the JavaScript/TypeScript test suite"
+run = [
+  "bun install --cwd javascript",
+  "bun --cwd javascript test",
 ]
 
 [tasks."test:python"]
 description = "Run the Python test suite"
 usage = 'arg "[args]" default="." help="Arguments to pass to pytest" var=#true'
+depends = ["build:javascript"]
 run = 'uv run pytest -v ${usage_args?}'
 
 [tasks.cov]
@@ -19,6 +29,8 @@ run = [
 ]
 
 [tasks."cov:python"]
+description = "Run the Python coverage reporting"
+depends = ["build:javascript"]
 usage = '''
 flag "--no-test" help="Skip running tests and just report coverage"
 flag "--old-coverage-xml <file>" help="Path to target coverage.xml"
@@ -57,7 +69,25 @@ flag "--check" help="Check for linting issues without fixing"
 '''
 run = [
   "mise run lint:python",
+  "mise run lint:javascript",
 ]
+
+[tasks."lint:javascript"]
+description = "Run JavaScript/TypeScript linting checks"
+usage = '''
+flag "--check" help="Check for linting issues without fixing"
+flag "--no-js-types" help="Skip type check TypeScript files"
+'''
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+
+bun install --cwd javascript
+
+NO_JS_TYPES="${usage_no_js_types:-false}"
+
+[[ "$NO_JS_TYPES" != "true" ]] && bun --cwd javascript type-check
+"""
 
 [tasks."lint:python"]
 description = "Run Pyton linting checks and fixes"
@@ -145,3 +175,32 @@ fi
 git fetch origin "$TARGET_BRANCH"
 git diff --name-only "origin/${TARGET_BRANCH}..HEAD" -- CHANGELOG.md || true
 """
+
+[tasks."build:javascript"]
+description = "Build the Javascript library"
+sources = [
+  "javascript/node_modules",
+  "javascript/package.json",
+  "javascript/src/**",
+  "javascript/tsconfig.json",
+  "javascript/vite.config.ts",
+]
+run = [
+  "bun install --cwd javascript",
+  "bun --cwd javascript build",
+]
+
+[tasks."build:python"]
+description = "Build the Python package"
+depends = ["build:javascript"]
+run = [
+  "mkdir -p python/labox/server/static",
+  "rm -rf python/labox/server/static/js",
+  "cp -r javascript/dist python/labox/server/static/js",
+  "uv build"
+]
+
+[tasks."release:python"]
+description = "Release the Python package"
+depends = ["build:python"]
+run = "uv publish"

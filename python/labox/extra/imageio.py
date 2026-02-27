@@ -67,7 +67,8 @@ class MediaSerializer(Serializer[Media, "_MediaSerializerConfig"]):
         )
 
         if media.extension is not None:
-            content_type, content_encoding = self.mimetypes.guess_type(media.extension)
+            filename = f"file{media.extension}"  # mimetypes needs a filename to guess the type
+            content_type, content_encoding = self.mimetypes.guess_file_type(filename)
         else:
             content_type = None
             content_encoding = None

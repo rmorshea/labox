@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Content {{ content_id }}</title>
+</head>
+
+<body>
+    <div id="labox-content-{{ content_id }}" class="labox-content"></div>
+    <script type="module">
+        import { renderContent } from '/static/js/index.js';
+
+        const contentId = '{{ content_id }}';
+        // Derive the app's base path by stripping /contents/{id}/view (3 segments)
+        // from the current pathname. This keeps things correct when the app is
+        // mounted under a sub-path of a larger application.
+        const segments = window.location.pathname.split('/');
+        const baseUrl = segments.slice(0, -3).join('/');
+        const container = document.getElementById(`labox-content-${contentId}`);
+
+        renderContent(contentId, baseUrl, container);
+    </script>
+</body>
+
+</html>
