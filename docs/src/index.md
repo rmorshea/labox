@@ -1,10 +1,52 @@
 # <img src="./logo.svg" alt="Labox Logo" style="height:2em;position:relative;top:0.4em"> Labox
 
-!!! warning
-
-    Long-term support is not guaranteed.
-
 A storage framework for heterogeneous data in Python.
+
+## At a Glance
+
+Model your data with Pydantic
+
+```python
+import pandas as pd
+import plotly.express as px
+from labox.extra.pydantic import StorableModel
+
+
+class ExperimentData(StorableModel, class_id="..."):  # (1)!
+    name: str
+    params: dict[str, float]
+    data: pd.DataFrame
+    plot: go.Figure
+
+
+# Populate it with data
+params = {"temperature": 298.15, "ph": 7.4, "concentration": 0.1}
+data = pd.DataFrame({"measure_num": [1, 2, 3], "measure_val": [1.23, 4.56, 7.89]})
+plot = px.scatter(data)
+experiment = ExperimentData(name="Measurement data", params=params, data=data, plot=plot)
+```
+
+1. Models have immutable `class_id`s [you need to define](./concepts/storables.md#class-ids).
+
+Then save and load it to a [storage backend](./concepts/storables.md) of your choice:
+
+```python
+import boto3
+from sqlalchemy.ext.asyncio import AsyncSession
+from labox.core import Registry, save_one, load_one
+from labox.extra.aws import S3Storage, simple_s3_router
+
+# With a bit of setup
+s3_storage = S3Storage(boto3.client("s3"), simple_s3_router("my-bucket"))
+registry = Registry(...)  # (1)!
+session = AsyncSession(...)  # (2)!
+
+record = await save_one(experiment, session=session, registry=registry)
+loaded_experiment = await load_one(record, ExperimentData, session=session, registry=registry)
+```
+
+1. Labox has a registry of integrations [you need to declare](./usage/index.md#registry-setup)
+1. Labox uses SQLAlchemy sessions [you need to be establish](./usage/index.md#database-setup)
 
 ## Installation
 
@@ -26,98 +68,6 @@ pip install labox[pydantic,pandas,aws]
 
 Be sure to checkout how Labox works with [Pydantic](./integrations/pydantic.md) as well
 as all the other [integrations](./integrations/index.md) Labox offers.
-
-## Basic Setup
-
-Initialize an async SQLAlchemy engine (in this case using
-[`aiosqlite`](https://pypi.org/project/aiosqlite/)):
-
-```python
-from sqlalchemy.ext.asyncio import async_sessionmaker
-from sqlalchemy.ext.asyncio import create_async_engine
-
-engine = create_async_engine("sqlite+aiosqlite:///temp.db")
-new_async_session = async_sessionmaker(engine, expire_on_commit=True)
-```
-
-Then use the engine to create Labox's tables:
-
-```python
-from labox.core import BaseRecord
-
-BaseRecord.create_all(engine).run()
-```
-
-Establish a [registry](./concepts/registry.md) with the
-[storables](./concepts/storables.md), [serializers](./concepts/serializers.md) and
-[storages](./concepts/storages.md) you plan to use.
-
-```python
-from labox.builtin import FileStorage
-from labox.core import Registry
-
-registry = Registry(
-    modules=["labox.builtin", "labox.extra.pandas", "labox.extra.pydantic"],
-    default_storage=FileStorage("temp", mkdir=True),
-)
-```
-
-## Basic Usage
-
-With setup completed, find some data you want to save:
-
-```python
-import pandas as pd
-
-experiment_data = {
-    "name": "Test Experiment",
-    "results": pd.DataFrame(
-        {"measurement_num": [1, 2, 3], "measurement_value": [1.23, 4.56, 7.89]}
-    ),
-}
-```
-
-Put that data in a [storable](./concepts/storables.md). In this case, a
-[Pydantic](./integrations/pydantic.md) model:
-
-```python
-import pandas as pd
-
-from labox.extra.pydantic import StorableModel
-
-
-class ExperimentData(StorableModel, class_id="..."):  # (1)!
-    name: str
-    results: pd.DataFrame
-
-
-experiment = ExperimentData(**experiment_data)
-```
-
-1. A `class_id` is a string that identifies a storable class when saving and loading
-    data. You can use a placeholder like `"..."` until you
-    [generate a unique ID](./concepts/storables.md#generating-ids). Once you've saved
-    data with a specific `class_id`, it should never be changed or reused.
-
-Save the data and return a [record](./concepts/database.md#manifest-records):
-
-```python
-from labox.core import save_one
-
-async with new_async_session() as session:
-    record = await save_one(experiment, session=session, registry=registry)
-```
-
-Now, you can load the data back from the record:
-
-```python
-from labox.core import load_one
-
-async with new_async_session() as session:
-    loaded_experiment = await load_one(record, session=session, registry=registry)
-
-assert loaded_experiment == experiment
-```
 
 ## Next Steps
 
