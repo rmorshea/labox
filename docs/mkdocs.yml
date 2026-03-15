@@ -85,7 +85,7 @@ plugins:
             - https://imageio.readthedocs.io/en/stable/objects.inv
             - https://msgpack-python.readthedocs.io/en/latest/objects.inv
             - https://numpy.org/doc/stable/objects.inv
-            - https://pandas.pydata.org/pandas-docs/stable/objects.inv
+            - https://pandas.pydata.org/docs/objects.inv
             - https://plotly.com/python-api-reference/objects.inv
             - https://pola-rs.github.io/polars/py-polars/html/objects.inv
             - https://anyio.readthedocs.io/en/stable/objects.inv

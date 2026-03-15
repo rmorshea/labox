@@ -34,13 +34,11 @@ to construct it from the modules where these components are defined.
 
 ```python
 from labox import Registry
+from labox.builtin import FileStorage
 
 registry = Registry(
-    modules=[
-        "labox.builtin",
-        "labox.extra.pydantic",
-        "labox.extra.pandas",
-    ]
+    modules=["labox.builtin", "labox.extra.pandas", "labox.extra.plotly", "labox.extra.pydantic"],
+    default_storage=FileStorage("temp", mkdir=True),
 )
 ```
 
@@ -144,12 +142,12 @@ from typing import Annotated
 import pandas as pd
 
 from labox.extra.pandas import ParquetDataFrameStreamSerializer
-from labox.extra.pydantic import ContentSpec
 from labox.extra.pydantic import StorableModel
+from labox.extra.pydantic import StorableSpec
 
 # A custom Pydantic type with a Labox serializer (1)
 DataFrameStream = Annotated[
-    AsyncIterable[pd.DataFrame], ContentSpec(serializer=ParquetDataFrameStreamSerializer())
+    AsyncIterable[pd.DataFrame], StorableSpec(serializer=ParquetDataFrameStreamSerializer())
 ]
 
 
@@ -162,7 +160,7 @@ class ExperimentData(StorableModel):
 1. Pydantic allows you to
     [annotate types](https://docs.pydantic.dev/2.11/concepts/types/#using-the-annotated-pattern)
     with additional metadata. In this case, a
-    [`ContentSpec`](../integrations/pydantic.md#content-specs) is used to specify that
+    [`StorableSpec`](../integrations/pydantic.md#storable-specs) is used to specify that
     the `DataFrameStream` must be serialized with a
     [`ParquetDataFrameStreamSerializer`][labox.extra.pandas.ParquetDataFrameStreamSerializer].
 
